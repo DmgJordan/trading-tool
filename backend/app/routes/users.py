@@ -3,47 +3,49 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import User
 from ..schemas.user import UserCreate, UserResponse, UserUpdate
+from ..auth import get_current_user, get_password_hash, encrypt_api_key, decrypt_api_key
 
 router = APIRouter(prefix="/users", tags=["users"])
 
-@router.post("/", response_model=UserResponse)
-def create_user(user: UserCreate, db: Session = Depends(get_db)):
-    # Vérifier si l'utilisateur existe déjà
-    db_user = db.query(User).filter(User.email == user.email).first()
-    if db_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
+@router.get("/me", response_model=UserResponse)
+def get_current_user_profile(current_user: User = Depends(get_current_user)):
+    # Déchiffrer les clés API avant de les retourner
+    hyperliquid_key = decrypt_api_key(current_user.hyperliquid_api_key) if current_user.hyperliquid_api_key else None
+    anthropic_key = decrypt_api_key(current_user.anthropic_api_key) if current_user.anthropic_api_key else None
 
-    # Créer l'utilisateur (sans hashage du mot de passe pour l'exemple)
-    db_user = User(
-        email=user.email,
-        username=user.username,
-        hashed_password=user.password,
-        hyperliquid_api_key=user.hyperliquid_api_key,
-        anthropic_api_key=user.anthropic_api_key
-    )
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return db_user
+    # Créer une copie pour éviter de modifier l'objet original
+    user_data = UserResponse.model_validate(current_user)
+    user_data.hyperliquid_api_key = hyperliquid_key
+    user_data.anthropic_api_key = anthropic_key
 
-@router.get("/{user_id}", response_model=UserResponse)
-def read_user(user_id: int, db: Session = Depends(get_db)):
-    db_user = db.query(User).filter(User.id == user_id).first()
-    if db_user is None:
-        raise HTTPException(status_code=404, detail="User not found")
-    return db_user
+    return user_data
 
-@router.put("/{user_id}", response_model=UserResponse)
-def update_user(user_id: int, user_update: UserUpdate, db: Session = Depends(get_db)):
-    db_user = db.query(User).filter(User.id == user_id).first()
-    if db_user is None:
-        raise HTTPException(status_code=404, detail="User not found")
-
+@router.put("/me", response_model=UserResponse)
+def update_current_user(
+    user_update: UserUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     # Mettre à jour les champs fournis
     update_data = user_update.model_dump(exclude_unset=True)
+
     for field, value in update_data.items():
-        setattr(db_user, field, value)
+        if field in ["hyperliquid_api_key", "anthropic_api_key"] and value:
+            # Chiffrer les clés API
+            encrypted_value = encrypt_api_key(value)
+            setattr(current_user, field, encrypted_value)
+        else:
+            setattr(current_user, field, value)
 
     db.commit()
-    db.refresh(db_user)
-    return db_user
+    db.refresh(current_user)
+
+    # Retourner les données déchiffrées
+    hyperliquid_key = decrypt_api_key(current_user.hyperliquid_api_key) if current_user.hyperliquid_api_key else None
+    anthropic_key = decrypt_api_key(current_user.anthropic_api_key) if current_user.anthropic_api_key else None
+
+    user_data = UserResponse.model_validate(current_user)
+    user_data.hyperliquid_api_key = hyperliquid_key
+    user_data.anthropic_api_key = anthropic_key
+
+    return user_data

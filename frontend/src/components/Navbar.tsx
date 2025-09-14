@@ -1,9 +1,19 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '../store/authStore';
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const { user, logout } = useAuthStore();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await logout();
+    router.push('/login');
+  };
 
   return (
     <nav className="bg-white shadow-sm border-b-2 border-black">
@@ -22,8 +32,8 @@ export default function Navbar() {
           </div>
 
           {/* Menu desktop */}
-          <div className="hidden md:block">
-            <div className="ml-10 flex items-baseline space-x-6">
+          <div className="hidden md:flex items-center space-x-6">
+            <div className="flex items-baseline space-x-6">
               <span className="bg-black text-white px-4 py-3 rounded-lg text-sm font-semibold cursor-default">
                 Configuration
               </span>
@@ -36,6 +46,41 @@ export default function Navbar() {
               <span className="text-gray-500 px-4 py-3 rounded-lg text-sm font-medium cursor-not-allowed">
                 Historique
               </span>
+            </div>
+
+            {/* User Menu Desktop */}
+            <div className="relative">
+              <button
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                className="flex items-center space-x-3 text-black hover:text-gray-600 focus:outline-none p-2"
+              >
+                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                  <span className="text-black font-medium text-sm">
+                    {user?.username?.charAt(0).toUpperCase() || 'U'}
+                  </span>
+                </div>
+                <span className="text-sm font-medium">{user?.username}</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {isUserMenuOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border-2 border-gray-100">
+                  <div className="py-2">
+                    <div className="px-4 py-2 border-b border-gray-100">
+                      <p className="text-sm font-medium text-black">{user?.username}</p>
+                      <p className="text-xs text-gray-600">{user?.email}</p>
+                    </div>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      Se déconnecter
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -88,6 +133,27 @@ export default function Navbar() {
             <span className="text-gray-500 block px-3 py-2 rounded-md text-base font-medium cursor-not-allowed">
               Historique
             </span>
+
+            {/* User info mobile */}
+            <div className="border-t border-gray-200 pt-3 mt-3">
+              <div className="flex items-center px-3 py-2">
+                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mr-3">
+                  <span className="text-black font-medium text-sm">
+                    {user?.username?.charAt(0).toUpperCase() || 'U'}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-black">{user?.username}</p>
+                  <p className="text-xs text-gray-600">{user?.email}</p>
+                </div>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
+              >
+                Se déconnecter
+              </button>
+            </div>
           </div>
         </div>
       )}

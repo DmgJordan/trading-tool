@@ -29,6 +29,8 @@ class UserResponse(BaseModel):
     id: int
     email: EmailStr
     username: str
+    hyperliquid_api_key: Optional[str] = None
+    anthropic_api_key: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime]
 
