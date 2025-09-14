@@ -27,7 +27,7 @@ export default function ConfigurationTest() {
       });
 
       if (response.ok) {
-        const data = await response.json();
+        await response.json();
         setTestResult(prev => ({
           ...prev,
           backend: 'success',
@@ -57,7 +57,7 @@ export default function ConfigurationTest() {
       });
 
       if (response.ok) {
-        const data = await response.json();
+        await response.json();
         setTestResult(prev => ({
           ...prev,
           database: 'success',

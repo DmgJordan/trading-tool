@@ -36,3 +36,10 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class ApiKeyUpdate(BaseModel):
+    hyperliquid_api_key: Optional[str] = None
+    anthropic_api_key: Optional[str] = None
+
+class ApiKeyTest(BaseModel):
+    api_key: str
