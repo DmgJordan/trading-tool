@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from .database import engine, get_db
 from .models import Base
-from .routes import users, auth, api_tests
+from .routes import users, auth, connectors
 
 # Créer les tables
 Base.metadata.create_all(bind=engine)
@@ -25,7 +25,7 @@ app.add_middleware(
 
 app.include_router(users.router)
 app.include_router(auth.router)
-app.include_router(api_tests.router)
+app.include_router(connectors.router)
 
 @app.get("/")
 async def root():

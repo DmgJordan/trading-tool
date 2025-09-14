@@ -79,15 +79,18 @@ export default function ApiKeysConfiguration() {
     setter({ status: 'testing', message: 'Test de connexion en cours...' });
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/test/${apiType}`, {
+      const endpoint = apiType === 'hyperliquid' ? 'test-hyperliquid' : 'test-anthropic';
+      const requestBody = apiType === 'hyperliquid'
+        ? { private_key: apiKey, use_testnet: false }
+        : { api_key: apiKey };
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/connectors/${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${JSON.parse(localStorage.getItem('auth_tokens') || '{}').access_token}`,
         },
-        body: JSON.stringify({
-          api_key: apiKey
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (response.ok) {
