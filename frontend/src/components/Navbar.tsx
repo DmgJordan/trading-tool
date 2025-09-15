@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '../store/authStore';
 
 export default function Navbar() {
@@ -9,6 +9,7 @@ export default function Navbar() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { user, logout } = useAuthStore();
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleLogout = async () => {
     await logout();
@@ -34,9 +35,16 @@ export default function Navbar() {
           {/* Menu desktop */}
           <div className="hidden md:flex items-center space-x-6">
             <div className="flex items-baseline space-x-6">
-              <span className="bg-black text-white px-4 py-3 rounded-lg text-sm font-semibold cursor-default">
+              <button
+                onClick={() => router.push('/')}
+                className={`px-4 py-3 rounded-lg text-sm font-semibold transition-colors ${
+                  pathname === '/'
+                    ? 'bg-black text-white'
+                    : 'text-black hover:bg-gray-100'
+                }`}
+              >
                 Configuration
-              </span>
+              </button>
               <span className="text-gray-500 px-4 py-3 rounded-lg text-sm font-medium cursor-not-allowed">
                 Dashboard
               </span>
@@ -127,9 +135,19 @@ export default function Navbar() {
       {isMenuOpen && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 bg-white border-t-2 border-black">
-            <span className="bg-black text-white block px-3 py-2 rounded-md text-base font-medium cursor-default">
+            <button
+              onClick={() => {
+                router.push('/');
+                setIsMenuOpen(false);
+              }}
+              className={`block w-full text-left px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                pathname === '/'
+                  ? 'bg-black text-white'
+                  : 'text-black hover:bg-gray-100'
+              }`}
+            >
               Configuration
-            </span>
+            </button>
             <span className="text-gray-500 block px-3 py-2 rounded-md text-base font-medium cursor-not-allowed">
               Dashboard
             </span>

@@ -138,6 +138,10 @@ export const useAuthStore = create<AuthStore>()(
         }
       },
 
+      setUser: (user: User) => {
+        set({ user });
+      },
+
       clearError: () => {
         set({ error: null });
       },

@@ -31,6 +31,8 @@ class UserResponse(BaseModel):
     username: str
     hyperliquid_api_key: Optional[str] = None
     anthropic_api_key: Optional[str] = None
+    hyperliquid_api_key_status: Optional[str] = None  # "configured" ou None
+    anthropic_api_key_status: Optional[str] = None   # "configured" ou None
     created_at: datetime
     updated_at: Optional[datetime]
 

@@ -1,6 +1,6 @@
 from hyperliquid.info import Info
 from hyperliquid.exchange import Exchange
-from hyperliquid.utils import constants
+from eth_account import Account
 import asyncio
 from typing import Dict, Any, Optional
 import logging
@@ -11,7 +11,8 @@ class HyperliquidConnector:
     """Connector pour l'API Hyperliquid utilisant le SDK officiel"""
 
     def __init__(self, use_testnet: bool = False):
-        self.api_url = constants.TESTNET_API_URL if use_testnet else constants.MAINNET_API_URL
+        # Laisser le SDK gérer les URLs automatiquement
+        # URL de production par défaut : https://api.hyperliquid.xyz
         self.use_testnet = use_testnet
 
     async def test_connection(self, private_key: str) -> Dict[str, Any]:
@@ -32,8 +33,8 @@ class HyperliquidConnector:
                     "message": "Format de clé privée invalide (doit commencer par 0x et faire 66 caractères)"
                 }
 
-            # Test de connexion avec le SDK
-            info = Info(self.api_url, skip_ws=True)
+            # Test de connexion avec le SDK - utilise l'URL de production par défaut
+            info = Info(skip_ws=True)
 
             # Essai de récupérer les métadonnées (endpoint public pour tester la connexion)
             meta = await asyncio.get_event_loop().run_in_executor(
@@ -48,11 +49,13 @@ class HyperliquidConnector:
 
             # Test avec Exchange pour valider la clé privée
             try:
-                exchange = Exchange(info, private_key)
+                # Créer un wallet à partir de la clé privée
+                wallet = Account.from_key(private_key)
+                exchange = Exchange(wallet, base_url=None)
 
                 # Test simple - récupérer l'état de l'utilisateur
                 user_state = await asyncio.get_event_loop().run_in_executor(
-                    None, info.user_state, exchange.wallet.address
+                    None, info.user_state, wallet.address
                 )
 
                 network = "Testnet" if self.use_testnet else "Mainnet"
@@ -60,7 +63,7 @@ class HyperliquidConnector:
                     "status": "success",
                     "message": f"Connexion Hyperliquid {network} réussie !",
                     "data": {
-                        "wallet_address": exchange.wallet.address,
+                        "wallet_address": wallet.address,
                         "network": network,
                         "user_state_available": user_state is not None
                     }
@@ -97,11 +100,11 @@ class HyperliquidConnector:
             Dict avec les informations utilisateur
         """
         try:
-            info = Info(self.api_url, skip_ws=True)
+            info = Info(skip_ws=True)
 
             if not wallet_address:
-                exchange = Exchange(info, private_key)
-                wallet_address = exchange.wallet.address
+                wallet = Account.from_key(private_key)
+                wallet_address = wallet.address
 
             user_state = await asyncio.get_event_loop().run_in_executor(
                 None, info.user_state, wallet_address

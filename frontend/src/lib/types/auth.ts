@@ -4,6 +4,8 @@ export interface User {
   username: string;
   hyperliquid_api_key?: string;
   anthropic_api_key?: string;
+  hyperliquid_api_key_status?: string;
+  anthropic_api_key_status?: string;
   created_at: string;
   updated_at?: string;
 }
@@ -40,4 +42,5 @@ export interface AuthActions {
   refreshToken: () => Promise<void>;
   clearError: () => void;
   updateUser: (userData: Partial<User>) => Promise<void>;
+  setUser: (user: User) => void;
 }

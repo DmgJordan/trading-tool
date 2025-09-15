@@ -70,7 +70,7 @@ export const authApi = {
   },
 
   getMe: async (): Promise<User> => {
-    const response = await api.get<User>('/auth/me');
+    const response = await api.get<User>('/users/me');
     return response.data;
   },
 

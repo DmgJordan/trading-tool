@@ -1,9 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useAuthStore } from '../store/authStore';
+import { authApi } from '../lib/api/auth';
+import api from '../lib/api/auth';
 
 const apiKeysSchema = z.object({
   hyperliquid_api_key: z.string().optional(),
@@ -23,13 +26,25 @@ export default function ApiKeysConfiguration() {
   const [isHelpModalOpen, setIsHelpModalOpen] = useState<string | null>(null);
   const [showKeys, setShowKeys] = useState({ hyperliquid: false, anthropic: false });
   const [isSaving, setIsSaving] = useState({ hyperliquid: false, anthropic: false });
+  const { user, setUser } = useAuthStore();
 
   const {
     register,
     getValues,
+    setValue,
   } = useForm<ApiKeysFormData>({
     resolver: zodResolver(apiKeysSchema),
   });
+
+  // Charger les clés masquées quand l'utilisateur est chargé
+  useEffect(() => {
+    if (user?.hyperliquid_api_key_status === 'configured') {
+      setValue('hyperliquid_api_key', user.hyperliquid_api_key || '');
+    }
+    if (user?.anthropic_api_key_status === 'configured') {
+      setValue('anthropic_api_key', user.anthropic_api_key || '');
+    }
+  }, [user, setValue]);
 
   const saveApiKey = async (apiType: 'hyperliquid' | 'anthropic') => {
     const values = getValues();
@@ -42,21 +57,18 @@ export default function ApiKeysConfiguration() {
     setIsSaving(prev => ({ ...prev, [apiType]: true }));
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/users/me/api-keys`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${JSON.parse(localStorage.getItem('auth_tokens') || '{}').access_token}`,
-        },
-        body: JSON.stringify({
-          [apiType + '_api_key']: apiKey
-        }),
+      const response = await api.put('/users/me/api-keys', {
+        [apiType + '_api_key']: apiKey
       });
 
-      if (response.ok) {
-        alert(`Clé API ${apiType === 'hyperliquid' ? 'Hyperliquid' : 'Anthropic'} sauvegardée avec succès !`);
-      } else {
-        throw new Error(`Erreur ${response.status}`);
+      alert(`Clé API ${apiType === 'hyperliquid' ? 'Hyperliquid' : 'Anthropic'} sauvegardée avec succès !`);
+
+      // Recharger les informations utilisateur pour obtenir les clés masquées
+      try {
+        const updatedUser = await authApi.getMe();
+        setUser(updatedUser);
+      } catch (error) {
+        console.error('Erreur lors du rechargement des données utilisateur:', error);
       }
     } catch (error) {
       alert(`Erreur lors de la sauvegarde: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
@@ -68,8 +80,12 @@ export default function ApiKeysConfiguration() {
   const testApiConnection = async (apiType: 'hyperliquid' | 'anthropic') => {
     const values = getValues();
     const apiKey = apiType === 'hyperliquid' ? values.hyperliquid_api_key : values.anthropic_api_key;
+    const isStoredKey = apiType === 'hyperliquid'
+      ? user?.hyperliquid_api_key_status === 'configured' && apiKey?.includes('••••••••')
+      : user?.anthropic_api_key_status === 'configured' && apiKey?.includes('••••••••');
 
-    if (!apiKey?.trim()) {
+    // Si pas de clé saisie et pas de clé enregistrée
+    if (!apiKey?.trim() && !isStoredKey) {
       const setter = apiType === 'hyperliquid' ? setHyperliquidResult : setAnthropicResult;
       setter({ status: 'error', message: 'Veuillez saisir une clé API avant de tester.' });
       return;
@@ -79,27 +95,25 @@ export default function ApiKeysConfiguration() {
     setter({ status: 'testing', message: 'Test de connexion en cours...' });
 
     try {
-      const endpoint = apiType === 'hyperliquid' ? 'test-hyperliquid' : 'test-anthropic';
-      const requestBody = apiType === 'hyperliquid'
-        ? { private_key: apiKey, use_testnet: false }
-        : { api_key: apiKey };
+      let endpoint;
+      let requestBody;
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/connectors/${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${JSON.parse(localStorage.getItem('auth_tokens') || '{}').access_token}`,
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setter({ status: 'success', message: data.message || 'Connexion réussie !' });
+      if (isStoredKey) {
+        // Utiliser les endpoints pour les clés stockées
+        endpoint = apiType === 'hyperliquid' ? 'test-hyperliquid-stored' : 'test-anthropic-stored';
+        requestBody = apiType === 'hyperliquid'
+          ? { private_key: '', use_testnet: false }  // private_key sera ignoré car on utilise la clé stockée
+          : {};
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `Erreur ${response.status}`);
+        // Utiliser les endpoints classiques avec la nouvelle clé
+        endpoint = apiType === 'hyperliquid' ? 'test-hyperliquid' : 'test-anthropic';
+        requestBody = apiType === 'hyperliquid'
+          ? { private_key: apiKey, use_testnet: false }
+          : { api_key: apiKey };
       }
+
+      const response = await api.post(`/connectors/${endpoint}`, requestBody);
+      setter({ status: 'success', message: response.data.message || 'Connexion réussie !' });
     } catch (error) {
       setter({ status: 'error', message: `Erreur de connexion: ${error instanceof Error ? error.message : 'Connexion échouée'}` });
     }
@@ -193,6 +207,11 @@ export default function ApiKeysConfiguration() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3">
               <h3 className="text-lg font-semibold text-black">Hyperliquid API</h3>
+              {user?.hyperliquid_api_key_status === 'configured' && (
+                <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                  Configurée
+                </span>
+              )}
               <button
                 type="button"
                 onClick={() => setIsHelpModalOpen('hyperliquid')}
@@ -209,7 +228,7 @@ export default function ApiKeysConfiguration() {
               <input
                 {...register('hyperliquid_api_key')}
                 type={showKeys.hyperliquid ? 'text' : 'password'}
-                placeholder="Entrez votre clé API Hyperliquid"
+                placeholder={user?.hyperliquid_api_key_status === 'configured' ? "Clé configurée (masquée pour la sécurité)" : "Entrez votre clé API Hyperliquid"}
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-black focus:outline-none"
               />
               <button
@@ -257,6 +276,11 @@ export default function ApiKeysConfiguration() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3">
               <h3 className="text-lg font-semibold text-black">Anthropic API</h3>
+              {user?.anthropic_api_key_status === 'configured' && (
+                <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                  Configurée
+                </span>
+              )}
               <button
                 type="button"
                 onClick={() => setIsHelpModalOpen('anthropic')}
@@ -273,7 +297,7 @@ export default function ApiKeysConfiguration() {
               <input
                 {...register('anthropic_api_key')}
                 type={showKeys.anthropic ? 'text' : 'password'}
-                placeholder="Entrez votre clé API Anthropic"
+                placeholder={user?.anthropic_api_key_status === 'configured' ? "Clé configurée (masquée pour la sécurité)" : "Entrez votre clé API Anthropic"}
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-black focus:outline-none"
               />
               <button

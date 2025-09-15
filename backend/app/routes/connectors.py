@@ -11,7 +11,7 @@ from ..schemas.connectors import (
 from ..services.validators.api_validator import ApiValidator
 from ..services.validators.dex_validator import DexValidator
 from ..models.user import User
-from ..auth import get_current_user
+from ..auth import get_current_user, decrypt_api_key
 import logging
 
 logger = logging.getLogger(__name__)
@@ -63,6 +63,68 @@ async def test_hyperliquid_connection(
 
     except Exception as e:
         logger.error(f"Erreur test Hyperliquid: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
+
+@router.post("/test-anthropic-stored", response_model=ConnectorTestResponse)
+async def test_anthropic_stored_connection(
+    current_user: User = Depends(get_current_user)
+):
+    """Test la connexion à l'API Anthropic avec la clé stockée de l'utilisateur"""
+    try:
+        if not current_user.anthropic_api_key:
+            raise HTTPException(
+                status_code=400,
+                detail="Aucune clé Anthropic configurée. Veuillez d'abord enregistrer votre clé API."
+            )
+
+        # Déchiffrer la clé stockée
+        api_key = decrypt_api_key(current_user.anthropic_api_key)
+        result = await api_validator.validate_anthropic(api_key)
+
+        return ConnectorTestResponse(
+            status=result["status"],
+            message=result["message"],
+            data=result.get("data"),
+            validation=result.get("validation")
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur test Anthropic stocké: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
+
+@router.post("/test-hyperliquid-stored", response_model=ConnectorTestResponse)
+async def test_hyperliquid_stored_connection(
+    dex_test: DexKeyTest,  # Réutiliser DexKeyTest qui contient use_testnet
+    current_user: User = Depends(get_current_user)
+):
+    """Test la connexion à Hyperliquid DEX avec la clé stockée de l'utilisateur"""
+    try:
+        if not current_user.hyperliquid_api_key:
+            raise HTTPException(
+                status_code=400,
+                detail="Aucune clé Hyperliquid configurée. Veuillez d'abord enregistrer votre clé API."
+            )
+
+        # Déchiffrer la clé stockée
+        private_key = decrypt_api_key(current_user.hyperliquid_api_key)
+        result = await dex_validator.validate_hyperliquid(
+            private_key,
+            dex_test.use_testnet
+        )
+
+        return ConnectorTestResponse(
+            status=result["status"],
+            message=result["message"],
+            data=result.get("data"),
+            validation=result.get("validation")
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur test Hyperliquid stocké: {e}")
         raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
 
 @router.post("/validate-key-format", response_model=ConnectorTestResponse)

@@ -9,14 +9,23 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 @router.get("/me", response_model=UserResponse)
 def get_current_user_profile(current_user: User = Depends(get_current_user)):
-    # Déchiffrer les clés API avant de les retourner
-    hyperliquid_key = decrypt_api_key(current_user.hyperliquid_api_key) if current_user.hyperliquid_api_key else None
-    anthropic_key = decrypt_api_key(current_user.anthropic_api_key) if current_user.anthropic_api_key else None
-
     # Créer une copie pour éviter de modifier l'objet original
     user_data = UserResponse.model_validate(current_user)
-    user_data.hyperliquid_api_key = hyperliquid_key
-    user_data.anthropic_api_key = anthropic_key
+
+    # Ne pas retourner les vraies clés, mais indiquer leur statut et les masquer
+    if current_user.hyperliquid_api_key:
+        user_data.hyperliquid_api_key = "••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••"  # 64 caractères masqués
+        user_data.hyperliquid_api_key_status = "configured"
+    else:
+        user_data.hyperliquid_api_key = None
+        user_data.hyperliquid_api_key_status = None
+
+    if current_user.anthropic_api_key:
+        user_data.anthropic_api_key = "sk-ant-••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••"
+        user_data.anthropic_api_key_status = "configured"
+    else:
+        user_data.anthropic_api_key = None
+        user_data.anthropic_api_key_status = None
 
     return user_data
 
@@ -40,13 +49,22 @@ def update_current_user(
     db.commit()
     db.refresh(current_user)
 
-    # Retourner les données déchiffrées
-    hyperliquid_key = decrypt_api_key(current_user.hyperliquid_api_key) if current_user.hyperliquid_api_key else None
-    anthropic_key = decrypt_api_key(current_user.anthropic_api_key) if current_user.anthropic_api_key else None
-
+    # Retourner les données masquées avec statut
     user_data = UserResponse.model_validate(current_user)
-    user_data.hyperliquid_api_key = hyperliquid_key
-    user_data.anthropic_api_key = anthropic_key
+
+    if current_user.hyperliquid_api_key:
+        user_data.hyperliquid_api_key = "••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••"
+        user_data.hyperliquid_api_key_status = "configured"
+    else:
+        user_data.hyperliquid_api_key = None
+        user_data.hyperliquid_api_key_status = None
+
+    if current_user.anthropic_api_key:
+        user_data.anthropic_api_key = "sk-ant-••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••"
+        user_data.anthropic_api_key_status = "configured"
+    else:
+        user_data.anthropic_api_key = None
+        user_data.anthropic_api_key_status = None
 
     return user_data
 
@@ -68,12 +86,21 @@ def update_user_api_keys(
     db.commit()
     db.refresh(current_user)
 
-    # Retourner les données déchiffrées
-    hyperliquid_key = decrypt_api_key(current_user.hyperliquid_api_key) if current_user.hyperliquid_api_key else None
-    anthropic_key = decrypt_api_key(current_user.anthropic_api_key) if current_user.anthropic_api_key else None
-
+    # Retourner les données masquées avec statut
     user_data = UserResponse.model_validate(current_user)
-    user_data.hyperliquid_api_key = hyperliquid_key
-    user_data.anthropic_api_key = anthropic_key
+
+    if current_user.hyperliquid_api_key:
+        user_data.hyperliquid_api_key = "••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••"
+        user_data.hyperliquid_api_key_status = "configured"
+    else:
+        user_data.hyperliquid_api_key = None
+        user_data.hyperliquid_api_key_status = None
+
+    if current_user.anthropic_api_key:
+        user_data.anthropic_api_key = "sk-ant-••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••"
+        user_data.anthropic_api_key_status = "configured"
+    else:
+        user_data.anthropic_api_key = None
+        user_data.anthropic_api_key_status = None
 
     return user_data
