@@ -1,5 +1,6 @@
 from typing import Dict, Any
 from ..connectors.anthropic_connector import AnthropicConnector
+from ..connectors.coingecko_connector import CoinGeckoConnector
 import logging
 
 logger = logging.getLogger(__name__)
@@ -9,6 +10,7 @@ class ApiValidator:
 
     def __init__(self):
         self.anthropic_connector = AnthropicConnector()
+        self.coingecko_connector = CoinGeckoConnector()
 
     async def validate_anthropic(self, api_key: str) -> Dict[str, Any]:
         """
@@ -40,6 +42,36 @@ class ApiValidator:
                 "message": f"Erreur de validation: {str(e)}"
             }
 
+    async def validate_coingecko(self, api_key: str) -> Dict[str, Any]:
+        """
+        Valide la connexion à l'API CoinGecko
+
+        Args:
+            api_key: Clé API CoinGecko
+
+        Returns:
+            Dict avec le résultat de la validation
+        """
+        try:
+            result = await self.coingecko_connector.test_connection(api_key)
+
+            # Enrichir le résultat avec des informations de validation
+            if result["status"] == "success":
+                result["validation"] = {
+                    "api_type": "coingecko",
+                    "connector_type": "standard_api",
+                    "authentication_method": "api_key"
+                }
+
+            return result
+
+        except Exception as e:
+            logger.error(f"Erreur validation CoinGecko: {e}")
+            return {
+                "status": "error",
+                "message": f"Erreur de validation: {str(e)}"
+            }
+
     async def get_anthropic_models(self, api_key: str) -> Dict[str, Any]:
         """
         Récupère les modèles disponibles pour Anthropic
@@ -55,6 +87,26 @@ class ApiValidator:
 
         except Exception as e:
             logger.error(f"Erreur récupération modèles: {e}")
+            return {
+                "status": "error",
+                "message": f"Erreur: {str(e)}"
+            }
+
+    async def get_coingecko_info(self, api_key: str) -> Dict[str, Any]:
+        """
+        Récupère les informations de l'API CoinGecko
+
+        Args:
+            api_key: Clé API CoinGecko
+
+        Returns:
+            Dict avec les informations de l'API
+        """
+        try:
+            return await self.coingecko_connector.get_api_info(api_key)
+
+        except Exception as e:
+            logger.error(f"Erreur récupération info CoinGecko: {e}")
             return {
                 "status": "error",
                 "message": f"Erreur: {str(e)}"
@@ -106,6 +158,24 @@ class ApiValidator:
                 return {
                     "status": "success",
                     "message": "Format de clé API OpenAI valide"
+                }
+
+            elif api_type.lower() == "coingecko":
+                if not key.startswith('CG-'):
+                    return {
+                        "status": "error",
+                        "message": "Clé API CoinGecko doit commencer par 'CG-'"
+                    }
+
+                if len(key) < 10:
+                    return {
+                        "status": "error",
+                        "message": "Clé API CoinGecko trop courte"
+                    }
+
+                return {
+                    "status": "success",
+                    "message": "Format de clé API CoinGecko valide"
                 }
 
             else:

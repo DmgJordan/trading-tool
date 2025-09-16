@@ -7,6 +7,7 @@ class UserBase(BaseModel):
     username: str
     hyperliquid_api_key: Optional[str] = None
     anthropic_api_key: Optional[str] = None
+    coingecko_api_key: Optional[str] = None
 
 class UserCreate(UserBase):
     password: str
@@ -16,6 +17,7 @@ class UserUpdate(BaseModel):
     username: Optional[str] = None
     hyperliquid_api_key: Optional[str] = None
     anthropic_api_key: Optional[str] = None
+    coingecko_api_key: Optional[str] = None
 
 class User(UserBase):
     id: int
@@ -31,8 +33,10 @@ class UserResponse(BaseModel):
     username: str
     hyperliquid_api_key: Optional[str] = None
     anthropic_api_key: Optional[str] = None
+    coingecko_api_key: Optional[str] = None
     hyperliquid_api_key_status: Optional[str] = None  # "configured" ou None
     anthropic_api_key_status: Optional[str] = None   # "configured" ou None
+    coingecko_api_key_status: Optional[str] = None   # "configured" ou None
     created_at: datetime
     updated_at: Optional[datetime]
 
@@ -42,6 +46,7 @@ class UserResponse(BaseModel):
 class ApiKeyUpdate(BaseModel):
     hyperliquid_api_key: Optional[str] = None
     anthropic_api_key: Optional[str] = None
+    coingecko_api_key: Optional[str] = None
 
 class ApiKeyTest(BaseModel):
     api_key: str

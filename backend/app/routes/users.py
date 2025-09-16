@@ -7,19 +7,19 @@ from ..auth import get_current_user, get_password_hash, encrypt_api_key, decrypt
 
 router = APIRouter(prefix="/users", tags=["users"])
 
-@router.get("/me", response_model=UserResponse)
-def get_current_user_profile(current_user: User = Depends(get_current_user)):
-    # Créer une copie pour éviter de modifier l'objet original
+def _mask_api_keys_in_response(current_user: User) -> UserResponse:
+    """Utilitaire pour masquer les clés API dans la réponse"""
     user_data = UserResponse.model_validate(current_user)
 
-    # Ne pas retourner les vraies clés, mais indiquer leur statut et les masquer
+    # Masquer la clé Hyperliquid
     if current_user.hyperliquid_api_key:
-        user_data.hyperliquid_api_key = "••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••"  # 64 caractères masqués
+        user_data.hyperliquid_api_key = "••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••"
         user_data.hyperliquid_api_key_status = "configured"
     else:
         user_data.hyperliquid_api_key = None
         user_data.hyperliquid_api_key_status = None
 
+    # Masquer la clé Anthropic
     if current_user.anthropic_api_key:
         user_data.anthropic_api_key = "sk-ant-••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••"
         user_data.anthropic_api_key_status = "configured"
@@ -27,7 +27,19 @@ def get_current_user_profile(current_user: User = Depends(get_current_user)):
         user_data.anthropic_api_key = None
         user_data.anthropic_api_key_status = None
 
+    # Masquer la clé CoinGecko
+    if current_user.coingecko_api_key:
+        user_data.coingecko_api_key = "CG-••••••••••••••••••••••••••••••••••••••"
+        user_data.coingecko_api_key_status = "configured"
+    else:
+        user_data.coingecko_api_key = None
+        user_data.coingecko_api_key_status = None
+
     return user_data
+
+@router.get("/me", response_model=UserResponse)
+def get_current_user_profile(current_user: User = Depends(get_current_user)):
+    return _mask_api_keys_in_response(current_user)
 
 @router.put("/me", response_model=UserResponse)
 def update_current_user(
@@ -39,7 +51,7 @@ def update_current_user(
     update_data = user_update.model_dump(exclude_unset=True)
 
     for field, value in update_data.items():
-        if field in ["hyperliquid_api_key", "anthropic_api_key"] and value:
+        if field in ["hyperliquid_api_key", "anthropic_api_key", "coingecko_api_key"] and value:
             # Chiffrer les clés API
             encrypted_value = encrypt_api_key(value)
             setattr(current_user, field, encrypted_value)
@@ -49,24 +61,7 @@ def update_current_user(
     db.commit()
     db.refresh(current_user)
 
-    # Retourner les données masquées avec statut
-    user_data = UserResponse.model_validate(current_user)
-
-    if current_user.hyperliquid_api_key:
-        user_data.hyperliquid_api_key = "••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••"
-        user_data.hyperliquid_api_key_status = "configured"
-    else:
-        user_data.hyperliquid_api_key = None
-        user_data.hyperliquid_api_key_status = None
-
-    if current_user.anthropic_api_key:
-        user_data.anthropic_api_key = "sk-ant-••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••"
-        user_data.anthropic_api_key_status = "configured"
-    else:
-        user_data.anthropic_api_key = None
-        user_data.anthropic_api_key_status = None
-
-    return user_data
+    return _mask_api_keys_in_response(current_user)
 
 @router.put("/me/api-keys", response_model=UserResponse)
 def update_user_api_keys(
@@ -86,21 +81,4 @@ def update_user_api_keys(
     db.commit()
     db.refresh(current_user)
 
-    # Retourner les données masquées avec statut
-    user_data = UserResponse.model_validate(current_user)
-
-    if current_user.hyperliquid_api_key:
-        user_data.hyperliquid_api_key = "••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••"
-        user_data.hyperliquid_api_key_status = "configured"
-    else:
-        user_data.hyperliquid_api_key = None
-        user_data.hyperliquid_api_key_status = None
-
-    if current_user.anthropic_api_key:
-        user_data.anthropic_api_key = "sk-ant-••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••"
-        user_data.anthropic_api_key_status = "configured"
-    else:
-        user_data.anthropic_api_key = None
-        user_data.anthropic_api_key_status = None
-
-    return user_data
+    return _mask_api_keys_in_response(current_user)

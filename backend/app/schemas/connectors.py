@@ -3,9 +3,9 @@ from typing import Optional, Literal, Any, Dict
 from datetime import datetime
 
 class StandardApiKeyTest(BaseModel):
-    """Schéma pour tester une clé API standard (Anthropic, OpenAI, etc.)"""
+    """Schéma pour tester une clé API standard (Anthropic, OpenAI, CoinGecko, etc.)"""
     api_key: str = Field(..., description="Clé API à tester")
-    api_type: Literal["anthropic", "openai"] = Field(default="anthropic", description="Type d'API")
+    api_type: Literal["anthropic", "openai", "coingecko"] = Field(default="anthropic", description="Type d'API")
 
 class DexKeyTest(BaseModel):
     """Schéma pour tester une clé DEX (Hyperliquid, etc.)"""
@@ -25,11 +25,11 @@ class KeyFormatValidation(BaseModel):
     """Schéma pour la validation de format de clé"""
     key: str = Field(..., description="Clé à valider")
     key_type: Literal["api_key", "private_key"] = Field(..., description="Type de clé")
-    service_type: str = Field(..., description="Type de service (anthropic, hyperliquid, etc.)")
+    service_type: str = Field(..., description="Type de service (anthropic, hyperliquid, coingecko, etc.)")
 
 class UserInfoRequest(BaseModel):
     """Schéma pour récupérer les informations utilisateur"""
-    service_type: Literal["hyperliquid", "anthropic"]
+    service_type: Literal["hyperliquid", "anthropic", "coingecko"]
     use_testnet: bool = Field(default=False, description="Pour Hyperliquid uniquement")
 
 class HyperliquidUserInfo(BaseModel):
@@ -45,3 +45,10 @@ class AnthropicApiInfo(BaseModel):
     api_version: str
     model_used: str
     available_models: Optional[list] = None
+
+class CoinGeckoApiInfo(BaseModel):
+    """Schéma spécialisé pour les informations API CoinGecko"""
+    plan_type: str  # demo, startup, pro, etc.
+    rate_limit: Optional[int] = None
+    monthly_calls_used: Optional[int] = None
+    monthly_calls_limit: Optional[int] = None

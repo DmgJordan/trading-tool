@@ -65,6 +65,26 @@ async def test_hyperliquid_connection(
         logger.error(f"Erreur test Hyperliquid: {e}")
         raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
 
+@router.post("/test-coingecko", response_model=ConnectorTestResponse)
+async def test_coingecko_connection(
+    api_test: StandardApiKeyTest,
+    current_user: User = Depends(get_current_user)
+):
+    """Test la connexion à l'API CoinGecko"""
+    try:
+        result = await api_validator.validate_coingecko(api_test.api_key)
+
+        return ConnectorTestResponse(
+            status=result["status"],
+            message=result["message"],
+            data=result.get("data"),
+            validation=result.get("validation")
+        )
+
+    except Exception as e:
+        logger.error(f"Erreur test CoinGecko: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
+
 @router.post("/test-anthropic-stored", response_model=ConnectorTestResponse)
 async def test_anthropic_stored_connection(
     current_user: User = Depends(get_current_user)
@@ -127,6 +147,35 @@ async def test_hyperliquid_stored_connection(
         logger.error(f"Erreur test Hyperliquid stocké: {e}")
         raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
 
+@router.post("/test-coingecko-stored", response_model=ConnectorTestResponse)
+async def test_coingecko_stored_connection(
+    current_user: User = Depends(get_current_user)
+):
+    """Test la connexion à l'API CoinGecko avec la clé stockée de l'utilisateur"""
+    try:
+        if not current_user.coingecko_api_key:
+            raise HTTPException(
+                status_code=400,
+                detail="Aucune clé CoinGecko configurée. Veuillez d'abord enregistrer votre clé API."
+            )
+
+        # Déchiffrer la clé stockée
+        api_key = decrypt_api_key(current_user.coingecko_api_key)
+        result = await api_validator.validate_coingecko(api_key)
+
+        return ConnectorTestResponse(
+            status=result["status"],
+            message=result["message"],
+            data=result.get("data"),
+            validation=result.get("validation")
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur test CoinGecko stocké: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
+
 @router.post("/validate-key-format", response_model=ConnectorTestResponse)
 async def validate_key_format(
     validation_request: KeyFormatValidation,
@@ -187,6 +236,16 @@ async def get_user_info(
                 current_user.anthropic_api_key
             )
 
+        elif info_request.service_type == "coingecko":
+            if not current_user.coingecko_api_key:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Aucune clé CoinGecko configurée pour cet utilisateur"
+                )
+
+            api_key = decrypt_api_key(current_user.coingecko_api_key)
+            result = await api_validator.get_coingecko_info(api_key)
+
         else:
             raise HTTPException(status_code=400, detail="Type de service non supporté")
 
@@ -211,6 +270,11 @@ async def get_supported_services():
                 "type": "standard_api",
                 "key_format": "sk-ant-*",
                 "description": "API Anthropic Claude"
+            },
+            "coingecko": {
+                "type": "standard_api",
+                "key_format": "CG-*",
+                "description": "API CoinGecko Pro"
             }
         },
         "dex_services": {

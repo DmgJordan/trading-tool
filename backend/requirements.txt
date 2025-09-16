@@ -24,3 +24,4 @@ typing-inspection==0.4.1
 typing_extensions==4.15.0
 uvicorn==0.35.0
 hyperliquid-python-sdk
+aiohttp==3.9.1
