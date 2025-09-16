@@ -21,3 +21,4 @@ class User(Base):
 
     # Relations
     trading_preferences = relationship("UserTradingPreferences", back_populates="user", uselist=False)
+    ai_recommendations = relationship("AIRecommendation", back_populates="user")
