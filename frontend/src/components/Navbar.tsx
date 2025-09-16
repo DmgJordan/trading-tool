@@ -45,6 +45,16 @@ export default function Navbar() {
               >
                 Configuration
               </button>
+              <button
+                onClick={() => router.push('/preferences')}
+                className={`px-4 py-3 rounded-lg text-sm font-semibold transition-colors ${
+                  pathname === '/preferences'
+                    ? 'bg-black text-white'
+                    : 'text-black hover:bg-gray-100'
+                }`}
+              >
+                Préférences IA
+              </button>
               <span className="text-gray-500 px-4 py-3 rounded-lg text-sm font-medium cursor-not-allowed">
                 Dashboard
               </span>
@@ -147,6 +157,19 @@ export default function Navbar() {
               }`}
             >
               Configuration
+            </button>
+            <button
+              onClick={() => {
+                router.push('/preferences');
+                setIsMenuOpen(false);
+              }}
+              className={`block w-full text-left px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                pathname === '/preferences'
+                  ? 'bg-black text-white'
+                  : 'text-black hover:bg-gray-100'
+              }`}
+            >
+              Préférences IA
             </button>
             <span className="text-gray-500 block px-3 py-2 rounded-md text-base font-medium cursor-not-allowed">
               Dashboard
