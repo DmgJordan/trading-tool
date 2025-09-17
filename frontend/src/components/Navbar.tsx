@@ -55,9 +55,16 @@ export default function Navbar() {
               >
                 Préférences IA
               </button>
-              <span className="text-gray-500 px-4 py-3 rounded-lg text-sm font-medium cursor-not-allowed">
+              <button
+                onClick={() => router.push('/dashboard')}
+                className={`px-4 py-3 rounded-lg text-sm font-semibold transition-colors ${
+                  pathname === '/dashboard'
+                    ? 'bg-black text-white'
+                    : 'text-black hover:bg-gray-100'
+                }`}
+              >
                 Dashboard
-              </span>
+              </button>
               <span className="text-gray-500 px-4 py-3 rounded-lg text-sm font-medium cursor-not-allowed">
                 Trading
               </span>
@@ -171,9 +178,19 @@ export default function Navbar() {
             >
               Préférences IA
             </button>
-            <span className="text-gray-500 block px-3 py-2 rounded-md text-base font-medium cursor-not-allowed">
+            <button
+              onClick={() => {
+                router.push('/dashboard');
+                setIsMenuOpen(false);
+              }}
+              className={`block w-full text-left px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                pathname === '/dashboard'
+                  ? 'bg-black text-white'
+                  : 'text-black hover:bg-gray-100'
+              }`}
+            >
               Dashboard
-            </span>
+            </button>
             <span className="text-gray-500 block px-3 py-2 rounded-md text-base font-medium cursor-not-allowed">
               Trading
             </span>
