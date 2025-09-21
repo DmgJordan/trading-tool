@@ -192,20 +192,20 @@ export const SLIDER_CONFIGS: Record<string, SliderConfig> = {
     max: 100,
     step: 0.1,
     unit: '%',
-    formatValue: (value) => `${value.toFixed(1)}%`
+    formatValue: (value: number) => `${value.toFixed(1)}%`
   },
   stop_loss_percentage: {
     min: 0.1,
     max: 50,
     step: 0.1,
     unit: '%',
-    formatValue: (value) => `${value.toFixed(1)}%`
+    formatValue: (value: number) => `${value.toFixed(1)}%`
   },
   take_profit_ratio: {
     min: 0.1,
     max: 10,
     step: 0.1,
     unit: 'x',
-    formatValue: (value) => `${value.toFixed(1)}x`
+    formatValue: (value: number) => `${value.toFixed(1)}x`
   }
 };

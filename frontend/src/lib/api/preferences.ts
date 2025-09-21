@@ -1,70 +1,10 @@
-import axios from 'axios';
 import {
   TradingPreferences,
   TradingPreferencesUpdate,
   TradingPreferencesDefault,
   PreferencesValidationInfo
 } from '../types/preferences';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
-// Réutiliser la même instance axios que pour l'auth (avec intercepteurs JWT)
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Intercepteur pour ajouter le token d'accès aux requêtes
-api.interceptors.request.use((config) => {
-  const tokens = localStorage.getItem('auth_tokens');
-  if (tokens) {
-    const { access_token } = JSON.parse(tokens);
-    if (config.headers) {
-      config.headers.Authorization = `Bearer ${access_token}`;
-    }
-  }
-  return config;
-});
-
-// Intercepteur pour gérer l'expiration des tokens (même logique que auth.ts)
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (error.response?.status === 401) {
-      // Token expiré, essayer de le rafraîchir
-      const tokens = localStorage.getItem('auth_tokens');
-      if (tokens) {
-        try {
-          const { refresh_token } = JSON.parse(tokens);
-
-          // Appel pour rafraîchir le token
-          const refreshResponse = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-            refresh_token
-          });
-
-          const newTokens = refreshResponse.data;
-
-          // Mettre à jour les tokens stockés
-          localStorage.setItem('auth_tokens', JSON.stringify(newTokens));
-
-          // Relancer la requête originale avec le nouveau token
-          if (error.config && error.config.headers) {
-            error.config.headers.Authorization = `Bearer ${newTokens.access_token}`;
-            return api.request(error.config);
-          }
-        } catch {
-          // Impossible de rafraîchir, déconnecter l'utilisateur
-          localStorage.removeItem('auth_tokens');
-          localStorage.removeItem('user');
-          window.location.href = '/login';
-        }
-      }
-    }
-    return Promise.reject(error);
-  }
-);
+import api from './auth'; // Réutiliser l'instance axios authentifiée
 
 export const preferencesApi = {
   /**

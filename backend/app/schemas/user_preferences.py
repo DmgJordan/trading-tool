@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List
 from datetime import datetime
 from ..models.user_preferences import RiskTolerance, InvestmentHorizon, TradingStyle
@@ -54,7 +54,8 @@ class UserTradingPreferencesBase(BaseModel):
         description="Liste des indicateurs techniques préférés (max 15)"
     )
 
-    @validator('preferred_assets')
+    @field_validator('preferred_assets')
+    @classmethod
     def validate_preferred_assets(cls, v):
         """Valide la liste des actifs préférés"""
         if not v:
@@ -73,7 +74,8 @@ class UserTradingPreferencesBase(BaseModel):
 
         return normalized
 
-    @validator('technical_indicators')
+    @field_validator('technical_indicators')
+    @classmethod
     def validate_technical_indicators(cls, v):
         """Valide la liste des indicateurs techniques"""
         if not v:
@@ -115,19 +117,21 @@ class UserTradingPreferencesUpdate(BaseModel):
     preferred_assets: Optional[List[str]] = Field(None, max_items=20)
     technical_indicators: Optional[List[str]] = Field(None, max_items=15)
 
-    @validator('preferred_assets')
+    @field_validator('preferred_assets')
+    @classmethod
     def validate_preferred_assets_update(cls, v):
         """Valide la liste des actifs préférés lors d'une mise à jour"""
         if v is None:
             return v
-        return UserTradingPreferencesBase.__validators__['validate_preferred_assets'](v)
+        return UserTradingPreferencesBase.validate_preferred_assets(v)
 
-    @validator('technical_indicators')
+    @field_validator('technical_indicators')
+    @classmethod
     def validate_technical_indicators_update(cls, v):
         """Valide la liste des indicateurs techniques lors d'une mise à jour"""
         if v is None:
             return v
-        return UserTradingPreferencesBase.__validators__['validate_technical_indicators'](v)
+        return UserTradingPreferencesBase.validate_technical_indicators(v)
 
 class UserTradingPreferencesResponse(UserTradingPreferencesBase):
     """Schéma de réponse pour les préférences de trading"""

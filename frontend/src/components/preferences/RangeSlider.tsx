@@ -26,15 +26,15 @@ export default function RangeSlider({
   showValue = true,
   className = ''
 }: RangeSliderProps) {
-  const [internalValue, setInternalValue] = useState(value);
+  const [internalValue, setInternalValue] = useState(value ?? config.min);
   const [isDragging, setIsDragging] = useState(false);
 
   // Synchroniser avec la valeur externe quand elle change
   useEffect(() => {
     if (!isDragging) {
-      setInternalValue(value);
+      setInternalValue(value ?? config.min);
     }
-  }, [value, isDragging]);
+  }, [value, isDragging, config.min]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = parseFloat(e.target.value);
@@ -57,7 +57,8 @@ export default function RangeSlider({
   };
 
   const formatValue = config.formatValue || ((val) => `${val}${config.unit}`);
-  const percentage = ((internalValue - config.min) / (config.max - config.min)) * 100;
+  const safeInternalValue = internalValue ?? config.min;
+  const percentage = ((safeInternalValue - config.min) / (config.max - config.min)) * 100;
 
   // Calculer la couleur basée sur la valeur (vert = sûr, rouge = risqué)
   const getSliderColor = () => {
@@ -89,7 +90,7 @@ export default function RangeSlider({
             <span className={`text-lg font-bold ${
               disabled ? 'text-gray-400' : 'text-black'
             }`}>
-              {formatValue(internalValue)}
+              {formatValue(safeInternalValue)}
             </span>
             <div className="text-xs text-gray-500">
               {config.min}{config.unit} - {config.max}{config.unit}
@@ -114,7 +115,7 @@ export default function RangeSlider({
           min={config.min}
           max={config.max}
           step={config.step}
-          value={internalValue}
+          value={safeInternalValue}
           onChange={handleChange}
           onMouseDown={handleMouseDown}
           onMouseUp={handleMouseUp}

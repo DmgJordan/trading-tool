@@ -35,6 +35,16 @@ export default function Navbar() {
           {/* Menu desktop */}
           <div className="hidden md:flex items-center space-x-6">
             <div className="flex items-baseline space-x-6">
+                <button
+                    onClick={() => router.push('/dashboard')}
+                    className={`px-4 py-3 rounded-lg text-sm font-semibold transition-colors ${
+                        pathname === '/dashboard'
+                            ? 'bg-black text-white'
+                            : 'text-black hover:bg-gray-100'
+                    }`}
+                >
+                    Dashboard
+                </button>
               <button
                 onClick={() => router.push('/')}
                 className={`px-4 py-3 rounded-lg text-sm font-semibold transition-colors ${
@@ -55,16 +65,7 @@ export default function Navbar() {
               >
                 Préférences IA
               </button>
-              <button
-                onClick={() => router.push('/dashboard')}
-                className={`px-4 py-3 rounded-lg text-sm font-semibold transition-colors ${
-                  pathname === '/dashboard'
-                    ? 'bg-black text-white'
-                    : 'text-black hover:bg-gray-100'
-                }`}
-              >
-                Dashboard
-              </button>
+
               <span className="text-gray-500 px-4 py-3 rounded-lg text-sm font-medium cursor-not-allowed">
                 Trading
               </span>
