@@ -2,6 +2,7 @@
 export { default as apiClient } from './client';
 export { authApi } from './auth';
 export { preferencesApi } from './preferences';
+export { claudeApi } from './claude';
 export * from './ai_recommendations';
 export { hyperliquidApi } from './hyperliquid';
 
