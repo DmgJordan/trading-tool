@@ -12,6 +12,7 @@ export const useAuthStore = create<AuthStore>()(
       user: null,
       tokens: null,
       isAuthenticated: false,
+      isInitialized: false,
       isLoading: false,
       error: null,
 
@@ -31,6 +32,7 @@ export const useAuthStore = create<AuthStore>()(
             user,
             tokens,
             isAuthenticated: true,
+            isInitialized: true,
             isLoading: false,
             error: null,
           });
@@ -40,6 +42,7 @@ export const useAuthStore = create<AuthStore>()(
             user: null,
             tokens: null,
             isAuthenticated: false,
+            isInitialized: true,
             isLoading: false,
             error: errorMessage,
           });
@@ -62,6 +65,7 @@ export const useAuthStore = create<AuthStore>()(
             user,
             tokens,
             isAuthenticated: true,
+            isInitialized: true,
             isLoading: false,
             error: null,
           });
@@ -71,6 +75,7 @@ export const useAuthStore = create<AuthStore>()(
             user: null,
             tokens: null,
             isAuthenticated: false,
+            isInitialized: true,
             isLoading: false,
             error: errorMessage,
           });
@@ -92,6 +97,7 @@ export const useAuthStore = create<AuthStore>()(
             user: null,
             tokens: null,
             isAuthenticated: false,
+            isInitialized: true,
             isLoading: false,
             error: null,
           });
@@ -109,7 +115,7 @@ export const useAuthStore = create<AuthStore>()(
           // L'API interceptor gère automatiquement le rafraîchissement
           const user = await authApi.getMe();
 
-          set({ user, isAuthenticated: true });
+          set({ user, isAuthenticated: true, isInitialized: true });
         } catch (error) {
           // Échec du rafraîchissement, déconnecter l'utilisateur
           get().logout();
@@ -131,6 +137,7 @@ export const useAuthStore = create<AuthStore>()(
         } catch (error: unknown) {
           const errorMessage = (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Erreur lors de la mise à jour';
           set({
+            isInitialized: true,
             isLoading: false,
             error: errorMessage,
           });
@@ -144,6 +151,24 @@ export const useAuthStore = create<AuthStore>()(
 
       clearError: () => {
         set({ error: null });
+      },
+
+      // Nouvelle méthode pour initialiser l'état d'authentification
+      initialize: async () => {
+        try {
+          const tokens = localStorage.getItem('auth_tokens');
+          if (tokens && !get().isAuthenticated) {
+            // Essayer de récupérer les informations utilisateur
+            await get().refreshToken();
+          } else {
+            // Pas de tokens ou déjà authentifié
+            set({ isInitialized: true });
+          }
+        } catch (error) {
+          // Échec de l'initialisation, marquer comme initialisé quand même
+          console.warn('Échec de l\'initialisation de l\'authentification:', error);
+          set({ isInitialized: true });
+        }
       },
     }),
 {

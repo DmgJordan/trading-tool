@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuthStore } from '../../store/authStore';
 import { loginSchema, registerSchema, LoginFormData, RegisterFormData } from '../../lib/validation/auth';
+import RouteGuard from '../../components/RouteGuard';
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -49,7 +50,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-6">
+    <RouteGuard requireAuth={false}>
+      <div className="min-h-screen bg-white flex items-center justify-center px-6">
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
@@ -209,6 +211,7 @@ export default function LoginPage() {
           </button>
         </div>
       </div>
-    </div>
+      </div>
+    </RouteGuard>
   );
 }

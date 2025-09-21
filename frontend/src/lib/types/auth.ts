@@ -31,6 +31,7 @@ export interface AuthState {
   user: User | null;
   tokens: AuthTokens | null;
   isAuthenticated: boolean;
+  isInitialized: boolean;
   isLoading: boolean;
   error: string | null;
 }
@@ -43,4 +44,5 @@ export interface AuthActions {
   clearError: () => void;
   updateUser: (userData: Partial<User>) => Promise<void>;
   setUser: (user: User) => void;
+  initialize: () => Promise<void>;
 }
