@@ -11,6 +11,7 @@ import {
 import Navbar from '../../components/Navbar';
 import DashboardHeader from '../../components/dashboard/DashboardHeader';
 import RecommendationGrid from '../../components/dashboard/RecommendationGrid';
+import HyperliquidSection from '../../components/dashboard/HyperliquidSection';
 import {
   AcceptRecommendationModal,
   RejectRecommendationModal
@@ -262,6 +263,11 @@ export default function DashboardPage() {
             </button>
           }
         />
+
+        {/* Section Hyperliquid Trading */}
+        <div className="mt-12">
+          <HyperliquidSection />
+        </div>
       </main>
 
       {/* Modales de confirmation */}
