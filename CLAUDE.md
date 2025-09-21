@@ -21,18 +21,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Architecture Frontend
 - **Next.js 15** : Framework React avec App Router
 - **TypeScript** : Typage strict activé
-- **Zustand** : Gestion d'état global pour auth
+- **Zustand** : Gestion d'état global pour auth et préférences
 - **Tailwind CSS** : Styling avec thème noir/blanc cohérent
 - **React Hook Form + Zod** : Gestion et validation des formulaires
+- **Axios centralisé** : Client API avec intercepteurs JWT automatiques
+- **Protection des routes** : Middleware SSR + RouteGuard sans flash
 - **Composants** : Structure modulaire réutilisable
 
 ## État Actuel de l'Application
 
 ### ✅ Fonctionnalités Implémentées
 - **Authentification complète** : inscription, connexion, refresh tokens
+- **Protection des routes** : middleware SSR + RouteGuard client sécurisé
 - **Gestion utilisateur** : profil, clés API chiffrées
+- **Système de préférences** : configuration trading personnalisée
 - **Tests de connecteurs** : Anthropic API et Hyperliquid DEX
-- **Interface responsive** : pages login, account, configuration
+- **Interface responsive** : pages login, account, preferences, configuration
 - **Diagnostics système** : santé backend et base de données
 
 ### ⏳ Non Implémentées (à développer)
@@ -94,14 +98,17 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 ### Backend (`backend/app/`)
 ```
 ├── models/
-│   └── user.py              # Modèle User avec clés API chiffrées
+│   ├── user.py              # Modèle User avec clés API chiffrées
+│   └── user_preferences.py  # Modèle préférences trading
 ├── routes/
 │   ├── auth.py              # Endpoints authentification
 │   ├── users.py             # Gestion utilisateur
+│   ├── user_preferences.py  # Endpoints préférences trading
 │   └── connectors.py        # Tests API externes
 ├── schemas/
 │   ├── auth.py              # Schémas JWT et auth
 │   ├── user.py              # Schémas utilisateur
+│   ├── user_preferences.py  # Schémas préférences (Pydantic v2)
 │   └── connectors.py        # Schémas tests API
 ├── services/
 │   ├── validators/
@@ -117,20 +124,33 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 ├── app/
 │   ├── page.tsx             # Page d'accueil (configuration)
-│   ├── login/page.tsx       # Authentification
+│   ├── login/page.tsx       # Authentification avec RouteGuard
 │   ├── account/page.tsx     # Gestion compte
-│   └── layout.tsx           # Layout global
+│   ├── preferences/page.tsx # Configuration préférences trading
+│   ├── layout.tsx           # Layout global avec AuthProvider
+│   └── middleware.ts        # Protection SSR des routes
 ├── components/
 │   ├── Navbar.tsx           # Navigation principale
-│   ├── AuthProvider.tsx     # Provider authentification
+│   ├── AuthProvider.tsx     # Provider auth avec RouteGuard
+│   ├── RouteGuard.tsx       # Protection client anti-flash
+│   ├── LoadingScreen.tsx    # Composants de chargement
 │   ├── ApiKeysConfiguration.tsx  # Config clés API
-│   └── ConfigurationTest.tsx     # Tests système
+│   ├── ConfigurationTest.tsx     # Tests système
+│   └── preferences/         # Composants préférences spécialisés
 ├── lib/
-│   ├── types/auth.ts        # Types TypeScript auth
-│   ├── api/auth.ts          # Client API auth
-│   └── validation/auth.ts   # Schémas Zod validation
+│   ├── api/
+│   │   ├── client.ts        # Instance Axios centralisée
+│   │   ├── auth.ts          # Client API auth
+│   │   └── preferences.ts   # Client API préférences
+│   ├── types/
+│   │   ├── auth.ts          # Types TypeScript auth + isInitialized
+│   │   └── preferences.ts   # Types préférences trading
+│   └── validation/
+│       ├── auth.ts          # Schémas Zod auth
+│       └── preferences.ts   # Schémas Zod préférences
 └── store/
-    └── authStore.ts         # Store Zustand authentification
+    ├── authStore.ts         # Store Zustand auth avec initialize()
+    └── preferencesStore.ts  # Store Zustand préférences
 ```
 
 ## API Endpoints Disponibles
@@ -146,6 +166,14 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 - `GET /users/me` - Informations utilisateur avec clés masquées
 - `PUT /users/me` - Mise à jour profil
 - `PUT /users/me/api-keys` - Configuration clés API chiffrées
+
+### Préférences Trading (`/users/me/preferences`)
+- `GET /users/me/preferences/` - Récupérer préférences utilisateur
+- `PUT /users/me/preferences/` - Mettre à jour préférences
+- `POST /users/me/preferences/` - Créer préférences complètes
+- `DELETE /users/me/preferences/` - Reset aux valeurs par défaut
+- `GET /users/me/preferences/default` - Valeurs par défaut
+- `GET /users/me/preferences/validation-info` - Contraintes de validation
 
 ### Connecteurs (`/connectors`)
 - `POST /connectors/test-anthropic` - Test API Anthropic avec nouvelle clé
@@ -179,11 +207,14 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 - **Schémas Pydantic** dans `backend/app/schemas/`
 
 ### Sécurité
-- **Tokens JWT** avec expiration configurée
+- **Tokens JWT** avec expiration configurée et refresh automatique
+- **Protection des routes** : middleware SSR + RouteGuard client
+- **Aucun flash** de contenu non autorisé (race condition résolue)
 - **Mots de passe** hashés avec bcrypt
-- **Clés API** chiffrées en base de données
+- **Clés API** chiffrées en base de données avec AES
 - **CORS** configuré pour localhost uniquement
-- **Validation stricte** côté backend et frontend
+- **Validation stricte** côté backend (Pydantic v2) et frontend (Zod)
+- **Instance Axios centralisée** avec intercepteurs JWT automatiques
 
 ## Docker Services
 ```bash
@@ -210,6 +241,27 @@ docker-compose up -d pgadmin
 
 ### Pages Actuelles
 - `/` : Configuration et tests système
-- `/login` : Authentification avec toggle inscription
+- `/login` : Authentification avec toggle inscription (RouteGuard requireAuth=false)
 - `/account` : Gestion profil et clés API
-- Routes protégées par authentification automatique
+- `/preferences` : Configuration préférences trading personnalisées
+- **Protection automatique** : Toutes les routes sauf `/login` protégées par authentification
+- **Sécurité renforcée** : Middleware SSR + RouteGuard client sans flash
+
+## Bonnes Pratiques Techniques
+
+### Architecture API
+- **Client Axios centralisé** dans `lib/api/client.ts` pour tous les modules
+- **Barrel exports** dans `lib/api/index.ts` pour imports propres
+- **Gestion d'erreurs** unifiée avec intercepteurs automatiques
+- **Types TypeScript** cohérents entre frontend et backend
+
+### Protection des Routes
+- **Middleware Next.js** : `src/middleware.ts` pour protection SSR
+- **RouteGuard** : Protection client avec gestion des états de chargement
+- **AuthStore.isInitialized** : État séparé pour éliminer les race conditions
+- **LoadingScreen** : Composants de transition élégants
+
+### Validation des Données
+- **Backend** : Pydantic v2 avec `@field_validator` et `@classmethod`
+- **Frontend** : Zod avec schémas de validation stricte
+- **Préférences** : Validation croisée et contraintes métier
