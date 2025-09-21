@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '../../components/Navbar';
@@ -11,6 +11,13 @@ import {
   HyperliquidPerpPosition,
   HyperliquidSpotUserState
 } from '../../lib/types/hyperliquid';
+
+// Nouveaux composants
+import TradingTabs from '../../components/trading/TradingTabs';
+import MetricsHeader from '../../components/trading/MetricsHeader';
+import PortfolioOverview from '../../components/trading/PortfolioOverview';
+import PositionsView from '../../components/trading/PositionsView';
+import OrdersView from '../../components/trading/OrdersView';
 
 const formatCurrency = (value?: number | null) => {
   if (value === undefined || value === null || Number.isNaN(value)) {
@@ -167,6 +174,9 @@ export default function TradingPage() {
   const setUseTestnet = useHyperliquidStore(state => state.setUseTestnet);
   const clearError = useHyperliquidStore(state => state.clearError);
 
+  // État pour la navigation par onglets
+  const [activeTab, setActiveTab] = useState('portfolio');
+
   useEffect(() => {
     if (!isAuthenticated && user === null) {
       router.push('/login');
@@ -181,43 +191,7 @@ export default function TradingPage() {
     }
   }, [isAuthenticated, fetchUserInfo]);
 
-  const summaryCards = useMemo(() => {
-    const summary = data?.portfolioSummary;
-    return [
-      {
-        title: 'Valeur du compte',
-        value: formatCurrency(summary?.accountValue ?? null),
-      },
-      {
-        title: 'Marge utilisée',
-        value: formatCurrency(summary?.totalMarginUsed ?? null),
-      },
-      {
-        title: 'PNL latent',
-        value: summary?.totalUnrealizedPnl === undefined || summary?.totalUnrealizedPnl === null
-          ? '—'
-          : formatCurrency(summary.totalUnrealizedPnl),
-        emphasis: (summary?.totalUnrealizedPnl ?? 0) > 0
-          ? 'text-green-600'
-          : (summary?.totalUnrealizedPnl ?? 0) < 0
-            ? 'text-red-600'
-            : 'text-black',
-      },
-      {
-        title: 'Solde retirable',
-        value: formatCurrency(summary?.withdrawableBalance ?? null),
-      },
-      {
-        title: 'Positions perp',
-        value: summary?.perpPositionCount ?? 0,
-      },
-      {
-        title: 'Positions spot',
-        value: summary?.assetPositionCount ?? 0,
-      },
-    ];
-  }, [data?.portfolioSummary]);
-
+  // Calcul des données dérivées d'abord
   const perpPositions = useMemo(
     () => derivePerpPositions(data?.userState?.perpPositions ?? data?.userState?.assetPositions),
     [data?.userState?.perpPositions, data?.userState?.assetPositions],
@@ -230,6 +204,44 @@ export default function TradingPage() {
 
   const fills = useMemo(() => (Array.isArray(data?.fills) ? data?.fills.slice(0, 25) : []), [data?.fills]);
   const openOrders = useMemo(() => (Array.isArray(data?.openOrders) ? data?.openOrders : []), [data?.openOrders]);
+
+  // Configuration des onglets (après avoir défini les variables)
+  const tabs = useMemo(() => [
+    {
+      id: 'portfolio',
+      label: 'Portfolio',
+      icon: '📊',
+      count: undefined,
+    },
+    {
+      id: 'positions',
+      label: 'Positions',
+      icon: '📈',
+      count: (perpPositions.length + spotPositions.length) || undefined,
+    },
+    {
+      id: 'orders',
+      label: 'Ordres',
+      icon: '📋',
+      count: (openOrders.length + fills.length) || undefined,
+    },
+  ], [perpPositions.length, spotPositions.length, openOrders.length, fills.length]);
+
+  // Calcul du volume 14 jours (simulation)
+  const volume14d = useMemo(() => {
+    if (!fills.length) return null;
+    const recent = fills.slice(0, 10); // Approximation avec les trades récents
+    return recent.reduce((sum, fill) => {
+      const value = computeFillValue(fill);
+      return sum + (value || 0);
+    }, 0) * 14; // Extrapolation simplifiée
+  }, [fills]);
+
+  // Frais moyens (simulation)
+  const fees = useMemo(() => ({
+    taker: 0.0005, // 0.05%
+    maker: 0.0002, // 0.02%
+  }), []);
 
   const handleRefresh = () => {
     fetchUserInfo().catch(err => {
@@ -246,6 +258,25 @@ export default function TradingPage() {
     }
   };
 
+  const handleQuickAction = (actionId: string) => {
+    switch (actionId) {
+      case 'deposit':
+        console.log('Déposer des fonds');
+        break;
+      case 'withdraw':
+        console.log('Retirer des fonds');
+        break;
+      case 'transfer':
+        console.log('Transférer des fonds');
+        break;
+      case 'settings':
+        router.push('/account');
+        break;
+      default:
+        console.log('Action non reconnue:', actionId);
+    }
+  };
+
   const networkLabel = useTestnet ? 'Testnet' : 'Mainnet';
   const retrievedAt = data?.retrievedAt || lastUpdated;
 
@@ -253,11 +284,12 @@ export default function TradingPage() {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <main className="max-w-7xl mx-auto px-6 py-10 space-y-8">
+        {/* Header avec titre et contrôles */}
         <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-black">Trading Hyperliquid</h1>
             <p className="text-gray-600 mt-2">
-              Suivi de votre portefeuille, positions et exécutions en direct depuis Hyperliquid.
+              Suivi avancé de votre portefeuille et positions en temps réel
             </p>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -288,6 +320,7 @@ export default function TradingPage() {
           </div>
         </div>
 
+        {/* Gestion des erreurs */}
         {error && (
           <div className="border-l-4 border-red-500 bg-red-50 px-4 py-3 rounded-md text-sm text-red-700 flex flex-col gap-2">
             <div className="font-semibold">Erreur lors de la récupération des données Hyperliquid</div>
@@ -312,226 +345,61 @@ export default function TradingPage() {
           </div>
         )}
 
+        {/* Message si aucune donnée */}
         {!isLoading && !data && !error && (
           <div className="border border-dashed border-gray-300 rounded-xl bg-white px-6 py-5 text-sm text-gray-600">
             Aucune donnée Hyperliquid n&apos;a encore été récupérée. Vérifiez que votre clé API <em>et</em> votre adresse publique Hyperliquid sont bien configurées puis utilisez le bouton « Rafraîchir » pour charger vos informations de trading.
           </div>
         )}
 
-        <div className="grid md:grid-cols-3 gap-4">
-          {summaryCards.map(card => (
-            <div key={card.title} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-              <p className="text-xs text-gray-500 uppercase tracking-wide">{card.title}</p>
-              <p className={`mt-3 text-xl font-semibold ${card.emphasis ?? 'text-black'}`}>
-                {card.value}
-              </p>
-            </div>
-          ))}
-        </div>
+        {/* Header avec métriques principales */}
+        {data && (
+          <MetricsHeader
+            portfolioSummary={data.portfolioSummary}
+            volume14d={volume14d}
+            fees={fees}
+          />
+        )}
 
-        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm">
-          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-black">Positions perpétuelles</h2>
-              <p className="text-xs text-gray-500">Vos positions à levier ouvertes et leurs métriques clés</p>
-            </div>
-            <span className="text-xs text-gray-500">{perpPositions.length} position(s)</span>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  {['Marché', 'Sens', 'Taille', 'Prix d’entrée', 'Prix actuel', 'PNL latent'].map(header => (
-                    <th
-                      key={header}
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      {header}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {perpPositions.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-6 text-center text-sm text-gray-500">
-                      Aucune position perpétuelle ouverte pour le moment.
-                    </td>
-                  </tr>
-                ) : (
-                  perpPositions.map(position => (
-                    <tr key={`${position.symbol}-${position.entryPx}-${position.size}`} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-black">{position.symbol}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{normalizeSide(position.side)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{formatNumber(position.size)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{formatNumber(position.entryPx, 2)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{formatNumber(position.markPx, 2)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold">
-                        {(() => {
-                          const pnlValue = position.pnl ? Number(position.pnl) : NaN;
-                          if (!Number.isFinite(pnlValue)) return position.pnl ?? '—';
-                          const formatted = formatCurrency(pnlValue);
-                          return (
-                            <span className={pnlValue > 0 ? 'text-green-600' : pnlValue < 0 ? 'text-red-600' : 'text-gray-700'}>
-                              {formatted}
-                            </span>
-                          );
-                        })()}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        {/* Navigation par onglets */}
+        {data && (
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
+            <TradingTabs
+              tabs={tabs}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              className="px-6"
+            />
 
-        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm">
-          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-black">Portefeuille Spot</h2>
-              <p className="text-xs text-gray-500">Soldes des actifs disponibles sur votre compte Hyperliquid</p>
-            </div>
-            <span className="text-xs text-gray-500">{spotPositions.length} actif(s)</span>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  {['Actif', 'Solde total', 'Disponible', 'Valeur USD'].map(header => (
-                    <th
-                      key={header}
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      {header}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {spotPositions.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="px-6 py-6 text-center text-sm text-gray-500">
-                      Aucun actif disponible.
-                    </td>
-                  </tr>
-                ) : (
-                  spotPositions.map(position => (
-                    <tr key={`${position.asset}-${position.total}`} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-black">{position.asset}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{formatNumber(position.total)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{formatNumber(position.available)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{formatCurrency(Number(position.usdValue))}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+            {/* Contenu des onglets */}
+            <div className="px-6 py-6">
+              {activeTab === 'portfolio' && (
+                <PortfolioOverview
+                  perpPositions={perpPositions}
+                  spotPositions={spotPositions}
+                  portfolioSummary={data.portfolioSummary}
+                  onAction={handleQuickAction}
+                />
+              )}
 
-        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm">
-          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-black">Historique des derniers trades</h2>
-              <p className="text-xs text-gray-500">Les 25 dernières exécutions enregistrées sur votre compte</p>
-            </div>
-            <span className="text-xs text-gray-500">{fills.length} trade(s)</span>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  {['Date', 'Marché', 'Sens', 'Taille', 'Prix', 'Valeur', 'Hash'].map(header => (
-                    <th
-                      key={header}
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      {header}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {fills.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-6 py-6 text-center text-sm text-gray-500">
-                      Aucun trade récent trouvé.
-                    </td>
-                  </tr>
-                ) : (
-                  fills.map(fill => {
-                    const value = computeFillValue(fill);
-                    return (
-                      <tr key={`${fill.time}-${fill.hash}`} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{formatTimestamp(fill.time)}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-black">{fill.symbol ?? fill.coin ?? '—'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{normalizeSide(fill.side ?? fill.dir)}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{formatNumber(fill.sz ?? fill.size)}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{formatNumber(fill.px ?? fill.price, 2)}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{value === null ? '—' : formatCurrency(value)}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-500">
-                          {fill.hash ? `${fill.hash.slice(0, 8)}…${fill.hash.slice(-6)}` : '—'}
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+              {activeTab === 'positions' && (
+                <PositionsView
+                  perpPositions={perpPositions}
+                  spotPositions={spotPositions}
+                />
+              )}
 
-        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm mb-8">
-          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-black">Ordres ouverts</h2>
-              <p className="text-xs text-gray-500">Ordres limites ou conditionnels actuellement actifs</p>
+              {activeTab === 'orders' && (
+                <OrdersView
+                  openOrders={openOrders}
+                  fills={fills}
+                />
+              )}
             </div>
-            <span className="text-xs text-gray-500">{openOrders.length} ordre(s)</span>
           </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  {['Marché', 'Sens', 'Taille', 'Prix', 'Type', 'Déclenchement'].map(header => (
-                    <th
-                      key={header}
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      {header}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {openOrders.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-6 text-center text-sm text-gray-500">
-                      Aucun ordre en attente.
-                    </td>
-                  </tr>
-                ) : (
-                  openOrders.map((order, index) => (
-                    <tr key={`${order.symbol ?? order.coin}-${order.px ?? order.price}-${index}`} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-black">{order.symbol ?? order.coin ?? '—'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{normalizeSide(order.side ?? order.dir)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{formatNumber(order.sz ?? order.size)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{formatNumber(order.px ?? order.price, 2)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{order.isTrigger ? 'Conditionnel' : 'Limité'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{order.triggerPx ? formatNumber(order.triggerPx, 2) : '—'}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        )}
 
+        {/* Footer avec dernière mise à jour */}
         {retrievedAt && (
           <p className="text-xs text-gray-500 text-right">
             Dernière mise à jour : {new Intl.DateTimeFormat('fr-FR', {
