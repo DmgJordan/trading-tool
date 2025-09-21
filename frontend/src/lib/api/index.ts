@@ -3,6 +3,7 @@ export { default as apiClient } from './client';
 export { authApi } from './auth';
 export { preferencesApi } from './preferences';
 export * from './ai_recommendations';
+export { hyperliquidApi } from './hyperliquid';
 
 // Types pour faciliter les imports
 export type { AuthTokens, User, LoginRequest, RegisterRequest } from '../types/auth';

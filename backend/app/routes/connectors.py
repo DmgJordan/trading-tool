@@ -220,8 +220,16 @@ async def get_user_info(
                     detail="Aucune clé Hyperliquid configurée pour cet utilisateur"
                 )
 
+            if not current_user.hyperliquid_public_address:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Aucune adresse publique Hyperliquid configurée pour cet utilisateur"
+                )
+
+            private_key = decrypt_api_key(current_user.hyperliquid_api_key).strip()
             result = await dex_validator.get_hyperliquid_user_info(
-                current_user.hyperliquid_api_key,
+                private_key,
+                current_user.hyperliquid_public_address,
                 info_request.use_testnet
             )
 

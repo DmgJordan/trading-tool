@@ -3,6 +3,7 @@ export interface User {
   email: string;
   username: string;
   hyperliquid_api_key?: string;
+  hyperliquid_public_address?: string;
   anthropic_api_key?: string;
   coingecko_api_key?: string;
   hyperliquid_api_key_status?: string;

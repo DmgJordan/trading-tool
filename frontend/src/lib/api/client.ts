@@ -2,6 +2,9 @@ import axios from 'axios';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+// Import dynamique pour éviter les cycles de dépendances
+let getAuthStore: () => any;
+
 // Instance axios centralisée pour toute l'application
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -12,13 +15,35 @@ const apiClient = axios.create({
 
 // Intercepteur pour ajouter le token d'accès aux requêtes
 apiClient.interceptors.request.use((config) => {
-  const tokens = localStorage.getItem('auth_tokens');
-  if (tokens) {
-    const { access_token } = JSON.parse(tokens);
-    if (config.headers) {
-      config.headers.Authorization = `Bearer ${access_token}`;
+  // Essayer d'abord localStorage pour les tokens existants
+  let access_token = null;
+  const storedTokens = localStorage.getItem('auth_tokens');
+
+  if (storedTokens) {
+    try {
+      const parsedTokens = JSON.parse(storedTokens);
+      access_token = parsedTokens.access_token;
+    } catch (error) {
+      console.error('Erreur lors du parsing des tokens localStorage:', error);
     }
   }
+
+  // Si pas de token dans localStorage, essayer le store Zustand
+  if (!access_token && getAuthStore) {
+    try {
+      const store = getAuthStore();
+      if (store?.tokens?.access_token) {
+        access_token = store.tokens.access_token;
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'accès au store Zustand:', error);
+    }
+  }
+
+  if (access_token && config.headers) {
+    config.headers.Authorization = `Bearer ${access_token}`;
+  }
+
   return config;
 });
 
@@ -56,5 +81,10 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Fonction pour initialiser la référence au store
+export const initializeAuthStore = (store: any) => {
+  getAuthStore = () => store;
+};
 
 export default apiClient;

@@ -6,6 +6,7 @@ class UserBase(BaseModel):
     email: EmailStr
     username: str
     hyperliquid_api_key: Optional[str] = None
+    hyperliquid_public_address: Optional[str] = None
     anthropic_api_key: Optional[str] = None
     coingecko_api_key: Optional[str] = None
 
@@ -16,6 +17,7 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     username: Optional[str] = None
     hyperliquid_api_key: Optional[str] = None
+    hyperliquid_public_address: Optional[str] = None
     anthropic_api_key: Optional[str] = None
     coingecko_api_key: Optional[str] = None
 
@@ -32,6 +34,7 @@ class UserResponse(BaseModel):
     email: EmailStr
     username: str
     hyperliquid_api_key: Optional[str] = None
+    hyperliquid_public_address: Optional[str] = None
     anthropic_api_key: Optional[str] = None
     coingecko_api_key: Optional[str] = None
     hyperliquid_api_key_status: Optional[str] = None  # "configured" ou None
@@ -45,6 +48,7 @@ class UserResponse(BaseModel):
 
 class ApiKeyUpdate(BaseModel):
     hyperliquid_api_key: Optional[str] = None
+    hyperliquid_public_address: Optional[str] = None
     anthropic_api_key: Optional[str] = None
     coingecko_api_key: Optional[str] = None
 

@@ -6,10 +6,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuthStore } from '../store/authStore';
 import { authApi } from '../lib/api/auth';
-import api from '../lib/api/auth';
+import apiClient from '../lib/api/client';
 
 const apiKeysSchema = z.object({
   hyperliquid_api_key: z.string().optional(),
+  hyperliquid_public_address: z.string().optional(),
   anthropic_api_key: z.string().optional(),
   coingecko_api_key: z.string().optional(),
 });
@@ -43,6 +44,9 @@ export default function ApiKeysConfiguration() {
     if (user?.hyperliquid_api_key_status === 'configured') {
       setValue('hyperliquid_api_key', user.hyperliquid_api_key || '');
     }
+    if (user?.hyperliquid_public_address) {
+      setValue('hyperliquid_public_address', user.hyperliquid_public_address);
+    }
     if (user?.anthropic_api_key_status === 'configured') {
       setValue('anthropic_api_key', user.anthropic_api_key || '');
     }
@@ -53,27 +57,47 @@ export default function ApiKeysConfiguration() {
 
   const saveApiKey = async (apiType: 'hyperliquid' | 'anthropic' | 'coingecko') => {
     const values = getValues();
-    const apiKey = apiType === 'hyperliquid' ? values.hyperliquid_api_key :
-                   apiType === 'anthropic' ? values.anthropic_api_key : values.coingecko_api_key;
-
-    if (!apiKey?.trim()) {
-      return;
-    }
 
     setIsSaving(prev => ({ ...prev, [apiType]: true }));
 
     try {
-      const response = await api.put('/users/me/api-keys', {
-        [apiType + '_api_key']: apiKey
-      });
+      let payload: Record<string, string | undefined> = {};
+
+      if (apiType === 'hyperliquid') {
+        if (values.hyperliquid_api_key?.trim()) {
+          payload.hyperliquid_api_key = values.hyperliquid_api_key.trim();
+        }
+
+        if (values.hyperliquid_public_address !== undefined) {
+          payload.hyperliquid_public_address = values.hyperliquid_public_address.trim();
+        }
+
+        if (Object.keys(payload).length === 0) {
+          alert('Veuillez renseigner la clé API ou l\'adresse publique Hyperliquid avant de sauvegarder.');
+          return;
+        }
+      } else {
+        const apiKey = apiType === 'anthropic' ? values.anthropic_api_key : values.coingecko_api_key;
+        if (!apiKey?.trim()) {
+          alert('Veuillez renseigner une clé API avant de sauvegarder.');
+          return;
+        }
+        payload = { [`${apiType}_api_key`]: apiKey.trim() };
+      }
+
+      await apiClient.put('/users/me/api-keys', payload);
 
       const apiNames = {
         hyperliquid: 'Hyperliquid',
         anthropic: 'Anthropic',
         coingecko: 'CoinGecko'
-      };
+      } as const;
 
-      alert(`Clé API ${apiNames[apiType]} sauvegardée avec succès !`);
+      const successMessage = apiType === 'hyperliquid'
+        ? 'Configuration Hyperliquid sauvegardée avec succès !'
+        : `Clé API ${apiNames[apiType]} sauvegardée avec succès !`;
+
+      alert(successMessage);
 
       // Recharger les informations utilisateur pour obtenir les clés masquées
       try {
@@ -132,7 +156,7 @@ export default function ApiKeysConfiguration() {
           : { api_key: apiKey };
       }
 
-      const response = await api.post(`/connectors/${endpoint}`, requestBody);
+      const response = await apiClient.post(`/connectors/${endpoint}`, requestBody);
       setter({ status: 'success', message: response.data.message || 'Connexion réussie !' });
     } catch (error) {
       setter({ status: 'error', message: `Erreur de connexion: ${error instanceof Error ? error.message : 'Connexion échouée'}` });
@@ -159,11 +183,11 @@ export default function ApiKeysConfiguration() {
       hyperliquid: {
         title: 'Configuration Hyperliquid API',
         steps: [
-          '1. Connectez-vous à votre compte Hyperliquid',
-          '2. Allez dans les paramètres de votre compte',
-          '3. Naviguez vers la section "API Keys"',
-          '4. Créez une nouvelle clé API avec les permissions de lecture',
-          '5. Copiez la clé et collez-la dans le champ ci-dessous'
+          '1. Connectez-vous à Hyperliquid, ouvrez la section « API Keys » et créez une clé Blaze.',
+          '2. Copiez la clé privée générée (agent wallet) et collez-la dans le champ « Clé privée API ». Elle sert à signer les ordres.',
+          '3. Cliquez sur « Copy API Wallet Address » pour récupérer l’adresse publique affichée en haut de la section et collez-la dans « Adresse publique Hyperliquid ».',
+          '4. Assurez-vous de transférer des fonds vers votre API wallet depuis Hyperliquid si nécessaire.',
+          '5. Sauvegardez les informations ci-dessous puis testez la connexion.'
         ]
       },
       anthropic: {
@@ -253,21 +277,44 @@ export default function ApiKeysConfiguration() {
             {getStatusIcon(hyperliquidResult.status)}
           </div>
 
-          <div className="space-y-4">
-            <div className="relative">
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-black">
+                Clé privée API Hyperliquid (agent wallet)
+              </label>
+              <div className="relative">
+                <input
+                  {...register('hyperliquid_api_key')}
+                  type={showKeys.hyperliquid ? 'text' : 'password'}
+                  placeholder={user?.hyperliquid_api_key_status === 'configured' ? "Clé configurée (masquée pour la sécurité)" : "Collez la clé privée reçue lors de la création de la clé Blaze"}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-black focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowKeys(prev => ({ ...prev, hyperliquid: !prev.hyperliquid }))}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-black"
+                >
+                  {showKeys.hyperliquid ? '👁️' : '🙈'}
+                </button>
+              </div>
+              <p className="text-xs text-gray-500">
+                Cette clé permet de signer les ordres depuis le Trading Tool. Elle n&apos;autorise pas les retraits.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-black">
+                Adresse publique Hyperliquid (wallet principal)
+              </label>
               <input
-                {...register('hyperliquid_api_key')}
-                type={showKeys.hyperliquid ? 'text' : 'password'}
-                placeholder={user?.hyperliquid_api_key_status === 'configured' ? "Clé configurée (masquée pour la sécurité)" : "Entrez votre clé API Hyperliquid"}
+                {...register('hyperliquid_public_address')}
+                type="text"
+                placeholder="Ex. 0x1234..."
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-black focus:outline-none"
               />
-              <button
-                type="button"
-                onClick={() => setShowKeys(prev => ({ ...prev, hyperliquid: !prev.hyperliquid }))}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-black"
-              >
-                {showKeys.hyperliquid ? '👁️' : '🙈'}
-              </button>
+              <p className="text-xs text-gray-500">
+                Utilisée pour récupérer votre portefeuille et vos positions. Elle correspond à l&apos;adresse affichée dans Hyperliquid, section API.
+              </p>
             </div>
 
             <div className="flex space-x-3">

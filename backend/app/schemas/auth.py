@@ -23,6 +23,7 @@ class UserProfile(BaseModel):
     email: EmailStr
     username: str
     hyperliquid_api_key: Optional[str] = None
+    hyperliquid_public_address: Optional[str] = None
     anthropic_api_key: Optional[str] = None
 
     class Config:

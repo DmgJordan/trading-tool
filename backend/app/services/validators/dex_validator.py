@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from ..connectors.hyperliquid_connector import HyperliquidConnector
 import logging
 
@@ -43,7 +43,12 @@ class DexValidator:
                 "message": f"Erreur de validation: {str(e)}"
             }
 
-    async def get_hyperliquid_user_info(self, private_key: str, use_testnet: bool = False) -> Dict[str, Any]:
+    async def get_hyperliquid_user_info(
+        self,
+        private_key: Optional[str],
+        wallet_address: Optional[str],
+        use_testnet: bool = False
+    ) -> Dict[str, Any]:
         """
         Récupère les informations détaillées de l'utilisateur Hyperliquid
 
@@ -56,7 +61,7 @@ class DexValidator:
         """
         try:
             connector = self.hyperliquid_testnet if use_testnet else self.hyperliquid_mainnet
-            return await connector.get_user_info(private_key)
+            return await connector.get_user_info(private_key, wallet_address=wallet_address)
 
         except Exception as e:
             logger.error(f"Erreur récupération info utilisateur: {e}")

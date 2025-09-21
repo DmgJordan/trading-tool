@@ -110,6 +110,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
         email=current_user.email,
         username=current_user.username,
         hyperliquid_api_key=hyperliquid_key,
+        hyperliquid_public_address=current_user.hyperliquid_public_address,
         anthropic_api_key=anthropic_key
     )
 

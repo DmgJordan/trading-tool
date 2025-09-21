@@ -13,6 +13,7 @@ class User(Base):
 
     # Clés API
     hyperliquid_api_key = Column(Text, nullable=True)
+    hyperliquid_public_address = Column(String(66), nullable=True)
     anthropic_api_key = Column(Text, nullable=True)
     coingecko_api_key = Column(Text, nullable=True)
 

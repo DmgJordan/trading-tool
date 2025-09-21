@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { AuthState, AuthActions, LoginRequest, RegisterRequest, User } from '../lib/types/auth';
 import { authApi } from '../lib/api/auth';
+import { initializeAuthStore } from '../lib/api/client';
 
 interface AuthStore extends AuthState, AuthActions {}
 
@@ -157,17 +158,40 @@ export const useAuthStore = create<AuthStore>()(
       initialize: async () => {
         try {
           const tokens = localStorage.getItem('auth_tokens');
-          if (tokens && !get().isAuthenticated) {
+          const currentState = get();
+
+          // Si l'utilisateur est marqué comme authentifié mais n'a pas de tokens, le déconnecter
+          if (currentState.isAuthenticated && !tokens) {
+            console.warn('Utilisateur authentifié sans tokens - déconnexion forcée');
+            set({
+              user: null,
+              tokens: null,
+              isAuthenticated: false,
+              isInitialized: true,
+              isLoading: false,
+              error: null,
+            });
+            return;
+          }
+
+          if (tokens && !currentState.isAuthenticated) {
             // Essayer de récupérer les informations utilisateur
             await get().refreshToken();
           } else {
-            // Pas de tokens ou déjà authentifié
+            // Pas de tokens ou déjà authentifié avec tokens valides
             set({ isInitialized: true });
           }
         } catch (error) {
-          // Échec de l'initialisation, marquer comme initialisé quand même
+          // Échec de l'initialisation, déconnecter par sécurité
           console.warn('Échec de l\'initialisation de l\'authentification:', error);
-          set({ isInitialized: true });
+          set({
+            user: null,
+            tokens: null,
+            isAuthenticated: false,
+            isInitialized: true,
+            isLoading: false,
+            error: null,
+          });
         }
       },
     }),
@@ -182,3 +206,6 @@ export const useAuthStore = create<AuthStore>()(
     }
   )
 );
+
+// Initialiser la référence du store pour l'intercepteur API
+initializeAuthStore(useAuthStore.getState);
