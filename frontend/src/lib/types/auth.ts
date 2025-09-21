@@ -4,8 +4,10 @@ export interface User {
   username: string;
   hyperliquid_api_key?: string;
   anthropic_api_key?: string;
+  coingecko_api_key?: string;
   hyperliquid_api_key_status?: string;
   anthropic_api_key_status?: string;
+  coingecko_api_key_status?: string;
   created_at: string;
   updated_at?: string;
 }

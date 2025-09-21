@@ -11,6 +11,7 @@ import api from '../lib/api/auth';
 const apiKeysSchema = z.object({
   hyperliquid_api_key: z.string().optional(),
   anthropic_api_key: z.string().optional(),
+  coingecko_api_key: z.string().optional(),
 });
 
 type ApiKeysFormData = z.infer<typeof apiKeysSchema>;
@@ -23,9 +24,10 @@ interface ApiTestResult {
 export default function ApiKeysConfiguration() {
   const [hyperliquidResult, setHyperliquidResult] = useState<ApiTestResult>({ status: null, message: '' });
   const [anthropicResult, setAnthropicResult] = useState<ApiTestResult>({ status: null, message: '' });
+  const [coingeckoResult, setCoingeckoResult] = useState<ApiTestResult>({ status: null, message: '' });
   const [isHelpModalOpen, setIsHelpModalOpen] = useState<string | null>(null);
-  const [showKeys, setShowKeys] = useState({ hyperliquid: false, anthropic: false });
-  const [isSaving, setIsSaving] = useState({ hyperliquid: false, anthropic: false });
+  const [showKeys, setShowKeys] = useState({ hyperliquid: false, anthropic: false, coingecko: false });
+  const [isSaving, setIsSaving] = useState({ hyperliquid: false, anthropic: false, coingecko: false });
   const { user, setUser } = useAuthStore();
 
   const {
@@ -44,11 +46,15 @@ export default function ApiKeysConfiguration() {
     if (user?.anthropic_api_key_status === 'configured') {
       setValue('anthropic_api_key', user.anthropic_api_key || '');
     }
+    if (user?.coingecko_api_key_status === 'configured') {
+      setValue('coingecko_api_key', user.coingecko_api_key || '');
+    }
   }, [user, setValue]);
 
-  const saveApiKey = async (apiType: 'hyperliquid' | 'anthropic') => {
+  const saveApiKey = async (apiType: 'hyperliquid' | 'anthropic' | 'coingecko') => {
     const values = getValues();
-    const apiKey = apiType === 'hyperliquid' ? values.hyperliquid_api_key : values.anthropic_api_key;
+    const apiKey = apiType === 'hyperliquid' ? values.hyperliquid_api_key :
+                   apiType === 'anthropic' ? values.anthropic_api_key : values.coingecko_api_key;
 
     if (!apiKey?.trim()) {
       return;
@@ -61,7 +67,13 @@ export default function ApiKeysConfiguration() {
         [apiType + '_api_key']: apiKey
       });
 
-      alert(`Clé API ${apiType === 'hyperliquid' ? 'Hyperliquid' : 'Anthropic'} sauvegardée avec succès !`);
+      const apiNames = {
+        hyperliquid: 'Hyperliquid',
+        anthropic: 'Anthropic',
+        coingecko: 'CoinGecko'
+      };
+
+      alert(`Clé API ${apiNames[apiType]} sauvegardée avec succès !`);
 
       // Recharger les informations utilisateur pour obtenir les clés masquées
       try {
@@ -77,21 +89,27 @@ export default function ApiKeysConfiguration() {
     }
   };
 
-  const testApiConnection = async (apiType: 'hyperliquid' | 'anthropic') => {
+  const testApiConnection = async (apiType: 'hyperliquid' | 'anthropic' | 'coingecko') => {
     const values = getValues();
-    const apiKey = apiType === 'hyperliquid' ? values.hyperliquid_api_key : values.anthropic_api_key;
+    const apiKey = apiType === 'hyperliquid' ? values.hyperliquid_api_key :
+                   apiType === 'anthropic' ? values.anthropic_api_key : values.coingecko_api_key;
+
     const isStoredKey = apiType === 'hyperliquid'
       ? user?.hyperliquid_api_key_status === 'configured' && apiKey?.includes('••••••••')
-      : user?.anthropic_api_key_status === 'configured' && apiKey?.includes('••••••••');
+      : apiType === 'anthropic'
+      ? user?.anthropic_api_key_status === 'configured' && apiKey?.includes('••••••••')
+      : user?.coingecko_api_key_status === 'configured' && apiKey?.includes('••••••••');
 
     // Si pas de clé saisie et pas de clé enregistrée
     if (!apiKey?.trim() && !isStoredKey) {
-      const setter = apiType === 'hyperliquid' ? setHyperliquidResult : setAnthropicResult;
+      const setter = apiType === 'hyperliquid' ? setHyperliquidResult :
+                     apiType === 'anthropic' ? setAnthropicResult : setCoingeckoResult;
       setter({ status: 'error', message: 'Veuillez saisir une clé API avant de tester.' });
       return;
     }
 
-    const setter = apiType === 'hyperliquid' ? setHyperliquidResult : setAnthropicResult;
+    const setter = apiType === 'hyperliquid' ? setHyperliquidResult :
+                   apiType === 'anthropic' ? setAnthropicResult : setCoingeckoResult;
     setter({ status: 'testing', message: 'Test de connexion en cours...' });
 
     try {
@@ -100,13 +118,15 @@ export default function ApiKeysConfiguration() {
 
       if (isStoredKey) {
         // Utiliser les endpoints pour les clés stockées
-        endpoint = apiType === 'hyperliquid' ? 'test-hyperliquid-stored' : 'test-anthropic-stored';
+        endpoint = apiType === 'hyperliquid' ? 'test-hyperliquid-stored' :
+                   apiType === 'anthropic' ? 'test-anthropic-stored' : 'test-coingecko-stored';
         requestBody = apiType === 'hyperliquid'
           ? { private_key: '', use_testnet: false }  // private_key sera ignoré car on utilise la clé stockée
           : {};
       } else {
         // Utiliser les endpoints classiques avec la nouvelle clé
-        endpoint = apiType === 'hyperliquid' ? 'test-hyperliquid' : 'test-anthropic';
+        endpoint = apiType === 'hyperliquid' ? 'test-hyperliquid' :
+                   apiType === 'anthropic' ? 'test-anthropic' : 'test-coingecko';
         requestBody = apiType === 'hyperliquid'
           ? { private_key: apiKey, use_testnet: false }
           : { api_key: apiKey };
@@ -154,6 +174,16 @@ export default function ApiKeysConfiguration() {
           '3. Créez une nouvelle clé API',
           '4. Copiez la clé et collez-la dans le champ ci-dessous',
           '5. Assurez-vous d\'avoir des crédits suffisants'
+        ]
+      },
+      coingecko: {
+        title: 'Configuration CoinGecko API',
+        steps: [
+          '1. Connectez-vous à votre compte CoinGecko Pro',
+          '2. Allez dans la section "Developer Dashboard"',
+          '3. Naviguez vers "API Keys"',
+          '4. Créez une nouvelle clé API ou utilisez celle existante',
+          '5. Copiez la clé (format CG-xxxxx) et collez-la ci-dessous'
         ]
       }
     };
@@ -339,6 +369,75 @@ export default function ApiKeysConfiguration() {
             )}
           </div>
         </div>
+
+        {/* CoinGecko API */}
+        <div className="p-6 rounded-xl border-2 border-gray-200">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <h3 className="text-lg font-semibold text-black">CoinGecko API</h3>
+              {user?.coingecko_api_key_status === 'configured' && (
+                <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                  Configurée
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => setIsHelpModalOpen('coingecko')}
+                className="text-gray-500 hover:text-black text-sm font-medium underline"
+              >
+                Aide
+              </button>
+            </div>
+            {getStatusIcon(coingeckoResult.status)}
+          </div>
+
+          <div className="space-y-4">
+            <div className="relative">
+              <input
+                {...register('coingecko_api_key')}
+                type={showKeys.coingecko ? 'text' : 'password'}
+                placeholder={user?.coingecko_api_key_status === 'configured' ? "Clé configurée (masquée pour la sécurité)" : "Entrez votre clé API CoinGecko"}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-black focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => setShowKeys(prev => ({ ...prev, coingecko: !prev.coingecko }))}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-black"
+              >
+                {showKeys.coingecko ? '👁️' : '🙈'}
+              </button>
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                type="button"
+                onClick={() => saveApiKey('coingecko')}
+                disabled={isSaving.coingecko}
+                className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+              >
+                {isSaving.coingecko ? 'Sauvegarde...' : 'Sauvegarder'}
+              </button>
+              <button
+                type="button"
+                onClick={() => testApiConnection('coingecko')}
+                disabled={coingeckoResult.status === 'testing'}
+                className="px-4 py-2 border-2 border-black text-black rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+              >
+                {coingeckoResult.status === 'testing' ? 'Test...' : 'Tester'}
+              </button>
+            </div>
+
+            {coingeckoResult.message && (
+              <div className={`p-3 rounded-lg border-2 ${
+                coingeckoResult.status === 'success' ? 'bg-green-50 border-green-200 text-green-800' :
+                coingeckoResult.status === 'error' ? 'bg-red-50 border-red-200 text-red-800' :
+                'bg-blue-50 border-blue-200 text-blue-800'
+              }`}>
+                <p className="text-sm font-medium">{coingeckoResult.message}</p>
+              </div>
+            )}
+          </div>
+        </div>
       </form>
 
       {/* Modales d'aide */}
@@ -350,6 +449,11 @@ export default function ApiKeysConfiguration() {
       <HelpModal
         apiType="anthropic"
         isOpen={isHelpModalOpen === 'anthropic'}
+        onClose={() => setIsHelpModalOpen(null)}
+      />
+      <HelpModal
+        apiType="coingecko"
+        isOpen={isHelpModalOpen === 'coingecko'}
         onClose={() => setIsHelpModalOpen(null)}
       />
     </div>

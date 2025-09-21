@@ -9,8 +9,32 @@ class CoinGeckoConnector:
     """Connecteur pour l'API CoinGecko"""
 
     def __init__(self):
-        self.base_url = "https://api.coingecko.com/api/v3"
+        self.demo_base_url = "https://api.coingecko.com/api/v3"
         self.pro_base_url = "https://pro-api.coingecko.com/api/v3"
+
+    def _get_base_url(self, api_key: str) -> str:
+        """
+        Détermine l'URL de base selon le type de clé API
+
+        Args:
+            api_key: Clé API CoinGecko
+
+        Returns:
+            URL de base appropriée
+        """
+        # Les clés Demo CoinGecko suivent le pattern: CG-XXXXXXXXXXXXXXXXXXXXXX
+        # Les clés peuvent être légèrement plus longues après chiffrement/déchiffrement
+        print(f"DEBUG CoinGecko - Clé reçue: {api_key[:6]}... longueur: {len(api_key)}")
+        print(f"DEBUG CoinGecko - Commence par CG-: {api_key.startswith('CG-')}")
+
+        # Les clés Demo commencent par CG- et font entre 25-30 caractères
+        # Les clés Pro ont généralement un format différent ou sont plus longues
+        if api_key.startswith('CG-') and 25 <= len(api_key) <= 30:
+            print("DEBUG CoinGecko - Détection: DEMO API")
+            return self.demo_base_url
+        else:
+            print("DEBUG CoinGecko - Détection: PRO API")
+            return self.pro_base_url
 
     async def test_connection(self, api_key: str) -> Dict[str, Any]:
         """
@@ -23,26 +47,39 @@ class CoinGeckoConnector:
             Dict avec le résultat du test
         """
         try:
-            headers = {"x-cg-pro-api-key": api_key}
+            # Déterminer l'URL et les headers selon le type de clé
+            base_url = self._get_base_url(api_key)
 
-            # Tester d'abord l'API Pro
+            print(f"DEBUG CoinGecko - URL finale choisie: {base_url}")
+
+            if base_url == self.demo_base_url:
+                # Pour les clés demo, utiliser le paramètre x_cg_demo_api_key
+                headers = {"x-cg-demo-api-key": api_key}
+                api_type = "coingecko_demo"
+                print("DEBUG CoinGecko - Headers: DEMO API (x-cg-demo-api-key)")
+            else:
+                # Pour les clés pro, utiliser x-cg-pro-api-key
+                headers = {"x-cg-pro-api-key": api_key}
+                api_type = "coingecko_pro"
+                print("DEBUG CoinGecko - Headers: PRO API (x-cg-pro-api-key)")
+
             async with aiohttp.ClientSession() as session:
                 # Test avec un endpoint simple qui consomme peu de quota
                 async with session.get(
-                    f"{self.pro_base_url}/ping",
+                    f"{base_url}/ping",
                     headers=headers,
                     timeout=aiohttp.ClientTimeout(total=10)
                 ) as response:
 
                     if response.status == 200:
                         data = await response.json()
-                        plan_info = await self._get_plan_info(session, headers)
+                        plan_info = await self._get_plan_info(session, headers, base_url)
 
                         return {
                             "status": "success",
-                            "message": "Connexion CoinGecko API Pro réussie",
+                            "message": f"Connexion CoinGecko API {api_type.split('_')[1].title()} réussie",
                             "data": {
-                                "api_type": "coingecko_pro",
+                                "api_type": api_type,
                                 "ping_response": data,
                                 "plan_info": plan_info
                             }
@@ -80,7 +117,7 @@ class CoinGeckoConnector:
                 "message": f"Erreur de connexion: {str(e)}"
             }
 
-    async def _get_plan_info(self, session: aiohttp.ClientSession, headers: Dict[str, str]) -> Dict[str, Any]:
+    async def _get_plan_info(self, session: aiohttp.ClientSession, headers: Dict[str, str], base_url: str) -> Dict[str, Any]:
         """
         Récupère les informations du plan API
 
@@ -95,7 +132,7 @@ class CoinGeckoConnector:
             # CoinGecko n'a pas d'endpoint spécifique pour les infos de plan
             # On utilise un endpoint simple pour tester et examiner les headers de réponse
             async with session.get(
-                f"{self.pro_base_url}/simple/price?ids=bitcoin&vs_currencies=usd",
+                f"{base_url}/simple/price?ids=bitcoin&vs_currencies=usd",
                 headers=headers,
                 timeout=aiohttp.ClientTimeout(total=5)
             ) as response:
@@ -138,11 +175,17 @@ class CoinGeckoConnector:
             Dict avec les prix
         """
         try:
-            headers = {"x-cg-pro-api-key": api_key}
+            # Déterminer l'URL et les headers selon le type de clé
+            base_url = self._get_base_url(api_key)
+
+            if base_url == self.demo_base_url:
+                headers = {"x-cg-demo-api-key": api_key}
+            else:
+                headers = {"x-cg-pro-api-key": api_key}
 
             async with aiohttp.ClientSession() as session:
                 async with session.get(
-                    f"{self.pro_base_url}/simple/price",
+                    f"{base_url}/simple/price",
                     headers=headers,
                     params={
                         "ids": ids,
@@ -185,24 +228,32 @@ class CoinGeckoConnector:
             Dict avec les informations de l'API
         """
         try:
-            headers = {"x-cg-pro-api-key": api_key}
+            # Déterminer l'URL et les headers selon le type de clé
+            base_url = self._get_base_url(api_key)
+
+            if base_url == self.demo_base_url:
+                headers = {"x-cg-demo-api-key": api_key}
+                api_type = "coingecko_demo"
+            else:
+                headers = {"x-cg-pro-api-key": api_key}
+                api_type = "coingecko_pro"
 
             async with aiohttp.ClientSession() as session:
                 # Test avec ping et récupération des headers
                 async with session.get(
-                    f"{self.pro_base_url}/ping",
+                    f"{base_url}/ping",
                     headers=headers,
                     timeout=aiohttp.ClientTimeout(total=10)
                 ) as response:
 
                     if response.status == 200:
-                        plan_info = await self._get_plan_info(session, headers)
+                        plan_info = await self._get_plan_info(session, headers, base_url)
 
                         return {
                             "status": "success",
                             "message": "Informations API récupérées",
                             "data": {
-                                "api_type": "coingecko_pro",
+                                "api_type": api_type,
                                 "plan_info": plan_info,
                                 "endpoints_available": [
                                     "simple/price",
