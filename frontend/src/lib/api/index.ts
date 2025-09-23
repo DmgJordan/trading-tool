@@ -5,6 +5,7 @@ export { preferencesApi } from './preferences';
 export { claudeApi } from './claude';
 export * from './ai_recommendations';
 export { hyperliquidApi } from './hyperliquid';
+export { ohlcvApi } from './ohlcv';
 
 // Types pour faciliter les imports
 export type { AuthTokens, User, LoginRequest, RegisterRequest } from '../types/auth';
@@ -13,3 +14,12 @@ export type {
   TradingPreferencesUpdate,
   TradingPreferencesDefault
 } from '../types/preferences';
+export type {
+  OHLCVCandle,
+  CCXTTestRequest,
+  CCXTTestResponse,
+  CurrentPriceInfo,
+  ExchangeListResponse,
+  ExchangeSymbolsRequest,
+  ExchangeSymbolsResponse
+} from './ohlcv';

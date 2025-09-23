@@ -1,5 +1,6 @@
 import Navbar from '../components/Navbar';
 import ConfigurationTest from '../components/ConfigurationTest';
+import CCXTTest from '../components/CCXTTest';
 
 export default function Home() {
   return (
@@ -18,9 +19,16 @@ export default function Home() {
         </div>
 
         {/* Configuration card centré avec plus d'espacement */}
-        <div className="flex justify-center">
+        <div className="flex justify-center mb-16">
           <div className="w-full max-w-3xl">
             <ConfigurationTest />
+          </div>
+        </div>
+
+        {/* Section CCXT Test */}
+        <div className="flex justify-center">
+          <div className="w-full max-w-4xl">
+            <CCXTTest />
           </div>
         </div>
 
