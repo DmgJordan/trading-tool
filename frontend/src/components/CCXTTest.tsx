@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ohlcvApi, CCXTTestResponse, ExchangeListResponse, OHLCVCandle, CurrentPriceInfo } from '../lib/api';
+import { ohlcvApi, CCXTTestResponse, ExchangeListResponse, OHLCVCandle, CurrentPriceInfo, TechnicalAnalysis } from '../lib/api';
 
 interface CCXTTestState {
   status: 'idle' | 'testing' | 'success' | 'error';
   message: string;
   data: OHLCVCandle[] | null;
   currentPriceInfo: CurrentPriceInfo | null;
+  technicalAnalysis: TechnicalAnalysis | null;
   exchange: string;
   symbol: string;
   timeframe: string;
@@ -19,6 +20,7 @@ export default function CCXTTest() {
     message: '',
     data: null,
     currentPriceInfo: null,
+    technicalAnalysis: null,
     exchange: '',
     symbol: '',
     timeframe: ''
@@ -50,6 +52,7 @@ export default function CCXTTest() {
       message: `Test CCXT en cours pour ${selectedExchange} ${selectedSymbol} ${selectedTimeframe}...`,
       data: null,
       currentPriceInfo: null,
+      technicalAnalysis: null,
       exchange: selectedExchange,
       symbol: selectedSymbol,
       timeframe: selectedTimeframe
@@ -69,6 +72,7 @@ export default function CCXTTest() {
           message: `${result.message} - ${result.count} bougies récupérées`,
           data: result.data || null,
           currentPriceInfo: result.current_price_info || null,
+          technicalAnalysis: result.technical_analysis || null,
           exchange: result.exchange || selectedExchange,
           symbol: result.symbol || selectedSymbol,
           timeframe: result.timeframe || selectedTimeframe
@@ -79,6 +83,7 @@ export default function CCXTTest() {
           message: result.message,
           data: null,
           currentPriceInfo: null,
+          technicalAnalysis: null,
           exchange: selectedExchange,
           symbol: selectedSymbol,
           timeframe: selectedTimeframe
@@ -90,6 +95,7 @@ export default function CCXTTest() {
         message: `Erreur: ${error instanceof Error ? error.message : 'Connexion échouée'}`,
         data: null,
         currentPriceInfo: null,
+        technicalAnalysis: null,
         exchange: selectedExchange,
         symbol: selectedSymbol,
         timeframe: selectedTimeframe
@@ -121,6 +127,33 @@ export default function CCXTTest() {
       default:
         return 'border-gray-300 bg-white';
     }
+  };
+
+  const getRSIColor = (rsi: number | null) => {
+    if (rsi === null) return 'text-gray-500';
+    if (rsi >= 70) return 'text-red-600';
+    if (rsi <= 30) return 'text-green-600';
+    if (rsi >= 50) return 'text-blue-600';
+    return 'text-yellow-600';
+  };
+
+  const getRSILabel = (rsi: number | null) => {
+    if (rsi === null) return 'N/A';
+    if (rsi >= 70) return 'Surachat';
+    if (rsi <= 30) return 'Survente';
+    if (rsi >= 50) return 'Haussier';
+    return 'Baissier';
+  };
+
+  const getSignalColor = (signal: string) => {
+    if (signal.includes('ACHAT') || signal.includes('HAUSSIER')) return 'text-green-600';
+    if (signal.includes('VENTE') || signal.includes('BAISSIER')) return 'text-red-600';
+    return 'text-gray-600';
+  };
+
+  const formatNumber = (num: number | null, decimals: number = 2) => {
+    if (num === null) return 'N/A';
+    return num.toLocaleString('fr-FR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
   };
 
   const formatOHLCVData = (data: OHLCVCandle[]) => {
@@ -303,6 +336,145 @@ export default function CCXTTest() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Affichage des indicateurs techniques */}
+      {testState.technicalAnalysis && (
+        <div className="mt-8">
+          <h3 className="text-xl font-semibold text-black mb-4">📊 Analyse Technique - {testState.symbol}</h3>
+
+          {/* Grid avec 4 cartes d'indicateurs */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+
+            {/* RSI Card */}
+            <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-4 rounded-xl border-2 border-gray-300">
+              <div className="text-center">
+                <div className={`text-2xl font-bold ${getRSIColor(testState.technicalAnalysis.rsi.value)}`}>
+                  {testState.technicalAnalysis.rsi.value?.toFixed(1) || 'N/A'}
+                </div>
+                <div className="text-sm text-gray-600 mt-1">RSI (14)</div>
+                <div className="text-xs mt-1 font-medium">{getRSILabel(testState.technicalAnalysis.rsi.value)}</div>
+                <div className={`text-xs mt-1 ${getSignalColor(testState.technicalAnalysis.rsi.signal)}`}>
+                  {testState.technicalAnalysis.rsi.signal}
+                </div>
+              </div>
+            </div>
+
+            {/* Moving Averages Card */}
+            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 p-4 rounded-xl border-2 border-gray-300">
+              <div className="space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span>MA20:</span>
+                  <span className="font-semibold">{formatNumber(testState.technicalAnalysis.moving_averages.ma20)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>MA50:</span>
+                  <span className="font-semibold">{formatNumber(testState.technicalAnalysis.moving_averages.ma50)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>MA200:</span>
+                  <span className="font-semibold">{formatNumber(testState.technicalAnalysis.moving_averages.ma200)}</span>
+                </div>
+                <div className={`text-xs mt-2 text-center font-medium ${getSignalColor(testState.technicalAnalysis.moving_averages.overall_signal)}`}>
+                  {testState.technicalAnalysis.moving_averages.overall_signal}
+                </div>
+              </div>
+            </div>
+
+            {/* Volume Analysis Card */}
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl border-2 border-gray-300">
+              <div className="text-center">
+                <div className={`text-lg font-bold ${testState.technicalAnalysis.volume_analysis.spike_ratio >= 1.5 ? 'text-orange-600' : 'text-green-600'}`}>
+                  {testState.technicalAnalysis.volume_analysis.spike_ratio.toFixed(2)}x
+                </div>
+                <div className="text-sm text-gray-600 mt-1">Volume Spike</div>
+                <div className="text-xs mt-1">Current: {formatNumber(testState.technicalAnalysis.volume_analysis.current, 0)}</div>
+                <div className="text-xs">Avg20: {formatNumber(testState.technicalAnalysis.volume_analysis.avg20, 0)}</div>
+                <div className={`text-xs mt-1 font-medium ${getSignalColor(testState.technicalAnalysis.volume_analysis.signal)}`}>
+                  {testState.technicalAnalysis.volume_analysis.interpretation}
+                </div>
+              </div>
+            </div>
+
+            {/* Support/Resistance Card */}
+            <div className="bg-gradient-to-br from-yellow-50 to-orange-50 p-4 rounded-xl border-2 border-gray-300">
+              <div className="space-y-1">
+                {testState.technicalAnalysis.support_resistance.nearest_support && (
+                  <div className="text-sm">
+                    <span className="text-green-600 font-semibold">Support:</span>
+                    <span className="ml-1">{formatNumber(testState.technicalAnalysis.support_resistance.nearest_support)}</span>
+                  </div>
+                )}
+                {testState.technicalAnalysis.support_resistance.nearest_resistance && (
+                  <div className="text-sm">
+                    <span className="text-red-600 font-semibold">Résistance:</span>
+                    <span className="ml-1">{formatNumber(testState.technicalAnalysis.support_resistance.nearest_resistance)}</span>
+                  </div>
+                )}
+                <div className="text-xs text-gray-600 mt-2">
+                  {testState.technicalAnalysis.support_resistance.total_levels} niveaux détectés
+                </div>
+                <div className="text-xs">
+                  {testState.technicalAnalysis.support_resistance.support_levels.length} supports, {' '}
+                  {testState.technicalAnalysis.support_resistance.resistance_levels.length} résistances
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Analyse Globale */}
+          <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border-2 border-gray-300 p-6">
+            <div className="text-center">
+              <h4 className="text-lg font-semibold text-black mb-3">🎯 Analyse Globale</h4>
+              <div className={`text-2xl font-bold mb-2 ${getSignalColor(testState.technicalAnalysis.overall_analysis.overall_signal)}`}>
+                {testState.technicalAnalysis.overall_analysis.overall_signal}
+              </div>
+              <div className="text-sm text-gray-700 mb-3">
+                {testState.technicalAnalysis.overall_analysis.recommendation}
+              </div>
+              <div className="text-xs text-gray-600">
+                Force du signal: {testState.technicalAnalysis.overall_analysis.signal_strength}/10
+                {' • '}Score: {testState.technicalAnalysis.overall_analysis.score}
+                {' • '}{testState.technicalAnalysis.data_points} bougies analysées
+              </div>
+              {testState.technicalAnalysis.overall_analysis.active_signals.length > 0 && (
+                <div className="mt-3">
+                  <div className="text-xs text-gray-600 mb-1">Signaux actifs:</div>
+                  <div className="flex flex-wrap gap-1 justify-center">
+                    {testState.technicalAnalysis.overall_analysis.active_signals.map((signal, index) => (
+                      <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                        {signal}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Aperçu JSON Global */}
+      {(testState.data || testState.technicalAnalysis || testState.currentPriceInfo) && (
+        <div className="mt-8">
+          <details>
+            <summary className="cursor-pointer text-lg font-semibold text-gray-700 hover:text-black mb-4">
+              🔍 Aperçu JSON Complet (Données + Indicateurs + Prix)
+            </summary>
+            <div className="mt-4 p-4 bg-gray-900 text-green-400 rounded-lg text-xs overflow-x-auto max-h-96 overflow-y-auto">
+              <pre>{JSON.stringify({
+                timestamp: new Date().toISOString(),
+                exchange: testState.exchange,
+                symbol: testState.symbol,
+                timeframe: testState.timeframe,
+                current_price_info: testState.currentPriceInfo,
+                technical_analysis: testState.technicalAnalysis,
+                ohlcv_data: testState.data?.slice(0, 5), // Montrer seulement les 5 premières bougies pour éviter trop de données
+                total_candles: testState.data?.length || 0
+              }, null, 2)}</pre>
+            </div>
+          </details>
         </div>
       )}
 

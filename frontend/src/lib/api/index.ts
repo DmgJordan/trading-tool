@@ -19,6 +19,12 @@ export type {
   CCXTTestRequest,
   CCXTTestResponse,
   CurrentPriceInfo,
+  RSIAnalysis,
+  MovingAveragesAnalysis,
+  VolumeAnalysis,
+  SupportResistanceAnalysis,
+  OverallAnalysis,
+  TechnicalAnalysis,
   ExchangeListResponse,
   ExchangeSymbolsRequest,
   ExchangeSymbolsResponse

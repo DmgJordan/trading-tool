@@ -3,6 +3,7 @@ import asyncio
 import logging
 from typing import List, Dict, Any, Optional
 from datetime import datetime
+from .technical_indicators.technical_indicators_service import TechnicalIndicatorsService
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,9 @@ class CCXTService:
             '1d': '1d',
             '1w': '1w'
         }
+
+        # Service d'analyse technique
+        self.technical_indicators_service = TechnicalIndicatorsService()
 
     async def get_current_price(
         self,
@@ -219,6 +223,21 @@ class CCXTService:
             # Ajouter le prix actuel si disponible
             if current_price_data:
                 result["current_price_info"] = current_price_data
+
+            # Effectuer l'analyse technique
+            try:
+                current_price_for_analysis = None
+                if current_price_data and current_price_data.get("current_price"):
+                    current_price_for_analysis = current_price_data["current_price"]
+
+                technical_analysis = await self.technical_indicators_service.analyze_ohlcv_data(
+                    formatted_data, current_price_for_analysis
+                )
+                result["technical_analysis"] = technical_analysis
+                logger.info("Analyse technique ajoutée avec succès")
+            except Exception as e:
+                logger.warning(f"Impossible d'effectuer l'analyse technique: {e}")
+                result["technical_analysis"] = None
 
             return result
 

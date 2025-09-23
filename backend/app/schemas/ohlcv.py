@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime
+from .technical_indicators import TechnicalAnalysis
 
 class OHLCVCandle(BaseModel):
     """Modèle pour une bougie OHLCV individuelle"""
@@ -39,6 +40,7 @@ class CCXTTestResponse(BaseModel):
     count: Optional[int] = Field(None, description="Nombre de bougies retournées")
     data: Optional[List[OHLCVCandle]] = Field(None, description="Données OHLCV")
     current_price_info: Optional[CurrentPriceInfo] = Field(None, description="Informations prix actuel")
+    technical_analysis: Optional[TechnicalAnalysis] = Field(None, description="Analyse technique complète")
 
 class ExchangeInfo(BaseModel):
     """Modèle pour les informations d'un exchange"""

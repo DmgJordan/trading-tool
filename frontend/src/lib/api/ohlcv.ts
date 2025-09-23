@@ -27,6 +27,63 @@ export interface CurrentPriceInfo {
   datetime?: string;
 }
 
+export interface RSIAnalysis {
+  value: number | null;
+  interpretation: string;
+  signal: string;
+}
+
+export interface MovingAveragesAnalysis {
+  ma20: number | null;
+  ma50: number | null;
+  ma200: number | null;
+  current_price: number | null;
+  short_trend: string;
+  medium_trend: string;
+  long_trend: string;
+  overall_signal: string;
+  crossover_20_50: string | null;
+  crossover_50_200: string | null;
+}
+
+export interface VolumeAnalysis {
+  current: number;
+  avg20: number;
+  spike_ratio: number;
+  interpretation: string;
+  signal: string;
+  trend: string;
+  trend_strength: number;
+  price_change_percent: number;
+}
+
+export interface SupportResistanceAnalysis {
+  support_levels: number[];
+  resistance_levels: number[];
+  confidence_scores: number[];
+  nearest_support: number | null;
+  nearest_resistance: number | null;
+  total_levels: number;
+}
+
+export interface OverallAnalysis {
+  overall_signal: string;
+  signal_strength: number;
+  active_signals: string[];
+  score: number;
+  recommendation: string;
+}
+
+export interface TechnicalAnalysis {
+  rsi: RSIAnalysis;
+  moving_averages: MovingAveragesAnalysis;
+  volume_analysis: VolumeAnalysis;
+  support_resistance: SupportResistanceAnalysis;
+  overall_analysis: OverallAnalysis;
+  analyzed_at: string;
+  data_points: number;
+}
+
 export interface CCXTTestResponse {
   status: string;
   message: string;
@@ -36,6 +93,7 @@ export interface CCXTTestResponse {
   count?: number;
   data?: OHLCVCandle[];
   current_price_info?: CurrentPriceInfo;
+  technical_analysis?: TechnicalAnalysis;
 }
 
 export interface ExchangeListResponse {
