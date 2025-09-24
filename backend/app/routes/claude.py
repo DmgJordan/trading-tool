@@ -1,221 +1,30 @@
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
+from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
-from typing import List, Optional
 import uuid
 import logging
+import json
 from datetime import datetime
 
 from ..database import get_db
 from ..models.user import User
-from ..models.user_preferences import UserTradingPreferences
 from ..auth import get_current_user, decrypt_api_key
 from ..schemas.claude import (
-    ClaudeAnalysisRequest,
-    ClaudeAnalysisResponse,
-    ClaudeAnalysisHistory,
-    ClaudeErrorResponse,
-    ClaudeModel
+    ClaudeModel,
+    SingleAssetAnalysisRequest,
+    SingleAssetAnalysisResponse,
+    TechnicalDataLight
 )
-from ..services.claude_prompt_service import ClaudePromptService
-from ..services.market_data_service import MarketDataService
 from ..services.connectors.anthropic_connector import AnthropicConnector
+from ..services.ccxt_service import CCXTService
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/claude", tags=["claude"])
 
 # Initialisation des services
-prompt_service = ClaudePromptService()
-market_service = MarketDataService()
 anthropic_connector = AnthropicConnector()
+ccxt_service = CCXTService()
 
-@router.post("/analyze-trading", response_model=ClaudeAnalysisResponse)
-async def analyze_trading_assets(
-    request: ClaudeAnalysisRequest,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Analyse trading complète d'actifs avec Claude AI
-
-    Cette endpoint génère une analyse trading personnalisée en utilisant:
-    - Les préférences de trading de l'utilisateur
-    - Les données de marché CoinGecko en temps réel
-    - Le modèle Claude sélectionné
-    - Un prompt optimisé selon le type d'analyse
-    """
-    try:
-        # Générer un ID unique pour cette requête
-        request_id = str(uuid.uuid4())
-
-        logger.info(f"Début analyse trading {request_id} pour utilisateur {current_user.id}")
-        logger.info(f"Actifs: {request.assets}, Modèle: {request.model.value}")
-
-        # 1. Vérifier la clé API Anthropic
-        if not current_user.anthropic_api_key:
-            raise HTTPException(
-                status_code=400,
-                detail="Aucune clé API Anthropic configurée. Veuillez configurer votre clé API dans les paramètres."
-            )
-
-        # Déchiffrer la clé API
-        try:
-            api_key = decrypt_api_key(current_user.anthropic_api_key)
-        except Exception as e:
-            logger.error(f"Erreur déchiffrement clé API: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail="Erreur lors du déchiffrement de la clé API"
-            )
-
-        # 2. Récupérer les préférences utilisateur (optionnel)
-        user_preferences = None
-        if request.use_user_preferences:
-            user_preferences = db.query(UserTradingPreferences).filter(
-                UserTradingPreferences.user_id == current_user.id
-            ).first()
-
-            if not user_preferences:
-                logger.warning(f"Aucune préférence trouvée pour utilisateur {current_user.id}")
-
-        # 3. Récupérer les données de marché CoinGecko (optionnel)
-        market_data = {}
-        if request.include_market_data:
-            # Vérifier la clé API CoinGecko
-            if current_user.coingecko_api_key:
-                try:
-                    coingecko_key = decrypt_api_key(current_user.coingecko_api_key)
-                    market_data = await market_service.get_market_data_for_assets(
-                        api_key=coingecko_key,
-                        assets=request.assets
-                    )
-                    logger.info(f"Données marché récupérées pour {len(market_data)} actifs")
-                except Exception as e:
-                    logger.error(f"Erreur récupération données marché: {e}")
-                    # Continuer sans les données de marché
-            else:
-                logger.warning("Aucune clé CoinGecko configurée, analyse sans données de marché")
-
-        # 4. Générer le prompt adaptatif
-        try:
-            generated_prompt = prompt_service.generate_trading_prompt(
-                assets=request.assets,
-                model=request.model,
-                market_data=market_data,
-                user_preferences=user_preferences,
-                analysis_type=request.analysis_type,
-                custom_prompt=request.custom_prompt
-            )
-            logger.info(f"Prompt généré: {generated_prompt.estimated_tokens} tokens estimés")
-        except Exception as e:
-            logger.error(f"Erreur génération prompt: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail="Erreur lors de la génération du prompt d'analyse"
-            )
-
-        # 5. Appeler Claude pour l'analyse
-        try:
-            analysis_result = await anthropic_connector.generate_trading_analysis(
-                api_key=api_key,
-                prompt=generated_prompt,
-                model=request.model,
-                request_id=request_id,
-                assets=request.assets
-            )
-
-            if analysis_result["status"] != "success":
-                error_msg = analysis_result.get("message", "Erreur inconnue lors de l'analyse")
-                logger.error(f"Erreur Claude: {error_msg}")
-                raise HTTPException(status_code=400, detail=error_msg)
-
-            analysis_data = analysis_result["data"]
-
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.error(f"Erreur appel Claude: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail="Erreur lors de l'appel à l'API Claude"
-            )
-
-        # 6. Enrichir la réponse avec les données contextuelles
-        try:
-            # Ajouter les données de marché utilisées
-            analysis_data["market_data"] = {
-                asset: {
-                    "symbol": data.symbol,
-                    "name": data.name,
-                    "current_price": data.current_price,
-                    "price_change_24h": data.price_change_24h,
-                    "volume_24h": data.volume_24h,
-                    "market_cap": data.market_cap,
-                    "last_updated": data.last_updated.isoformat()
-                }
-                for asset, data in market_data.items()
-            }
-
-            # Ajouter résumé des préférences utilisateur
-            if user_preferences:
-                analysis_data["user_preferences_summary"] = {
-                    "risk_tolerance": user_preferences.risk_tolerance.value,
-                    "investment_horizon": user_preferences.investment_horizon.value,
-                    "trading_style": user_preferences.trading_style.value,
-                    "max_position_size": user_preferences.max_position_size,
-                    "stop_loss_percentage": user_preferences.stop_loss_percentage,
-                    "take_profit_ratio": user_preferences.take_profit_ratio
-                }
-
-        except Exception as e:
-            logger.error(f"Erreur enrichissement réponse: {e}")
-            # Continuer avec les données de base
-
-        # 7. Logger le succès
-        logger.info(
-            f"Analyse {request_id} terminée avec succès - "
-            f"Tokens: {analysis_data.get('tokens_used', 0)}, "
-            f"Temps: {analysis_data.get('processing_time_ms', 0)}ms"
-        )
-
-        # 8. Retourner la réponse structurée
-        return ClaudeAnalysisResponse(**analysis_data)
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Erreur inattendue dans analyze_trading_assets: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Erreur interne lors de l'analyse trading"
-        )
-
-@router.get("/analysis-history", response_model=List[ClaudeAnalysisHistory])
-async def get_analysis_history(
-    limit: int = 20,
-    offset: int = 0,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Récupère l'historique des analyses Claude de l'utilisateur
-
-    Note: Cette fonctionnalité nécessite l'implémentation d'un système
-    de stockage des analyses en base de données (fonctionnalité future).
-    """
-    try:
-        # TODO: Implémenter le stockage des analyses en base
-        # Pour l'instant, retourner une liste vide
-        logger.info(f"Demande historique analyses pour utilisateur {current_user.id}")
-
-        return []
-
-    except Exception as e:
-        logger.error(f"Erreur récupération historique: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Erreur lors de la récupération de l'historique"
-        )
 
 @router.post("/test-connection")
 async def test_claude_connection(
@@ -262,138 +71,193 @@ async def test_claude_connection(
             detail="Erreur lors du test de connexion"
         )
 
-@router.get("/supported-assets")
-async def get_supported_assets():
+
+@router.post("/analyze-single-asset", response_model=SingleAssetAnalysisResponse)
+async def analyze_single_asset_with_technical(
+    request: SingleAssetAnalysisRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """
-    Retourne la liste des actifs supportés pour l'analyse
+    Analyse complète d'un seul actif avec données techniques multi-timeframes
 
-    Basé sur les mappings CoinGecko disponibles dans le MarketDataService.
-    """
-    try:
-        supported_assets = market_service.get_supported_assets()
-
-        return {
-            "assets": sorted(supported_assets),
-            "total_count": len(supported_assets),
-            "categories": {
-                "major": ["BTC", "ETH", "BNB", "XRP", "ADA", "DOGE", "SOL"],
-                "defi": ["AAVE", "UNI", "SUSHI", "CRV", "COMP", "YFI", "MKR"],
-                "layer2": ["MATIC", "AVAX", "FTM", "ONE"],
-                "gaming": ["AXS", "MANA", "SAND", "ENJ", "CHZ"]
-            },
-            "last_updated": datetime.now().isoformat()
-        }
-
-    except Exception as e:
-        logger.error(f"Erreur récupération actifs supportés: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Erreur lors de la récupération des actifs supportés"
-        )
-
-@router.get("/models")
-async def get_available_models():
-    """
-    Retourne la liste des modèles Claude disponibles avec leurs caractéristiques
+    Processus:
+    1. Récupère 600 bougies sur 3 timeframes via CCXT
+    2. Calcule indicateurs techniques complets
+    3. Envoie données complètes (avec bougies) au LLM Claude
+    4. Retourne analyse Claude + données techniques allégées au frontend
     """
     try:
-        models_info = {
-            ClaudeModel.HAIKU.value: {
-                "name": "Claude 3 Haiku",
-                "description": "Modèle rapide et économique, idéal pour des analyses concises",
-                "max_tokens": 2048,
-                "typical_speed": "Très rapide",
-                "cost_level": "Faible",
-                "best_for": ["Analyses rapides", "Résumés", "Signaux simples"]
+        request_id = str(uuid.uuid4())
+        start_time = datetime.now()
+
+        logger.info(f"Analyse single-asset {request_id}: {request.ticker} - {request.profile}")
+
+        # 1. Vérifier la clé API Anthropic
+        if not current_user.anthropic_api_key:
+            raise HTTPException(
+                status_code=400,
+                detail="Aucune clé API Anthropic configurée. Configurez-la dans vos paramètres."
+            )
+
+        api_key = decrypt_api_key(current_user.anthropic_api_key)
+
+        # 2. Récupérer données techniques multi-timeframes (600 bougies par TF)
+        try:
+            technical_data = await ccxt_service.get_multi_timeframe_analysis(
+                exchange_name=request.exchange,
+                symbol=request.ticker,
+                profile=request.profile
+            )
+
+            if "status" in technical_data and technical_data["status"] == "error":
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Erreur récupération données techniques: {technical_data['message']}"
+                )
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Erreur service CCXT: {e}")
+            raise HTTPException(
+                status_code=500,
+                detail="Erreur lors de la récupération des données techniques"
+            )
+
+        # 3. Préparer les prompts système et utilisateur
+        system_prompt = """Tu es un expert en analyse technique de trading cryptocurrency avec une expertise en analyse multi-timeframes. Tu dois analyser des données techniques complètes et fournir des recommandations de trading précises basées sur les indicateurs, patterns, et structure de marché."""
+
+        user_prompt = f"""
+ANALYSE TECHNIQUE DÉTAILLÉE - {request.ticker}
+
+Profil de trading: {request.profile}
+Exchange: {request.exchange}
+
+=== DONNÉES TECHNIQUES COMPLÈTES ===
+{json.dumps(technical_data, indent=2, ensure_ascii=False)}
+
+=== INSTRUCTIONS D'ANALYSE ===
+Analysez ces données techniques multi-timeframes et fournissez:
+
+1. **SITUATION ACTUELLE**
+   - Prix actuel et contexte de marché
+   - Analyse de la structure multi-timeframes
+   - Confluence des indicateurs
+
+2. **ANALYSE PAR TIMEFRAME**
+   - Timeframe principal ({technical_data.get('tf', 'N/A')}): Tendance, signaux d'entrée/sortie
+   - Contexte supérieur: Biais directionnel et niveaux clés
+   - Contexte inférieur: Points d'entrée précis et timing
+
+3. **SIGNAUX DE TRADING**
+   - Points d'entrée potentiels avec justifications
+   - Niveaux de stop-loss basés sur la structure
+   - Objectifs de take-profit réalistes
+   - Gestion de position recommandée
+
+4. **ÉVALUATION DES RISQUES**
+   - Analyse de la volatilité (ATR)
+   - Identification des zones dangereuses
+   - Scénarios alternatifs
+
+5. **RECOMMANDATION FINALE**
+   - Action recommandée (ACHAT/VENTE/ATTENTE)
+   - Niveau de confiance et horizon temporel
+   - Conditions de révision de l'analyse
+
+Utilisez les données de bougies pour identifier les patterns, cassures, et niveaux de prix précis.
+Basez vos recommandations sur les 600 bougies analysées pour chaque timeframe.
+"""
+
+        # 4. Ajouter instructions personnalisées si fournies
+        if request.custom_prompt:
+            user_prompt += f"\n\n=== INSTRUCTIONS ADDITIONNELLES ===\n{request.custom_prompt}"
+
+        # 5. Appeler Claude avec toutes les données
+        try:
+            claude_response = await anthropic_connector.generate_analysis(
+                api_key=api_key,
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                model=request.model
+            )
+
+            if claude_response["status"] != "success":
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Erreur analyse Claude: {claude_response.get('message', 'Erreur inconnue')}"
+                )
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Erreur appel Claude: {e}")
+            raise HTTPException(
+                status_code=500,
+                detail="Erreur lors de l'appel à l'API Claude"
+            )
+
+        # 6. Préparer données techniques allégées (sans bougies pour frontend)
+        technical_light = TechnicalDataLight(
+            symbol=technical_data.get("symbol", request.ticker),
+            profile=technical_data.get("profile", request.profile),
+            tf=technical_data.get("tf", ""),
+            current_price=technical_data.get("current_price", {}),
+            features={
+                "ma": technical_data.get("features", {}).get("ma", {}),
+                "rsi14": technical_data.get("features", {}).get("rsi14", 0),
+                "atr14": technical_data.get("features", {}).get("atr14", 0),
+                "volume": technical_data.get("features", {}).get("volume", {}),
+                # Pas de last_20_candles ici
             },
-            ClaudeModel.SONNET.value: {
-                "name": "Claude 3 Sonnet",
-                "description": "Équilibre optimal entre performance et coût",
-                "max_tokens": 3072,
-                "typical_speed": "Rapide",
-                "cost_level": "Modéré",
-                "best_for": ["Analyses détaillées", "Stratégies", "Recommandations"]
+            higher_tf={
+                "tf": technical_data.get("higher_tf", {}).get("tf", ""),
+                "ma": technical_data.get("higher_tf", {}).get("ma", {}),
+                "rsi14": technical_data.get("higher_tf", {}).get("rsi14", 0),
+                "atr14": technical_data.get("higher_tf", {}).get("atr14", 0),
+                "structure": technical_data.get("higher_tf", {}).get("structure", ""),
+                "nearest_resistance": technical_data.get("higher_tf", {}).get("nearest_resistance", 0),
             },
-            ClaudeModel.SONNET_35.value: {
-                "name": "Claude 3.5 Sonnet",
-                "description": "Version améliorée avec capacités avancées",
-                "max_tokens": 4096,
-                "typical_speed": "Rapide",
-                "cost_level": "Modéré",
-                "best_for": ["Analyses complexes", "Corrélations", "Insights avancés"],
-                "recommended": True
-            },
-            ClaudeModel.OPUS.value: {
-                "name": "Claude 3 Opus",
-                "description": "Modèle le plus sophistiqué pour analyses approfondies",
-                "max_tokens": 4096,
-                "typical_speed": "Plus lent",
-                "cost_level": "Élevé",
-                "best_for": ["Analyses institutionnelles", "Recherche", "Stratégies complexes"]
+            lower_tf={
+                "tf": technical_data.get("lower_tf", {}).get("tf", ""),
+                "rsi14": technical_data.get("lower_tf", {}).get("rsi14", 0),
+                "volume": technical_data.get("lower_tf", {}).get("volume", {}),
+                # Pas de last_20_candles ici non plus
             }
-        }
-
-        return {
-            "models": models_info,
-            "default_model": ClaudeModel.SONNET_35.value,
-            "total_count": len(models_info)
-        }
-
-    except Exception as e:
-        logger.error(f"Erreur récupération modèles: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Erreur lors de la récupération des modèles"
         )
 
-@router.get("/cache/stats")
-async def get_cache_stats(
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Retourne les statistiques du cache des données de marché
+        # 7. Calculer métriques de performance
+        processing_time = (datetime.now() - start_time).total_seconds() * 1000
+        tokens_used = claude_response.get("tokens_used", 0)
 
-    Utile pour le debug et l'optimisation des performances.
-    """
-    try:
-        cache_stats = market_service.get_cache_stats()
-
-        return {
-            "cache_stats": cache_stats,
-            "timestamp": datetime.now().isoformat(),
-            "user_id": current_user.id
-        }
-
-    except Exception as e:
-        logger.error(f"Erreur récupération stats cache: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Erreur lors de la récupération des statistiques"
+        # 8. Construire réponse finale
+        response = SingleAssetAnalysisResponse(
+            request_id=request_id,
+            timestamp=start_time,
+            model_used=request.model,
+            ticker=request.ticker,
+            exchange=request.exchange,
+            profile=request.profile,
+            technical_data=technical_light,
+            claude_analysis=claude_response.get("content", ""),
+            tokens_used=tokens_used,
+            processing_time_ms=int(processing_time),
+            warnings=[]
         )
 
-@router.post("/cache/clear")
-async def clear_market_cache(
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Nettoie le cache des données de marché
+        logger.info(
+            f"Analyse {request_id} terminée - "
+            f"Tokens: {tokens_used}, Temps: {int(processing_time)}ms"
+        )
 
-    Force la récupération de nouvelles données lors du prochain appel.
-    """
-    try:
-        market_service.clear_cache()
+        return response
 
-        logger.info(f"Cache nettoyé par utilisateur {current_user.id}")
-
-        return {
-            "status": "success",
-            "message": "Cache des données de marché nettoyé",
-            "timestamp": datetime.now().isoformat()
-        }
-
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Erreur nettoyage cache: {e}")
+        logger.error(f"Erreur inattendue analyze_single_asset: {e}")
         raise HTTPException(
             status_code=500,
-            detail="Erreur lors du nettoyage du cache"
+            detail="Erreur interne lors de l'analyse"
         )

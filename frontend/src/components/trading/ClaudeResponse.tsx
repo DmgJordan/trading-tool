@@ -122,12 +122,14 @@ export default function ClaudeResponse({
         {/* Assets analyzed */}
         <div className="mt-4">
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-500">Actifs analysés :</span>
+            <span className="text-sm text-gray-500">
+              {selectedAssets.length === 1 ? 'Actif analysé :' : 'Actifs analysés :'}
+            </span>
             <div className="flex flex-wrap gap-1">
               {selectedAssets.map((asset) => (
                 <span
                   key={asset}
-                  className="inline-flex px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-md"
+                  className="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-md"
                 >
                   {asset}
                 </span>
@@ -146,18 +148,6 @@ export default function ClaudeResponse({
             </div>
           </div>
 
-          {/* Action buttons */}
-          <div className="mt-6 flex flex-col sm:flex-row gap-3">
-            <button className="flex-1 px-4 py-2 bg-black text-white font-medium rounded-lg hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition-colors">
-              Nouvelle analyse
-            </button>
-            <button className="flex-1 px-4 py-2 border-2 border-black text-black font-medium rounded-lg hover:bg-black hover:text-white focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition-colors">
-              Modifier la sélection
-            </button>
-            <button className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors">
-              Historique
-            </button>
-          </div>
         </div>
       )}
 

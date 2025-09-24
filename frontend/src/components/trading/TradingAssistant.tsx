@@ -1,87 +1,146 @@
 'use client';
 
-import { useState } from 'react';
-import AssetSelector from './AssetSelector';
+import { useState, useEffect } from 'react';
 import ModelSelector from './ModelSelector';
 import ClaudeResponse from './ClaudeResponse';
-import { claudeApi } from '../../lib/api';
+import { claudeApi, SingleAssetAnalysisRequest, SingleAssetAnalysisResponse } from '../../lib/api';
+import { usePreferencesStore } from '../../store/preferencesStore';
 
 interface TradingAssistantProps {
   className?: string;
 }
 
 export default function TradingAssistant({ className = '' }: TradingAssistantProps) {
-  const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
+  const { preferences, isLoading, loadPreferences } = usePreferencesStore();
+
+  const [selectedTicker, setSelectedTicker] = useState<string>('');
+  const [selectedProfile, setSelectedProfile] = useState<'short' | 'medium' | 'long'>('medium');
   const [selectedModel, setSelectedModel] = useState<string>('claude-3-5-sonnet-20241022');
+  const [availableTickers, setAvailableTickers] = useState<string[]>([]);
+
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [claudeResponse, setClaudeResponse] = useState<string | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<SingleAssetAnalysisResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const handleAssetSelectionChange = (assets: string[]) => {
-    setSelectedAssets(assets);
-    // Reset previous results when selection changes
-    setClaudeResponse(null);
-    setError(null);
+  // Charger les préférences utilisateur au montage
+  useEffect(() => {
+    loadPreferences().catch(console.error);
+  }, [loadPreferences]);
+
+  // Extraire les tickers des préférences utilisateur
+  useEffect(() => {
+    if (preferences?.preferred_assets) {
+      let assets: string[] = [];
+
+      if (typeof preferences.preferred_assets === 'string') {
+        assets = preferences.preferred_assets
+          .split(',')
+          .map(asset => asset.trim().toUpperCase())
+          .filter(asset => asset.length > 0);
+      } else if (Array.isArray(preferences.preferred_assets)) {
+        assets = preferences.preferred_assets
+          .map(asset => String(asset).trim().toUpperCase())
+          .filter(asset => asset.length > 0);
+      }
+
+      setAvailableTickers(assets);
+
+      // Sélectionner le premier ticker par défaut
+      if (assets.length > 0 && !selectedTicker) {
+        setSelectedTicker(assets[0]);
+      }
+    }
+  }, [preferences?.preferred_assets, selectedTicker]);
+
+  const getProfileDescription = (profile: string) => {
+    switch (profile) {
+      case 'short':
+        return 'Court terme (15m/1h/5m) - Scalping et day trading';
+      case 'medium':
+        return 'Moyen terme (1h/1D/15m) - Swing trading';
+      case 'long':
+        return 'Long terme (1D/1W/4h) - Position trading';
+      default:
+        return '';
+    }
   };
 
   const handleAnalyze = async () => {
-    if (selectedAssets.length === 0) {
-      setError('Veuillez sélectionner au moins un actif à analyser');
+    if (!selectedTicker) {
+      setError('Veuillez sélectionner un ticker à analyser');
       return;
     }
 
     setIsAnalyzing(true);
     setError(null);
-    setClaudeResponse(null);
+    setAnalysisResult(null);
 
     try {
-      const analysisResult = await claudeApi.analyzeAssets({
-        assets: selectedAssets,
+      const request: SingleAssetAnalysisRequest = {
+        ticker: selectedTicker,
+        exchange: 'binance',
+        profile: selectedProfile,
         model: selectedModel as any,
-        analysis_type: 'detailed',
-        custom_prompt: `Analysez les actifs suivants pour le trading: ${selectedAssets.join(', ')}.
-        Donnez des recommandations spécifiques incluant:
-        - Analyse technique actuelle
-        - Niveaux de support et résistance
-        - Signaux d'entrée et de sortie
-        - Gestion des risques
-        - Perspective à court et moyen terme`,
-        include_market_data: true,
-        use_user_preferences: true
-      });
+        custom_prompt: undefined
+      };
 
-      setClaudeResponse(analysisResult.full_analysis);
+      const result = await claudeApi.analyzeSingleAsset(request);
+      setAnalysisResult(result);
+
     } catch (err) {
-      // Fallback to mock response in case of API error
-      if (err instanceof Error && err.message.includes('404')) {
-        console.warn('Claude API endpoint not implemented yet, using mock response');
-
-        const mockResponse = `Analyse des actifs sélectionnés : ${selectedAssets.join(', ')}
-Modèle utilisé : ${selectedModel}
-
-📊 Résumé du marché:
-Les actifs sélectionnés montrent des signaux mixtes dans le contexte actuel du marché.
-
-🔍 Recommandations par actif:
-${selectedAssets.map(asset => `
-• ${asset}:
-  - Tendance: Neutre à haussière
-  - Signal: Attendre une cassure des résistances
-  - Niveau d'entrée suggéré: À définir selon l'évolution
-`).join('')}
-
-⚠️ Avertissement:
-Cette analyse est une simulation. L'endpoint /claude/analyze-trading n'existe pas encore.
-Configurez votre clé API Claude dans les paramètres pour obtenir de vraies analyses.`;
-
-        setClaudeResponse(mockResponse);
+      if (err instanceof Error) {
+        setError(err.message);
       } else {
-        setError(err instanceof Error ? err.message : 'Erreur lors de l\'analyse');
+        setError('Erreur lors de l\'analyse');
       }
     } finally {
       setIsAnalyzing(false);
     }
   };
+
+  const handleNewAnalysis = () => {
+    setAnalysisResult(null);
+    setError(null);
+  };
+
+  if (isLoading) {
+    return (
+      <div className={`space-y-8 ${className}`}>
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/3 mx-auto mb-4"></div>
+          <div className="h-4 bg-gray-200 rounded w-2/3 mx-auto mb-8"></div>
+          <div className="space-y-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-32 bg-gray-200 rounded-xl"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (availableTickers.length === 0) {
+    return (
+      <div className={`space-y-8 ${className}`}>
+        <div className="text-center py-16">
+          <div className="text-6xl mb-6">⚙️</div>
+          <h2 className="text-2xl font-bold text-black mb-4">
+            Aucun actif configuré
+          </h2>
+          <p className="text-gray-600 mb-6 max-w-md mx-auto">
+            Vous devez d'abord configurer vos actifs préférés dans les préférences
+            pour utiliser l'assistant trading.
+          </p>
+          <button
+            onClick={() => window.location.href = '/preferences'}
+            className="px-6 py-3 bg-black text-white font-semibold rounded-lg hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition-colors"
+          >
+            Configurer les préférences
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`space-y-8 ${className}`}>
@@ -91,23 +150,92 @@ Configurez votre clé API Claude dans les paramètres pour obtenir de vraies ana
           Assistant Trading IA
         </h1>
         <p className="text-gray-600 max-w-2xl mx-auto">
-          Sélectionnez vos actifs préférés et obtenez une analyse personnalisée
-          grâce à l'intelligence artificielle Claude.
+          Sélectionnez un actif, choisissez votre profil de trading et obtenez une analyse
+          technique détaillée powered by Claude AI.
         </p>
       </div>
 
-      {/* Asset Selection */}
+      {/* Configuration */}
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
-        <h2 className="text-xl font-semibold text-black mb-4">
-          Sélection des actifs
+        <h2 className="text-xl font-semibold text-black mb-6">
+          Configuration de l'analyse
         </h2>
-        <AssetSelector
-          onSelectionChange={handleAssetSelectionChange}
-          selectedAssets={selectedAssets}
-        />
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+          {/* Sélection du Ticker */}
+          <div>
+            <label className="block text-sm font-medium text-black mb-2">
+              Actif à analyser
+            </label>
+            <select
+              value={selectedTicker}
+              onChange={(e) => setSelectedTicker(e.target.value)}
+              className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-black focus:outline-none bg-white"
+            >
+              <option value="">Sélectionner un actif</option>
+              {availableTickers.map(ticker => (
+                <option key={ticker} value={ticker}>
+                  {ticker}
+                </option>
+              ))}
+            </select>
+            <p className="text-sm text-gray-500 mt-1">
+              {availableTickers.length} actif{availableTickers.length > 1 ? 's' : ''} disponible{availableTickers.length > 1 ? 's' : ''}
+            </p>
+          </div>
+
+          {/* Sélection du Profil */}
+          <div>
+            <label className="block text-sm font-medium text-black mb-2">
+              Profil de trading
+            </label>
+            <div className="space-y-2">
+              {(['short', 'medium', 'long'] as const).map(profile => (
+                <label key={profile} className="flex items-center">
+                  <input
+                    type="radio"
+                    name="profile"
+                    value={profile}
+                    checked={selectedProfile === profile}
+                    onChange={(e) => setSelectedProfile(e.target.value as 'short' | 'medium' | 'long')}
+                    className="mr-3 text-black focus:ring-black"
+                  />
+                  <div>
+                    <div className="font-medium text-black">
+                      {profile === 'short' ? 'Court terme' :
+                       profile === 'medium' ? 'Moyen terme' : 'Long terme'}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {getProfileDescription(profile).split(' - ')[0]}
+                    </div>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Info du Profil Sélectionné */}
+          <div>
+            <label className="block text-sm font-medium text-black mb-2">
+              Détails du profil
+            </label>
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="text-sm">
+                <div className="font-medium text-blue-900 mb-1">
+                  {selectedProfile === 'short' ? 'Court terme' :
+                   selectedProfile === 'medium' ? 'Moyen terme' : 'Long terme'}
+                </div>
+                <div className="text-blue-800 text-xs">
+                  {getProfileDescription(selectedProfile)}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Model Selection */}
+      {/* Sélection du Modèle */}
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
         <ModelSelector
           selectedModel={selectedModel}
@@ -115,7 +243,7 @@ Configurez votre clé API Claude dans les paramètres pour obtenir de vraies ana
         />
       </div>
 
-      {/* Analysis Controls */}
+      {/* Bouton d'analyse */}
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -123,15 +251,15 @@ Configurez votre clé API Claude dans les paramètres pour obtenir de vraies ana
               Lancer l'analyse
             </h3>
             <p className="text-sm text-gray-600 mt-1">
-              {selectedAssets.length > 0
-                ? `${selectedAssets.length} actif${selectedAssets.length > 1 ? 's' : ''} sélectionné${selectedAssets.length > 1 ? 's' : ''} • Modèle: ${selectedModel.replace('claude-3', 'Claude 3').replace('-20240307', '').replace('-20240229', '').replace('-20241022', '').replace('-', ' ')}`
-                : 'Aucun actif sélectionné'
+              {selectedTicker
+                ? `${selectedTicker} • ${selectedProfile === 'short' ? 'Court' : selectedProfile === 'medium' ? 'Moyen' : 'Long'} terme • ${selectedModel.replace('claude-3', 'Claude 3').replace('-20240307', '').replace('-20240229', '').replace('-20241022', '').replace('-', ' ')}`
+                : 'Sélectionnez un actif pour commencer'
               }
             </p>
           </div>
           <button
             onClick={handleAnalyze}
-            disabled={selectedAssets.length === 0 || isAnalyzing}
+            disabled={!selectedTicker || isAnalyzing}
             className="px-6 py-3 bg-black text-white font-semibold rounded-lg hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
           >
             {isAnalyzing ? (
@@ -153,7 +281,7 @@ Configurez votre clé API Claude dans les paramètres pour obtenir de vraies ana
         </div>
       </div>
 
-      {/* Error Display */}
+      {/* Erreur */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4">
           <div className="flex items-start space-x-3">
@@ -168,12 +296,90 @@ Configurez votre clé API Claude dans les paramètres pour obtenir de vraies ana
         </div>
       )}
 
-      {/* Claude Response */}
-      {claudeResponse && (
-        <ClaudeResponse
-          response={claudeResponse}
-          selectedAssets={selectedAssets}
-        />
+      {/* Résultats de l'analyse */}
+      {analysisResult && (
+        <>
+          {/* Données techniques */}
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-black">
+                📊 Données Techniques - {analysisResult.ticker}
+              </h3>
+              <button
+                onClick={handleNewAnalysis}
+                className="text-sm px-3 py-1.5 text-gray-600 hover:text-black border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                Nouvelle analyse
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+              {/* Prix actuel */}
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h4 className="font-medium text-blue-900 mb-2">Prix Actuel</h4>
+                <div className="text-2xl font-bold text-blue-800">
+                  ${analysisResult.technical_data.current_price?.current_price?.toFixed(4) || 'N/A'}
+                </div>
+                {analysisResult.technical_data.current_price?.change_24h_percent && (
+                  <div className={`text-sm ${analysisResult.technical_data.current_price.change_24h_percent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {analysisResult.technical_data.current_price.change_24h_percent >= 0 ? '+' : ''}{analysisResult.technical_data.current_price.change_24h_percent.toFixed(2)}% (24h)
+                  </div>
+                )}
+              </div>
+
+              {/* RSI principal */}
+              <div className="bg-purple-50 p-4 rounded-lg">
+                <h4 className="font-medium text-purple-900 mb-2">RSI ({analysisResult.technical_data.tf})</h4>
+                <div className="text-2xl font-bold text-purple-800">
+                  {analysisResult.technical_data.features?.rsi14?.toFixed(1) || 'N/A'}
+                </div>
+                <div className="text-sm text-purple-600">
+                  {analysisResult.technical_data.features?.rsi14 >= 70 ? 'Surachat' :
+                   analysisResult.technical_data.features?.rsi14 <= 30 ? 'Survente' :
+                   analysisResult.technical_data.features?.rsi14 >= 50 ? 'Haussier' : 'Baissier'}
+                </div>
+              </div>
+
+              {/* ATR */}
+              <div className="bg-orange-50 p-4 rounded-lg">
+                <h4 className="font-medium text-orange-900 mb-2">Volatilité (ATR)</h4>
+                <div className="text-2xl font-bold text-orange-800">
+                  {analysisResult.technical_data.features?.atr14?.toFixed(4) || 'N/A'}
+                </div>
+                <div className="text-sm text-orange-600">
+                  {analysisResult.technical_data.tf}
+                </div>
+              </div>
+            </div>
+
+            {/* Résumé multi-timeframes */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h4 className="font-medium text-gray-900 mb-2">Analyse Multi-Timeframes</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div>
+                  <span className="font-medium">Principal ({analysisResult.technical_data.tf}):</span>
+                  <br />RSI: {analysisResult.technical_data.features?.rsi14?.toFixed(1) || 'N/A'}
+                </div>
+                <div>
+                  <span className="font-medium">Supérieur ({analysisResult.technical_data.higher_tf?.tf}):</span>
+                  <br />RSI: {analysisResult.technical_data.higher_tf?.rsi14?.toFixed(1) || 'N/A'}
+                  <br />Structure: {analysisResult.technical_data.higher_tf?.structure || 'N/A'}
+                </div>
+                <div>
+                  <span className="font-medium">Inférieur ({analysisResult.technical_data.lower_tf?.tf}):</span>
+                  <br />RSI: {analysisResult.technical_data.lower_tf?.rsi14?.toFixed(1) || 'N/A'}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Analyse Claude */}
+          <ClaudeResponse
+            response={analysisResult.claude_analysis}
+            selectedAssets={[analysisResult.ticker]}
+            timestamp={new Date(analysisResult.timestamp)}
+          />
+        </>
       )}
     </div>
   );

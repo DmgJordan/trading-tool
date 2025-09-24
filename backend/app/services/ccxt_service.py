@@ -198,23 +198,24 @@ class CCXTService:
             # Charger les marchés
             await self._load_markets_async(exchange)
 
-            # Vérifier le symbole
-            if symbol not in exchange.markets:
+            # Normaliser le symbole (convertir 'SOL' en 'SOL/USDT' par exemple)
+            normalized_symbol = self._normalize_symbol(symbol, exchange)
+            if not normalized_symbol:
                 return {
                     "status": "error",
-                    "message": f"Symbole '{symbol}' non trouvé sur {exchange_name}"
+                    "message": f"Symbole '{symbol}' non trouvé sur {exchange_name}. Symboles disponibles limités aux paires avec USDT, USDC, BTC."
                 }
 
             # Récupérer 600 bougies pour chaque timeframe
-            main_data = await self._fetch_ohlcv_async(exchange, symbol, main_tf, 600)
-            higher_data = await self._fetch_ohlcv_async(exchange, symbol, higher_tf, 600)
-            lower_data = await self._fetch_ohlcv_async(exchange, symbol, lower_tf, 600)
+            main_data = await self._fetch_ohlcv_async(exchange, normalized_symbol, main_tf, 600)
+            higher_data = await self._fetch_ohlcv_async(exchange, normalized_symbol, higher_tf, 600)
+            lower_data = await self._fetch_ohlcv_async(exchange, normalized_symbol, lower_tf, 600)
 
             # Récupérer le prix actuel via ticker
             current_price_info = None
             try:
                 if exchange.has['fetchTicker']:
-                    ticker = await self._fetch_ticker_async(exchange, symbol)
+                    ticker = await self._fetch_ticker_async(exchange, normalized_symbol)
                     current_price_info = {
                         "current_price": ticker['last'] if ticker['last'] else (main_data[-1][4] if main_data else 0),
                         "change_24h_percent": ticker.get('percentage'),
@@ -247,7 +248,7 @@ class CCXTService:
             # Formater la réponse selon le format souhaité
             response = {
                 "profile": profile,
-                "symbol": symbol,
+                "symbol": normalized_symbol,
                 "tf": main_tf,
                 "current_price": current_price_info,
                 "features": {
@@ -454,3 +455,32 @@ class CCXTService:
             return "LH_HL"
         else:
             return "SIDEWAYS"
+
+    def _normalize_symbol(self, symbol: str, exchange) -> Optional[str]:
+        """
+        Normalise un symbole en trouvant la paire de trading correspondante
+        Exemple: 'SOL' -> 'SOL/USDT'
+
+        Args:
+            symbol: Symbole simple (ex: 'SOL', 'BTC', 'ETH')
+            exchange: Instance de l'exchange CCXT
+
+        Returns:
+            Symbole normalisé ou None si non trouvé
+        """
+        # Si le symbole est déjà une paire (contient '/'), le vérifier directement
+        if '/' in symbol:
+            return symbol if symbol in exchange.markets else None
+
+        # Sinon, essayer de créer une paire avec les bases communes
+        bases_courantes = ['USDT', 'USDC', 'BTC', 'ETH', 'BNB', 'USD']
+
+        symbol_upper = symbol.upper()
+
+        for base in bases_courantes:
+            pair = f"{symbol_upper}/{base}"
+            if pair in exchange.markets:
+                return pair
+
+        # Aucune paire trouvée
+        return None
