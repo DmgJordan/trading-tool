@@ -33,232 +33,26 @@ class CCXTService:
             '1w': '1w'
         }
 
-        # Service d'analyse technique
-        self.technical_indicators_service = TechnicalIndicatorsService()
-
-    async def get_current_price(
-        self,
-        exchange_name: str,
-        symbol: str
-    ) -> Dict[str, Any]:
-        """
-        Récupère le prix actuel d'un symbole via fetch_ticker
-
-        Args:
-            exchange_name: Nom de l'exchange (ex: 'binance')
-            symbol: Symbole du trading pair (ex: 'BTC/USDT')
-
-        Returns:
-            Dict contenant le prix actuel et les informations du ticker
-        """
-        try:
-            # Vérifier que l'exchange est supporté
-            if exchange_name.lower() not in self.available_exchanges:
-                return {
-                    "status": "error",
-                    "message": f"Exchange '{exchange_name}' non supporté"
-                }
-
-            # Créer l'instance de l'exchange
-            exchange_class = getattr(ccxt, exchange_name.lower())
-            exchange = exchange_class({
-                'sandbox': False,
-                'enableRateLimit': True,
-            })
-
-            # Vérifier que l'exchange supporte fetchTicker
-            if not exchange.has['fetchTicker']:
-                return {
-                    "status": "error",
-                    "message": f"L'exchange {exchange_name} ne supporte pas la récupération de ticker"
-                }
-
-            # Charger les marchés de l'exchange
-            await self._load_markets_async(exchange)
-
-            # Vérifier que le symbole existe
-            if symbol not in exchange.markets:
-                return {
-                    "status": "error",
-                    "message": f"Symbole '{symbol}' non trouvé sur {exchange_name}"
-                }
-
-            # Récupérer le ticker
-            ticker = await self._fetch_ticker_async(exchange, symbol)
-
-            # Fermer la connexion de l'exchange si disponible
-            if hasattr(exchange, 'close'):
-                await exchange.close()
-
-            return {
-                "status": "success",
-                "exchange": exchange_name,
-                "symbol": symbol,
-                "current_price": ticker['last'],
-                "bid": ticker.get('bid'),
-                "ask": ticker.get('ask'),
-                "high_24h": ticker.get('high'),
-                "low_24h": ticker.get('low'),
-                "volume_24h": ticker.get('baseVolume'),
-                "change_24h": ticker.get('change'),
-                "change_24h_percent": ticker.get('percentage'),
-                "timestamp": ticker.get('timestamp'),
-                "datetime": ticker.get('datetime')
+        # Configuration des profils multi-timeframes
+        self.profile_configs = {
+            "short": {
+                "main": "15m",
+                "higher": "1h",
+                "lower": "5m"
+            },
+            "medium": {
+                "main": "1h",
+                "higher": "1d",
+                "lower": "15m"
+            },
+            "long": {
+                "main": "1d",
+                "higher": "1w",
+                "lower": "4h"
             }
+        }
 
-        except Exception as e:
-            logger.error(f"Erreur récupération prix actuel pour {symbol} sur {exchange_name}: {e}")
-            return {
-                "status": "error",
-                "message": f"Erreur récupération prix: {str(e)}"
-            }
-
-    async def get_ohlcv_data(
-        self,
-        exchange_name: str,
-        symbol: str,
-        timeframe: str,
-        limit: int = 50
-    ) -> Dict[str, Any]:
-        """
-        Récupère les données OHLCV pour un symbole donné
-
-        Args:
-            exchange_name: Nom de l'exchange (ex: 'binance')
-            symbol: Symbole du trading pair (ex: 'BTC/USDT')
-            timeframe: Période (ex: '1h', '1d')
-            limit: Nombre de bougies à récupérer
-
-        Returns:
-            Dict contenant le statut et les données OHLCV
-        """
-        try:
-            # Vérifier que l'exchange est supporté
-            if exchange_name.lower() not in self.available_exchanges:
-                return {
-                    "status": "error",
-                    "message": f"Exchange '{exchange_name}' non supporté. Exchanges disponibles: {', '.join(self.available_exchanges)}"
-                }
-
-            # Vérifier que la timeframe est supportée
-            if timeframe not in self.timeframes:
-                return {
-                    "status": "error",
-                    "message": f"Timeframe '{timeframe}' non supportée. Timeframes disponibles: {', '.join(self.timeframes.keys())}"
-                }
-
-            # Créer l'instance de l'exchange
-            exchange_class = getattr(ccxt, exchange_name.lower())
-            exchange = exchange_class({
-                'sandbox': False,
-                'enableRateLimit': True,
-            })
-
-            # Vérifier que l'exchange supporte fetchOHLCV
-            if not exchange.has['fetchOHLCV']:
-                return {
-                    "status": "error",
-                    "message": f"L'exchange {exchange_name} ne supporte pas la récupération de données OHLCV"
-                }
-
-            # Charger les marchés de l'exchange
-            await self._load_markets_async(exchange)
-
-            # Vérifier que le symbole existe
-            if symbol not in exchange.markets:
-                return {
-                    "status": "error",
-                    "message": f"Symbole '{symbol}' non trouvé sur {exchange_name}. Vérifiez le format (ex: 'BTC/USDT')"
-                }
-
-            # Récupérer les données OHLCV
-            ohlcv_data = await self._fetch_ohlcv_async(
-                exchange, symbol, timeframe, limit
-            )
-
-            # Récupérer le prix actuel via ticker
-            current_price_data = None
-            try:
-                if exchange.has['fetchTicker']:
-                    ticker = await self._fetch_ticker_async(exchange, symbol)
-                    current_price_data = {
-                        "current_price": ticker['last'],
-                        "bid": ticker.get('bid'),
-                        "ask": ticker.get('ask'),
-                        "change_24h_percent": ticker.get('percentage'),
-                        "volume_24h": ticker.get('baseVolume'),
-                        "timestamp": ticker.get('timestamp'),
-                        "datetime": ticker.get('datetime')
-                    }
-            except Exception as e:
-                logger.warning(f"Impossible de récupérer le prix actuel: {e}")
-
-            # Fermer la connexion de l'exchange si disponible
-            if hasattr(exchange, 'close'):
-                await exchange.close()
-
-            # Formater les données
-            formatted_data = []
-            for candle in ohlcv_data:
-                formatted_data.append({
-                    "timestamp": candle[0],
-                    "datetime": datetime.fromtimestamp(candle[0] / 1000).isoformat(),
-                    "open": candle[1],
-                    "high": candle[2],
-                    "low": candle[3],
-                    "close": candle[4],
-                    "volume": candle[5]
-                })
-
-            result = {
-                "status": "success",
-                "message": f"Données OHLCV récupérées avec succès",
-                "exchange": exchange_name,
-                "symbol": symbol,
-                "timeframe": timeframe,
-                "count": len(formatted_data),
-                "data": formatted_data
-            }
-
-            # Ajouter le prix actuel si disponible
-            if current_price_data:
-                result["current_price_info"] = current_price_data
-
-            # Effectuer l'analyse technique
-            try:
-                current_price_for_analysis = None
-                if current_price_data and current_price_data.get("current_price"):
-                    current_price_for_analysis = current_price_data["current_price"]
-
-                technical_analysis = await self.technical_indicators_service.analyze_ohlcv_data(
-                    formatted_data, current_price_for_analysis
-                )
-                result["technical_analysis"] = technical_analysis
-                logger.info("Analyse technique ajoutée avec succès")
-            except Exception as e:
-                logger.warning(f"Impossible d'effectuer l'analyse technique: {e}")
-                result["technical_analysis"] = None
-
-            return result
-
-        except ccxt.NetworkError as e:
-            logger.error(f"Erreur réseau CCXT pour {exchange_name}: {e}")
-            return {
-                "status": "error",
-                "message": f"Erreur de connexion à {exchange_name}: {str(e)}"
-            }
-        except ccxt.ExchangeError as e:
-            logger.error(f"Erreur exchange CCXT pour {exchange_name}: {e}")
-            return {
-                "status": "error",
-                "message": f"Erreur de l'exchange {exchange_name}: {str(e)}"
-            }
-        except Exception as e:
-            logger.error(f"Erreur inattendue CCXT: {e}")
-            return {
-                "status": "error",
-                "message": f"Erreur inattendue: {str(e)}"
-            }
+    # Anciennes méthodes get_current_price et get_ohlcv_data supprimées - remplacées par get_multi_timeframe_analysis
 
     async def _load_markets_async(self, exchange) -> None:
         """Charge les marchés de l'exchange de manière asynchrone"""
@@ -348,3 +142,315 @@ class CCXTService:
                 "status": "error",
                 "message": f"Erreur récupération symboles: {str(e)}"
             }
+
+    async def get_multi_timeframe_analysis(
+        self,
+        exchange_name: str,
+        symbol: str,
+        profile: str
+    ) -> Dict[str, Any]:
+        """
+        Récupère et analyse les données sur plusieurs timeframes selon le profil
+
+        Args:
+            exchange_name: Nom de l'exchange
+            symbol: Symbole du trading pair
+            profile: Profil de trading ("short", "medium", "long")
+
+        Returns:
+            Dict contenant l'analyse multi-timeframes
+        """
+        try:
+            # Vérifier le profil
+            if profile not in self.profile_configs:
+                return {
+                    "status": "error",
+                    "message": f"Profil '{profile}' non supporté. Profils disponibles: {list(self.profile_configs.keys())}"
+                }
+
+            # Récupérer la configuration du profil
+            config = self.profile_configs[profile]
+            main_tf = config["main"]
+            higher_tf = config["higher"]
+            lower_tf = config["lower"]
+
+            # Vérifier que l'exchange est supporté
+            if exchange_name.lower() not in self.available_exchanges:
+                return {
+                    "status": "error",
+                    "message": f"Exchange '{exchange_name}' non supporté"
+                }
+
+            # Créer l'instance de l'exchange
+            exchange_class = getattr(ccxt, exchange_name.lower())
+            exchange = exchange_class({
+                'sandbox': False,
+                'enableRateLimit': True,
+            })
+
+            # Vérifier la disponibilité des fonctionnalités
+            if not exchange.has['fetchOHLCV']:
+                return {
+                    "status": "error",
+                    "message": f"L'exchange {exchange_name} ne supporte pas la récupération OHLCV"
+                }
+
+            # Charger les marchés
+            await self._load_markets_async(exchange)
+
+            # Vérifier le symbole
+            if symbol not in exchange.markets:
+                return {
+                    "status": "error",
+                    "message": f"Symbole '{symbol}' non trouvé sur {exchange_name}"
+                }
+
+            # Récupérer 600 bougies pour chaque timeframe
+            main_data = await self._fetch_ohlcv_async(exchange, symbol, main_tf, 600)
+            higher_data = await self._fetch_ohlcv_async(exchange, symbol, higher_tf, 600)
+            lower_data = await self._fetch_ohlcv_async(exchange, symbol, lower_tf, 600)
+
+            # Récupérer le prix actuel via ticker
+            current_price_info = None
+            try:
+                if exchange.has['fetchTicker']:
+                    ticker = await self._fetch_ticker_async(exchange, symbol)
+                    current_price_info = {
+                        "current_price": ticker['last'] if ticker['last'] else (main_data[-1][4] if main_data else 0),
+                        "change_24h_percent": ticker.get('percentage'),
+                        "volume_24h": ticker.get('baseVolume')
+                    }
+                else:
+                    # Fallback au prix de fermeture de la dernière bougie
+                    current_price_info = {
+                        "current_price": main_data[-1][4] if main_data else 0,
+                        "change_24h_percent": None,
+                        "volume_24h": None
+                    }
+            except Exception as e:
+                logger.warning(f"Impossible de récupérer le prix actuel: {e}")
+                current_price_info = {
+                    "current_price": main_data[-1][4] if main_data else 0,
+                    "change_24h_percent": None,
+                    "volume_24h": None
+                }
+
+            # Fermer la connexion
+            if hasattr(exchange, 'close'):
+                await exchange.close()
+
+            # Calculer les indicateurs pour chaque timeframe
+            main_indicators = self._calculate_indicators(main_data)
+            higher_indicators = self._calculate_indicators(higher_data)
+            lower_indicators = self._calculate_indicators(lower_data)
+
+            # Formater la réponse selon le format souhaité
+            response = {
+                "profile": profile,
+                "symbol": symbol,
+                "tf": main_tf,
+                "current_price": current_price_info,
+                "features": {
+                    "ma": {
+                        "ma20": main_indicators["ma20"],
+                        "ma50": main_indicators["ma50"],
+                        "ma200": main_indicators["ma200"]
+                    },
+                    "rsi14": main_indicators["rsi14"],
+                    "atr14": main_indicators["atr14"],
+                    "volume": {
+                        "current": int(main_data[-1][5]) if main_data else 0,
+                        "avg20": int(main_indicators["volume_avg20"]),
+                        "spike_ratio": main_indicators["volume_spike_ratio"]
+                    },
+                    "last_20_candles": [[
+                        candle[0],  # timestamp
+                        candle[1],  # open
+                        candle[2],  # high
+                        candle[3],  # low
+                        candle[4],  # close
+                        candle[5]   # volume
+                    ] for candle in main_data[-20:]] if main_data else []
+                },
+                "higher_tf": {
+                    "tf": higher_tf,
+                    "ma": {
+                        "ma20": higher_indicators["ma20"],
+                        "ma50": higher_indicators["ma50"],
+                        "ma200": higher_indicators["ma200"]
+                    },
+                    "rsi14": higher_indicators["rsi14"],
+                    "atr14": higher_indicators["atr14"],
+                    "structure": higher_indicators["market_structure"],
+                    "nearest_resistance": higher_indicators["nearest_resistance"]
+                },
+                "lower_tf": {
+                    "tf": lower_tf,
+                    "rsi14": lower_indicators["rsi14"],
+                    "volume": {
+                        "current": int(lower_data[-1][5]) if lower_data else 0,
+                        "avg20": int(lower_indicators["volume_avg20"]),
+                        "spike_ratio": lower_indicators["volume_spike_ratio"]
+                    },
+                    "last_20_candles": [[
+                        candle[0],  # timestamp
+                        candle[1],  # open
+                        candle[2],  # high
+                        candle[3],  # low
+                        candle[4],  # close
+                        candle[5]   # volume
+                    ] for candle in lower_data[-20:]] if lower_data else []
+                }
+            }
+
+            return response
+
+        except Exception as e:
+            logger.error(f"Erreur analyse multi-timeframes pour {symbol} sur {exchange_name}: {e}")
+            return {
+                "status": "error",
+                "message": f"Erreur analyse multi-timeframes: {str(e)}"
+            }
+
+    def _calculate_indicators(self, ohlcv_data: List[List[float]]) -> Dict[str, float]:
+        """
+        Calcule les indicateurs techniques à partir des données OHLCV
+
+        Args:
+            ohlcv_data: Liste des données OHLCV [timestamp, open, high, low, close, volume]
+
+        Returns:
+            Dict contenant tous les indicateurs calculés
+        """
+        if not ohlcv_data or len(ohlcv_data) < 200:
+            return self._get_default_indicators()
+
+        # Extraire les prix et volumes
+        closes = [candle[4] for candle in ohlcv_data]
+        highs = [candle[2] for candle in ohlcv_data]
+        lows = [candle[3] for candle in ohlcv_data]
+        volumes = [candle[5] for candle in ohlcv_data]
+
+        # Calculer les moyennes mobiles
+        ma20 = sum(closes[-20:]) / 20 if len(closes) >= 20 else closes[-1]
+        ma50 = sum(closes[-50:]) / 50 if len(closes) >= 50 else closes[-1]
+        ma200 = sum(closes[-200:]) / 200 if len(closes) >= 200 else closes[-1]
+
+        # Calculer RSI 14
+        rsi14 = self._calculate_rsi(closes, 14)
+
+        # Calculer ATR 14
+        atr14 = self._calculate_atr(highs, lows, closes, 14)
+
+        # Calculer indicateurs de volume
+        volume_avg20 = sum(volumes[-20:]) / 20 if len(volumes) >= 20 else volumes[-1]
+        volume_spike_ratio = volumes[-1] / volume_avg20 if volume_avg20 > 0 else 1.0
+
+        # Analyser la structure du marché (simplifié)
+        market_structure = self._analyze_market_structure(highs, lows)
+
+        # Trouver la résistance la plus proche (simplifié)
+        nearest_resistance = max(highs[-50:]) if len(highs) >= 50 else highs[-1]
+
+        return {
+            "ma20": round(ma20, 2),
+            "ma50": round(ma50, 2),
+            "ma200": round(ma200, 2),
+            "rsi14": round(rsi14, 1),
+            "atr14": round(atr14, 4),
+            "volume_avg20": volume_avg20,
+            "volume_spike_ratio": round(volume_spike_ratio, 2),
+            "market_structure": market_structure,
+            "nearest_resistance": round(nearest_resistance, 2)
+        }
+
+    def _get_default_indicators(self) -> Dict[str, float]:
+        """Retourne des indicateurs par défaut en cas de données insuffisantes"""
+        return {
+            "ma20": 0.0,
+            "ma50": 0.0,
+            "ma200": 0.0,
+            "rsi14": 50.0,
+            "atr14": 0.0,
+            "volume_avg20": 0.0,
+            "volume_spike_ratio": 1.0,
+            "market_structure": "UNDEFINED",
+            "nearest_resistance": 0.0
+        }
+
+    def _calculate_rsi(self, closes: List[float], period: int = 14) -> float:
+        """Calcule le RSI sur une période donnée"""
+        if len(closes) < period + 1:
+            return 50.0
+
+        gains = []
+        losses = []
+
+        for i in range(1, len(closes)):
+            change = closes[i] - closes[i-1]
+            if change > 0:
+                gains.append(change)
+                losses.append(0)
+            else:
+                gains.append(0)
+                losses.append(abs(change))
+
+        if len(gains) < period:
+            return 50.0
+
+        avg_gain = sum(gains[-period:]) / period
+        avg_loss = sum(losses[-period:]) / period
+
+        if avg_loss == 0:
+            return 100.0
+
+        rs = avg_gain / avg_loss
+        rsi = 100 - (100 / (1 + rs))
+
+        return rsi
+
+    def _calculate_atr(self, highs: List[float], lows: List[float], closes: List[float], period: int = 14) -> float:
+        """Calcule l'ATR (Average True Range)"""
+        if len(highs) < period + 1:
+            return 0.0
+
+        true_ranges = []
+        for i in range(1, len(highs)):
+            tr1 = highs[i] - lows[i]
+            tr2 = abs(highs[i] - closes[i-1])
+            tr3 = abs(lows[i] - closes[i-1])
+            true_ranges.append(max(tr1, tr2, tr3))
+
+        if len(true_ranges) < period:
+            return 0.0
+
+        return sum(true_ranges[-period:]) / period
+
+    def _analyze_market_structure(self, highs: List[float], lows: List[float]) -> str:
+        """Analyse simplifiée de la structure du marché"""
+        if len(highs) < 50 or len(lows) < 50:
+            return "UNDEFINED"
+
+        recent_highs = highs[-20:]
+        recent_lows = lows[-20:]
+        previous_highs = highs[-40:-20]
+        previous_lows = lows[-40:-20]
+
+        max_recent_high = max(recent_highs)
+        max_previous_high = max(previous_highs)
+        min_recent_low = min(recent_lows)
+        min_previous_low = min(previous_lows)
+
+        # Structure haussière : HH (Higher Highs) et HL (Higher Lows)
+        if max_recent_high > max_previous_high and min_recent_low > min_previous_low:
+            return "HH_HL"
+        # Structure baissière : LH (Lower Highs) et LL (Lower Lows)
+        elif max_recent_high < max_previous_high and min_recent_low < min_previous_low:
+            return "LH_LL"
+        # Structure mixte
+        elif max_recent_high > max_previous_high and min_recent_low < min_previous_low:
+            return "HH_LL"
+        elif max_recent_high < max_previous_high and min_recent_low > min_previous_low:
+            return "LH_HL"
+        else:
+            return "SIDEWAYS"

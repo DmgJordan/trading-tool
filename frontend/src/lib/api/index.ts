@@ -15,17 +15,15 @@ export type {
   TradingPreferencesDefault
 } from '../types/preferences';
 export type {
-  OHLCVCandle,
-  CCXTTestRequest,
-  CCXTTestResponse,
-  CurrentPriceInfo,
-  RSIAnalysis,
-  MovingAveragesAnalysis,
-  VolumeAnalysis,
-  SupportResistanceAnalysis,
-  OverallAnalysis,
-  TechnicalAnalysis,
   ExchangeListResponse,
   ExchangeSymbolsRequest,
-  ExchangeSymbolsResponse
+  ExchangeSymbolsResponse,
+  CurrentPriceInfo,
+  MAIndicators,
+  VolumeIndicators,
+  MainTFFeatures,
+  HigherTFFeatures,
+  LowerTFFeatures,
+  MultiTimeframeRequest,
+  MultiTimeframeResponse
 } from './ohlcv';

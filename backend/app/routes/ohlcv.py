@@ -5,11 +5,11 @@ import logging
 from ..database import get_db
 from ..models.user import User
 from ..schemas.ohlcv import (
-    CCXTTestRequest,
-    CCXTTestResponse,
     ExchangeListResponse,
     ExchangeSymbolsRequest,
-    ExchangeSymbolsResponse
+    ExchangeSymbolsResponse,
+    MultiTimeframeRequest,
+    MultiTimeframeResponse
 )
 from ..auth import get_current_user
 from ..services.ccxt_service import CCXTService
@@ -21,37 +21,7 @@ router = APIRouter(prefix="/ohlcv", tags=["ohlcv"])
 # Initialisation du service CCXT
 ccxt_service = CCXTService()
 
-@router.post("/test", response_model=CCXTTestResponse)
-async def test_ccxt_ohlcv(
-    request: CCXTTestRequest,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Test de récupération de données OHLCV via CCXT
-
-    - **exchange**: Nom de l'exchange (ex: binance, coinbase, kraken)
-    - **symbol**: Symbole du trading pair (ex: BTC/USDT, ETH/USDT)
-    - **timeframe**: Période (ex: 1m, 5m, 1h, 1d)
-    - **limit**: Nombre de bougies à récupérer (max 500)
-    """
-    try:
-        logger.info(f"Test CCXT OHLCV pour utilisateur {current_user.id}: {request.exchange} {request.symbol} {request.timeframe}")
-
-        # Appeler le service CCXT
-        result = await ccxt_service.get_ohlcv_data(
-            exchange_name=request.exchange,
-            symbol=request.symbol,
-            timeframe=request.timeframe,
-            limit=request.limit
-        )
-
-        # Retourner la réponse formatée
-        return CCXTTestResponse(**result)
-
-    except Exception as e:
-        logger.error(f"Erreur test CCXT OHLCV: {e}")
-        raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
+# Ancien endpoint /test supprimé - remplacé par /multi-timeframe-analysis
 
 @router.get("/exchanges", response_model=ExchangeListResponse)
 async def get_available_exchanges(
@@ -97,4 +67,47 @@ async def get_exchange_symbols(
 
     except Exception as e:
         logger.error(f"Erreur récupération symboles: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
+
+@router.post("/multi-timeframe-analysis", response_model=MultiTimeframeResponse)
+async def get_multi_timeframe_analysis(
+    request: MultiTimeframeRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Analyse multi-timeframes pour un symbole donné selon le profil de trading
+
+    - **exchange**: Nom de l'exchange (ex: binance, coinbase, kraken)
+    - **symbol**: Symbole du trading pair (ex: BTC/USDT, ETH/USDT)
+    - **profile**: Profil de trading (short, medium, long)
+
+    Le profil détermine les timeframes utilisés :
+    - **short**: Principal 15m, Supérieur 1h, Inférieur 5m
+    - **medium**: Principal 1h, Supérieur 1d, Inférieur 15m
+    - **long**: Principal 1d, Supérieur 1w, Inférieur 4h
+
+    Récupère 600 bougies par timeframe pour calculs précis des indicateurs
+    """
+    try:
+        logger.info(f"Analyse multi-timeframes pour utilisateur {current_user.id}: {request.exchange} {request.symbol} profil {request.profile}")
+
+        # Appeler le service CCXT pour l'analyse multi-timeframes
+        result = await ccxt_service.get_multi_timeframe_analysis(
+            exchange_name=request.exchange,
+            symbol=request.symbol,
+            profile=request.profile
+        )
+
+        # Vérifier le statut de la réponse
+        if "status" in result and result["status"] == "error":
+            raise HTTPException(status_code=400, detail=result["message"])
+
+        # Retourner la réponse formatée
+        return MultiTimeframeResponse(**result)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur analyse multi-timeframes: {e}")
         raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")

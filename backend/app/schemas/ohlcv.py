@@ -1,46 +1,8 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Literal
 from datetime import datetime
-from .technical_indicators import TechnicalAnalysis
 
-class OHLCVCandle(BaseModel):
-    """Modèle pour une bougie OHLCV individuelle"""
-    timestamp: int = Field(..., description="Timestamp Unix en millisecondes")
-    datetime: str = Field(..., description="Date et heure au format ISO")
-    open: float = Field(..., description="Prix d'ouverture")
-    high: float = Field(..., description="Prix le plus haut")
-    low: float = Field(..., description="Prix le plus bas")
-    close: float = Field(..., description="Prix de fermeture")
-    volume: float = Field(..., description="Volume échangé")
-
-class CCXTTestRequest(BaseModel):
-    """Modèle pour la requête de test CCXT"""
-    exchange: str = Field(..., description="Nom de l'exchange (ex: binance)")
-    symbol: str = Field(..., description="Symbole du trading pair (ex: BTC/USDT)")
-    timeframe: str = Field(..., description="Période (ex: 1h, 1d)")
-    limit: Optional[int] = Field(default=50, le=500, description="Nombre de bougies à récupérer (max 500)")
-
-class CurrentPriceInfo(BaseModel):
-    """Modèle pour les informations de prix actuel"""
-    current_price: float = Field(..., description="Prix actuel (dernier trade)")
-    bid: Optional[float] = Field(None, description="Prix d'achat le plus élevé")
-    ask: Optional[float] = Field(None, description="Prix de vente le plus bas")
-    change_24h_percent: Optional[float] = Field(None, description="Variation 24h en pourcentage")
-    volume_24h: Optional[float] = Field(None, description="Volume 24h")
-    timestamp: Optional[int] = Field(None, description="Timestamp du prix")
-    datetime: Optional[str] = Field(None, description="Date/heure du prix")
-
-class CCXTTestResponse(BaseModel):
-    """Modèle pour la réponse du test CCXT"""
-    status: str = Field(..., description="Statut de la requête (success/error)")
-    message: str = Field(..., description="Message descriptif")
-    exchange: Optional[str] = Field(None, description="Nom de l'exchange utilisé")
-    symbol: Optional[str] = Field(None, description="Symbole demandé")
-    timeframe: Optional[str] = Field(None, description="Timeframe utilisée")
-    count: Optional[int] = Field(None, description="Nombre de bougies retournées")
-    data: Optional[List[OHLCVCandle]] = Field(None, description="Données OHLCV")
-    current_price_info: Optional[CurrentPriceInfo] = Field(None, description="Informations prix actuel")
-    technical_analysis: Optional[TechnicalAnalysis] = Field(None, description="Analyse technique complète")
+# Anciens modèles supprimés - remplacés par les nouveaux modèles multi-timeframes
 
 class ExchangeInfo(BaseModel):
     """Modèle pour les informations d'un exchange"""
@@ -65,3 +27,63 @@ class ExchangeSymbolsResponse(BaseModel):
     exchange: Optional[str] = Field(None, description="Nom de l'exchange")
     symbols: Optional[List[str]] = Field(None, description="Liste des symboles disponibles")
     total_available: Optional[int] = Field(None, description="Nombre total de symboles disponibles")
+
+# Nouveaux modèles pour l'analyse multi-timeframes
+
+class MAIndicators(BaseModel):
+    """Modèle pour les moyennes mobiles"""
+    ma20: float = Field(..., description="Moyenne mobile 20 périodes")
+    ma50: float = Field(..., description="Moyenne mobile 50 périodes")
+    ma200: float = Field(..., description="Moyenne mobile 200 périodes")
+
+class VolumeIndicators(BaseModel):
+    """Modèle pour les indicateurs de volume"""
+    current: int = Field(..., description="Volume actuel")
+    avg20: int = Field(..., description="Volume moyen sur 20 périodes")
+    spike_ratio: float = Field(..., description="Ratio de spike de volume")
+
+class CurrentPriceInfo(BaseModel):
+    """Modèle pour les informations de prix actuel"""
+    current_price: float = Field(..., description="Prix actuel")
+    change_24h_percent: Optional[float] = Field(None, description="Variation 24h en %")
+    volume_24h: Optional[float] = Field(None, description="Volume 24h")
+
+class MainTFFeatures(BaseModel):
+    """Modèle pour les features du timeframe principal"""
+    ma: MAIndicators = Field(..., description="Moyennes mobiles")
+    rsi14: float = Field(..., description="RSI 14 périodes")
+    atr14: float = Field(..., description="ATR 14 périodes")
+    volume: VolumeIndicators = Field(..., description="Indicateurs de volume")
+    last_20_candles: List[List[float]] = Field(..., description="20 dernières bougies [ts, o, h, l, c, v]")
+
+class HigherTFFeatures(BaseModel):
+    """Modèle pour les features du timeframe supérieur"""
+    tf: str = Field(..., description="Timeframe")
+    ma: MAIndicators = Field(..., description="Moyennes mobiles")
+    rsi14: float = Field(..., description="RSI 14 périodes")
+    atr14: float = Field(..., description="ATR 14 périodes")
+    structure: str = Field(..., description="Structure de marché (LH_LL, HL_HH, etc.)")
+    nearest_resistance: float = Field(..., description="Résistance la plus proche")
+
+class LowerTFFeatures(BaseModel):
+    """Modèle pour les features du timeframe inférieur"""
+    tf: str = Field(..., description="Timeframe")
+    rsi14: float = Field(..., description="RSI 14 périodes")
+    volume: VolumeIndicators = Field(..., description="Indicateurs de volume")
+    last_20_candles: List[List[float]] = Field(..., description="20 dernières bougies [ts, o, h, l, c, v]")
+
+class MultiTimeframeRequest(BaseModel):
+    """Modèle pour la requête d'analyse multi-timeframes"""
+    exchange: str = Field(..., description="Nom de l'exchange")
+    symbol: str = Field(..., description="Symbole du trading pair")
+    profile: Literal["short", "medium", "long"] = Field(..., description="Profil de trading")
+
+class MultiTimeframeResponse(BaseModel):
+    """Modèle pour la réponse d'analyse multi-timeframes"""
+    profile: str = Field(..., description="Profil de trading utilisé")
+    symbol: str = Field(..., description="Ticker du symbole analysé")
+    tf: str = Field(..., description="Timeframe principal")
+    current_price: CurrentPriceInfo = Field(..., description="Prix actuel du symbole")
+    features: MainTFFeatures = Field(..., description="Indicateurs du timeframe principal")
+    higher_tf: HigherTFFeatures = Field(..., description="Contexte du timeframe supérieur")
+    lower_tf: LowerTFFeatures = Field(..., description="Contexte du timeframe inférieur")

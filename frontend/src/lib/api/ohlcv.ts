@@ -1,100 +1,6 @@
 import apiClient from './client';
 
-export interface OHLCVCandle {
-  timestamp: number;
-  datetime: string;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
-}
-
-export interface CCXTTestRequest {
-  exchange: string;
-  symbol: string;
-  timeframe: string;
-  limit?: number;
-}
-
-export interface CurrentPriceInfo {
-  current_price: number;
-  bid?: number;
-  ask?: number;
-  change_24h_percent?: number;
-  volume_24h?: number;
-  timestamp?: number;
-  datetime?: string;
-}
-
-export interface RSIAnalysis {
-  value: number | null;
-  interpretation: string;
-  signal: string;
-}
-
-export interface MovingAveragesAnalysis {
-  ma20: number | null;
-  ma50: number | null;
-  ma200: number | null;
-  current_price: number | null;
-  short_trend: string;
-  medium_trend: string;
-  long_trend: string;
-  overall_signal: string;
-  crossover_20_50: string | null;
-  crossover_50_200: string | null;
-}
-
-export interface VolumeAnalysis {
-  current: number;
-  avg20: number;
-  spike_ratio: number;
-  interpretation: string;
-  signal: string;
-  trend: string;
-  trend_strength: number;
-  price_change_percent: number;
-}
-
-export interface SupportResistanceAnalysis {
-  support_levels: number[];
-  resistance_levels: number[];
-  confidence_scores: number[];
-  nearest_support: number | null;
-  nearest_resistance: number | null;
-  total_levels: number;
-}
-
-export interface OverallAnalysis {
-  overall_signal: string;
-  signal_strength: number;
-  active_signals: string[];
-  score: number;
-  recommendation: string;
-}
-
-export interface TechnicalAnalysis {
-  rsi: RSIAnalysis;
-  moving_averages: MovingAveragesAnalysis;
-  volume_analysis: VolumeAnalysis;
-  support_resistance: SupportResistanceAnalysis;
-  overall_analysis: OverallAnalysis;
-  analyzed_at: string;
-  data_points: number;
-}
-
-export interface CCXTTestResponse {
-  status: string;
-  message: string;
-  exchange?: string;
-  symbol?: string;
-  timeframe?: string;
-  count?: number;
-  data?: OHLCVCandle[];
-  current_price_info?: CurrentPriceInfo;
-  technical_analysis?: TechnicalAnalysis;
-}
+// Anciens types supprimés - remplacés par les nouveaux types multi-timeframes
 
 export interface ExchangeListResponse {
   status: string;
@@ -115,15 +21,67 @@ export interface ExchangeSymbolsResponse {
   total_available?: number;
 }
 
-export const ohlcvApi = {
-  /**
-   * Test la récupération de données OHLCV via CCXT
-   */
-  testCCXT: async (request: CCXTTestRequest): Promise<CCXTTestResponse> => {
-    const response = await apiClient.post('/ohlcv/test', request);
-    return response.data;
-  },
+// Nouveaux types pour l'analyse multi-timeframes
 
+export interface MAIndicators {
+  ma20: number;
+  ma50: number;
+  ma200: number;
+}
+
+export interface VolumeIndicators {
+  current: number;
+  avg20: number;
+  spike_ratio: number;
+}
+
+export interface CurrentPriceInfo {
+  current_price: number;
+  change_24h_percent?: number;
+  volume_24h?: number;
+}
+
+export interface MainTFFeatures {
+  ma: MAIndicators;
+  rsi14: number;
+  atr14: number;
+  volume: VolumeIndicators;
+  last_20_candles: number[][]; // [timestamp, open, high, low, close, volume]
+}
+
+export interface HigherTFFeatures {
+  tf: string;
+  ma: MAIndicators;
+  rsi14: number;
+  atr14: number;
+  structure: string;
+  nearest_resistance: number;
+}
+
+export interface LowerTFFeatures {
+  tf: string;
+  rsi14: number;
+  volume: VolumeIndicators;
+  last_20_candles: number[][]; // [timestamp, open, high, low, close, volume]
+}
+
+export interface MultiTimeframeRequest {
+  exchange: string;
+  symbol: string;
+  profile: 'short' | 'medium' | 'long';
+}
+
+export interface MultiTimeframeResponse {
+  profile: string;
+  symbol: string;
+  tf: string;
+  current_price: CurrentPriceInfo;
+  features: MainTFFeatures;
+  higher_tf: HigherTFFeatures;
+  lower_tf: LowerTFFeatures;
+}
+
+export const ohlcvApi = {
   /**
    * Récupère la liste des exchanges et timeframes disponibles
    */
@@ -137,6 +95,14 @@ export const ohlcvApi = {
    */
   getExchangeSymbols: async (request: ExchangeSymbolsRequest): Promise<ExchangeSymbolsResponse> => {
     const response = await apiClient.post('/ohlcv/symbols', request);
+    return response.data;
+  },
+
+  /**
+   * Analyse multi-timeframes pour un symbole selon le profil de trading
+   */
+  getMultiTimeframeAnalysis: async (request: MultiTimeframeRequest): Promise<MultiTimeframeResponse> => {
+    const response = await apiClient.post('/ohlcv/multi-timeframe-analysis', request);
     return response.data;
   }
 };
