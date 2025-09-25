@@ -4,6 +4,8 @@ import logging
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from .technical_indicators.technical_indicators_service import TechnicalIndicatorsService
+from .technical_indicators.calculators.rsi_calculator import RSICalculator
+from .technical_indicators.calculators.atr_calculator import ATRCalculator
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +23,10 @@ class CCXTService:
             'bybit',
             'kucoin'
         ]
+
+        # Initialiser les calculateurs pour logs détaillés
+        self.rsi_calculator = RSICalculator()
+        self.atr_calculator = ATRCalculator()
 
         self.timeframes = {
             '1m': '1m',
@@ -206,10 +212,11 @@ class CCXTService:
                     "message": f"Symbole '{symbol}' non trouvé sur {exchange_name}. Symboles disponibles limités aux paires avec USDT, USDC, BTC."
                 }
 
-            # Récupérer 600 bougies pour chaque timeframe
+            # Récupérer 600 bougies pour historique riche (impact négligeable sur ATR actuel)
             main_data = await self._fetch_ohlcv_async(exchange, normalized_symbol, main_tf, 600)
             higher_data = await self._fetch_ohlcv_async(exchange, normalized_symbol, higher_tf, 600)
             lower_data = await self._fetch_ohlcv_async(exchange, normalized_symbol, lower_tf, 600)
+
 
             # Récupérer le prix actuel via ticker
             current_price_info = None
@@ -337,11 +344,11 @@ class CCXTService:
         ma50 = sum(closes[-50:]) / 50 if len(closes) >= 50 else closes[-1]
         ma200 = sum(closes[-200:]) / 200 if len(closes) >= 200 else closes[-1]
 
-        # Calculer RSI 14
-        rsi14 = self._calculate_rsi(closes, 14)
+        # Calculer RSI 14 (méthode de Wilder)
+        rsi14 = self.rsi_calculator.calculate_rsi(closes, 14)
 
-        # Calculer ATR 14
-        atr14 = self._calculate_atr(highs, lows, closes, 14)
+        # Calculer ATR 14 (méthode de Wilder)
+        atr14 = self.atr_calculator.calculate_atr(highs, lows, closes, 14)
 
         # Calculer indicateurs de volume
         volume_avg20 = sum(volumes[-20:]) / 20 if len(volumes) >= 20 else volumes[-1]
@@ -357,8 +364,8 @@ class CCXTService:
             "ma20": round(ma20, 2),
             "ma50": round(ma50, 2),
             "ma200": round(ma200, 2),
-            "rsi14": round(rsi14, 1),
-            "atr14": round(atr14, 4),
+            "rsi14": round(rsi14, 1) if rsi14 is not None else 50.0,
+            "atr14": round(atr14, 4) if atr14 is not None else 0.0,
             "volume_avg20": volume_avg20,
             "volume_spike_ratio": round(volume_spike_ratio, 2),
             "market_structure": market_structure,
@@ -379,53 +386,6 @@ class CCXTService:
             "nearest_resistance": 0.0
         }
 
-    def _calculate_rsi(self, closes: List[float], period: int = 14) -> float:
-        """Calcule le RSI sur une période donnée"""
-        if len(closes) < period + 1:
-            return 50.0
-
-        gains = []
-        losses = []
-
-        for i in range(1, len(closes)):
-            change = closes[i] - closes[i-1]
-            if change > 0:
-                gains.append(change)
-                losses.append(0)
-            else:
-                gains.append(0)
-                losses.append(abs(change))
-
-        if len(gains) < period:
-            return 50.0
-
-        avg_gain = sum(gains[-period:]) / period
-        avg_loss = sum(losses[-period:]) / period
-
-        if avg_loss == 0:
-            return 100.0
-
-        rs = avg_gain / avg_loss
-        rsi = 100 - (100 / (1 + rs))
-
-        return rsi
-
-    def _calculate_atr(self, highs: List[float], lows: List[float], closes: List[float], period: int = 14) -> float:
-        """Calcule l'ATR (Average True Range)"""
-        if len(highs) < period + 1:
-            return 0.0
-
-        true_ranges = []
-        for i in range(1, len(highs)):
-            tr1 = highs[i] - lows[i]
-            tr2 = abs(highs[i] - closes[i-1])
-            tr3 = abs(lows[i] - closes[i-1])
-            true_ranges.append(max(tr1, tr2, tr3))
-
-        if len(true_ranges) < period:
-            return 0.0
-
-        return sum(true_ranges[-period:]) / period
 
     def _analyze_market_structure(self, highs: List[float], lows: List[float]) -> str:
         """Analyse simplifiée de la structure du marché"""

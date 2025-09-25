@@ -1,9 +1,23 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
+import logging
+import sys
 from .database import engine, get_db
 from .models import Base
 from .routes import users, auth, connectors, market_data, user_preferences, ai_recommendations, claude, ohlcv
+
+# Configuration du logging pour afficher dans le terminal
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)  # Afficher dans le terminal
+    ]
+)
+
+# Logger pour l'application principale
+logger = logging.getLogger(__name__)
 
 # Créer les tables
 Base.metadata.create_all(bind=engine)
