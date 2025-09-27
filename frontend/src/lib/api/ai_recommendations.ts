@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { AuthTokens } from '../types/auth';
 import {
   AIRecommendation,
   AIRecommendationRequest,
@@ -48,7 +49,7 @@ api.interceptors.response.use(
             }
           );
 
-          const newTokens = refreshResponse.data;
+          const newTokens = refreshResponse.data as AuthTokens;
 
           // Mettre à jour les tokens stockés
           localStorage.setItem('auth_tokens', JSON.stringify(newTokens));
@@ -97,10 +98,10 @@ export const aiRecommendationsApi = {
         '/ai-recommendations/generate-recommendations',
         request || {}
       );
-      return response.data;
-    } catch (error: any) {
+      return response.data as GenerateRecommendationsResponse;
+    } catch (error: unknown) {
       // Si l'endpoint n'existe pas encore, simuler une réponse
-      if (error.response?.status === 404) {
+      if ((error as any).response?.status === 404) {
         console.warn(
           'Endpoint /ai-recommendations/generate-recommendations not found, simulating response'
         );
@@ -112,7 +113,7 @@ export const aiRecommendationsApi = {
             'Service de recommandations IA non disponible pour le moment',
         };
       }
-      throw error;
+      throw error as Error;
     }
   },
 
@@ -122,16 +123,16 @@ export const aiRecommendationsApi = {
   getRecommendations: async (): Promise<AIRecommendation[]> => {
     try {
       const response = await api.get('/ai-recommendations/');
-      return response.data;
-    } catch (error: any) {
+      return response.data as AIRecommendation[];
+    } catch (error: unknown) {
       // Si l'endpoint n'existe pas encore, retourner un tableau vide
-      if (error.response?.status === 404) {
+      if ((error as any).response?.status === 404) {
         console.warn(
           'Endpoint /ai-recommendations/ not found, returning empty array'
         );
         return [];
       }
-      throw error;
+      throw error as Error;
     }
   },
 
@@ -140,7 +141,7 @@ export const aiRecommendationsApi = {
    */
   getRecommendation: async (id: number): Promise<AIRecommendation> => {
     const response = await api.get(`/ai-recommendations/${id}`);
-    return response.data;
+    return response.data as AIRecommendation;
   },
 
   /**
@@ -155,7 +156,7 @@ export const aiRecommendationsApi = {
       user_note: note,
     };
     const response = await api.put(`/ai-recommendations/${id}/accept`, update);
-    return response.data;
+    return response.data as AIRecommendation;
   },
 
   /**
@@ -170,7 +171,7 @@ export const aiRecommendationsApi = {
       user_note: note,
     };
     const response = await api.put(`/ai-recommendations/${id}/reject`, update);
-    return response.data;
+    return response.data as AIRecommendation;
   },
 
   /**
@@ -193,7 +194,7 @@ export const aiRecommendationsApi = {
     const response = await api.get(
       `/ai-recommendations/history?${params.toString()}`
     );
-    return response.data;
+    return response.data as RecommendationHistoryResponse;
   },
 
   /**
@@ -202,10 +203,10 @@ export const aiRecommendationsApi = {
   getDashboardStats: async (): Promise<DashboardStats> => {
     try {
       const response = await api.get('/ai-recommendations/stats');
-      return response.data;
-    } catch (error: any) {
+      return response.data as DashboardStats;
+    } catch (error: unknown) {
       // Si l'endpoint n'existe pas encore, retourner des stats par défaut
-      if (error.response?.status === 404) {
+      if ((error as any).response?.status === 404) {
         console.warn(
           'Endpoint /ai-recommendations/stats not found, returning default stats'
         );
@@ -219,7 +220,7 @@ export const aiRecommendationsApi = {
           last_generated_at: null,
         };
       }
-      throw error;
+      throw error as Error;
     }
   },
 
@@ -231,7 +232,7 @@ export const aiRecommendationsApi = {
     message: string;
   }> => {
     const response = await api.delete('/ai-recommendations/cleanup-expired');
-    return response.data;
+    return response.data as { deleted_count: number; message: string };
   },
 
   /**
@@ -243,14 +244,21 @@ export const aiRecommendationsApi = {
     try {
       await api.post('/ai-recommendations/validate-request', request);
       return { isValid: true };
-    } catch (error: any) {
-      if (error.response?.status === 422) {
+    } catch (error: unknown) {
+      if (
+        (error as { response?: { status?: number } }).response?.status === 422
+      ) {
         return {
           isValid: false,
-          errors: error.response.data.detail || {},
+          errors:
+            (
+              error as {
+                response?: { data?: { detail?: Record<string, string[]> } };
+              }
+            ).response?.data?.detail || {},
         };
       }
-      throw error;
+      throw error as Error;
     }
   },
 };
@@ -274,11 +282,19 @@ export const withErrorHandling = async <T>(
   try {
     const data = await apiCall();
     return { data, isLoading: false };
-  } catch (error: any) {
+  } catch (error: unknown) {
     const apiError: RecommendationsApiError = {
       detail:
-        error.response?.data?.detail || error.message || 'Erreur inconnue',
-      status_code: error.response?.status || 500,
+        (
+          error as {
+            response?: { data?: { detail?: string } };
+            message?: string;
+          }
+        ).response?.data?.detail ||
+        (error as Error).message ||
+        'Erreur inconnue',
+      status_code:
+        (error as { response?: { status?: number } }).response?.status || 500,
     };
     return { error: apiError, isLoading: false };
   }
@@ -290,17 +306,20 @@ export const withRetry = async <T>(
   maxRetries: number = 3,
   delay: number = 1000
 ): Promise<T> => {
-  let lastError: any;
+  let lastError: unknown;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await apiCall();
-    } catch (error: any) {
+    } catch (error: unknown) {
       lastError = error;
 
       // Ne pas retry sur les erreurs 4xx (erreurs client)
-      if (error.response?.status >= 400 && error.response?.status < 500) {
-        throw error;
+      if (
+        (error as any).response?.status >= 400 &&
+        (error as any).response?.status < 500
+      ) {
+        throw error as Error;
       }
 
       // Attendre avant le retry, avec backoff exponentiel
@@ -350,7 +369,7 @@ export const recommendationsCache = {
         localStorage.removeItem('recommendations_cache');
         return null;
       }
-      return data;
+      return data as AIRecommendation[];
     } catch {
       localStorage.removeItem('recommendations_cache');
       return null;

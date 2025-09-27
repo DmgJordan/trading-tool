@@ -23,12 +23,17 @@ export type {
   ExchangeListResponse,
   ExchangeSymbolsRequest,
   ExchangeSymbolsResponse,
-  CurrentPriceInfo,
-  MAIndicators,
-  VolumeIndicators,
-  MainTFFeatures,
-  HigherTFFeatures,
-  LowerTFFeatures,
   MultiTimeframeRequest,
   MultiTimeframeResponse,
 } from './ohlcv';
+export type {
+  SingleAssetAnalysisRequest,
+  SingleAssetAnalysisResponse,
+  MAIndicators,
+  VolumeIndicators,
+  CurrentPriceInfo,
+  MainTFFeatures,
+  HigherTFFeatures,
+  LowerTFFeatures,
+  TechnicalDataLight,
+} from './claude';

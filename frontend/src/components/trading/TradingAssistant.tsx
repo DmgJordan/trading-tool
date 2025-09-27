@@ -7,6 +7,8 @@ import {
   claudeApi,
   SingleAssetAnalysisRequest,
   SingleAssetAnalysisResponse,
+  type MainTFFeatures,
+  type CurrentPriceInfo,
 } from '../../lib/api';
 import { usePreferencesStore } from '../../store/preferencesStore';
 
@@ -44,14 +46,14 @@ export default function TradingAssistant({
       let assets: string[] = [];
 
       if (typeof preferences.preferred_assets === 'string') {
-        assets = preferences.preferred_assets
+        assets = (preferences.preferred_assets as string)
           .split(',')
-          .map(asset => asset.trim().toUpperCase())
-          .filter(asset => asset.length > 0);
+          .map((asset: string) => asset.trim().toUpperCase())
+          .filter((asset: string) => asset.length > 0);
       } else if (Array.isArray(preferences.preferred_assets)) {
         assets = preferences.preferred_assets
-          .map(asset => String(asset).trim().toUpperCase())
-          .filter(asset => asset.length > 0);
+          .map((asset: string) => String(asset).trim().toUpperCase())
+          .filter((asset: string) => asset.length > 0);
       }
 
       setAvailableTickers(assets);
@@ -91,7 +93,11 @@ export default function TradingAssistant({
         ticker: selectedTicker,
         exchange: 'binance',
         profile: selectedProfile,
-        model: selectedModel as any,
+        model: selectedModel as
+          | 'claude-3-haiku-20240307'
+          | 'claude-3-sonnet-20240229'
+          | 'claude-3-opus-20240229'
+          | 'claude-3-5-sonnet-20241022',
         custom_prompt: undefined,
       };
 

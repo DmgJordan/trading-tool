@@ -225,4 +225,10 @@ export const useAuthStore = create<AuthStore>()(
 );
 
 // Initialiser la référence du store pour l'intercepteur API
-initializeAuthStore(useAuthStore.getState);
+initializeAuthStore(() => {
+  const state = useAuthStore.getState();
+  return {
+    token: state.tokens?.access_token || null,
+    logout: state.logout,
+  };
+});

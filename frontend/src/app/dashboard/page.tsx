@@ -97,7 +97,7 @@ export default function DashboardPage() {
         console.error('Initialize failed:', error);
       });
     }
-  }, [isAuthenticated, user]); // Retirer initialize des dépendances
+  }, [isAuthenticated, user, initialize]);
 
   // Gestion des erreurs
   useEffect(() => {

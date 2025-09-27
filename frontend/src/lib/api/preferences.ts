@@ -12,7 +12,7 @@ export const preferencesApi = {
    */
   getPreferences: async (): Promise<TradingPreferences> => {
     const response = await apiClient.get('/users/me/preferences/');
-    return response.data;
+    return response.data as TradingPreferences;
   },
 
   /**
@@ -22,7 +22,7 @@ export const preferencesApi = {
     preferences: TradingPreferencesUpdate
   ): Promise<TradingPreferences> => {
     const response = await apiClient.put('/users/me/preferences/', preferences);
-    return response.data;
+    return response.data as TradingPreferences;
   },
 
   /**
@@ -38,7 +38,7 @@ export const preferencesApi = {
       '/users/me/preferences/',
       preferences
     );
-    return response.data;
+    return response.data as TradingPreferences;
   },
 
   /**
@@ -50,7 +50,11 @@ export const preferencesApi = {
     preferences: TradingPreferences;
   }> => {
     const response = await apiClient.delete('/users/me/preferences/');
-    return response.data;
+    return response.data as {
+      status: string;
+      message: string;
+      preferences: TradingPreferences;
+    };
   },
 
   /**
@@ -58,7 +62,7 @@ export const preferencesApi = {
    */
   getDefaults: async (): Promise<TradingPreferencesDefault> => {
     const response = await apiClient.get('/users/me/preferences/default');
-    return response.data;
+    return response.data as TradingPreferencesDefault;
   },
 
   /**
@@ -68,7 +72,7 @@ export const preferencesApi = {
     const response = await apiClient.get(
       '/users/me/preferences/validation-info'
     );
-    return response.data;
+    return response.data as PreferencesValidationInfo;
   },
 
   /**
@@ -81,12 +85,19 @@ export const preferencesApi = {
       // Cette route n'existe peut-être pas encore côté backend, mais utile pour l'avenir
       await apiClient.post('/users/me/preferences/validate', preferences);
       return { isValid: true, errors: {} };
-    } catch (error: any) {
-      if (error.response?.status === 422) {
+    } catch (error: unknown) {
+      if (
+        (error as { response?: { status?: number } }).response?.status === 422
+      ) {
         // Erreurs de validation
         return {
           isValid: false,
-          errors: error.response.data.detail || {},
+          errors:
+            (
+              error as {
+                response?: { data?: { detail?: Record<string, string[]> } };
+              }
+            ).response?.data?.detail || {},
         };
       }
       throw error;
@@ -113,11 +124,19 @@ export const withErrorHandling = async <T>(
   try {
     const data = await apiCall();
     return { data, isLoading: false };
-  } catch (error: any) {
+  } catch (error: unknown) {
     const apiError: PreferencesApiError = {
       detail:
-        error.response?.data?.detail || error.message || 'Erreur inconnue',
-      status_code: error.response?.status || 500,
+        (
+          error as {
+            response?: { data?: { detail?: string } };
+            message?: string;
+          }
+        ).response?.data?.detail ||
+        (error as Error).message ||
+        'Erreur inconnue',
+      status_code:
+        (error as { response?: { status?: number } }).response?.status || 500,
     };
     return { error: apiError, isLoading: false };
   }
@@ -129,16 +148,19 @@ export const withRetry = async <T>(
   maxRetries: number = 3,
   delay: number = 1000
 ): Promise<T> => {
-  let lastError: any;
+  let lastError: unknown;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await apiCall();
-    } catch (error: any) {
+    } catch (error: unknown) {
       lastError = error;
 
       // Ne pas retry sur les erreurs 4xx (erreurs client)
-      if (error.response?.status >= 400 && error.response?.status < 500) {
+      if (
+        (error as any).response?.status >= 400 &&
+        (error as any).response?.status < 500
+      ) {
         throw error;
       }
 

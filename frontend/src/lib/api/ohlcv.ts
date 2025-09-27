@@ -87,7 +87,7 @@ export const ohlcvApi = {
    */
   getAvailableExchanges: async (): Promise<ExchangeListResponse> => {
     const response = await apiClient.get('/ohlcv/exchanges');
-    return response.data;
+    return response.data as ExchangeListResponse;
   },
 
   /**
@@ -97,7 +97,7 @@ export const ohlcvApi = {
     request: ExchangeSymbolsRequest
   ): Promise<ExchangeSymbolsResponse> => {
     const response = await apiClient.post('/ohlcv/symbols', request);
-    return response.data;
+    return response.data as ExchangeSymbolsResponse;
   },
 
   /**
@@ -110,6 +110,6 @@ export const ohlcvApi = {
       '/ohlcv/multi-timeframe-analysis',
       request
     );
-    return response.data;
+    return response.data as MultiTimeframeResponse;
   },
 };

@@ -166,6 +166,13 @@ const INDICATOR_OPTIONS: MultiSelectOption[] = [
   },
 ];
 
+// Helper pour convertir les erreurs en string
+const getErrorMessage = (error: any): string | undefined => {
+  if (typeof error === 'string') return error;
+  if (error && typeof error.message === 'string') return error.message;
+  return undefined;
+};
+
 export default function PreferencesPage() {
   const {
     initialize,
@@ -222,7 +229,7 @@ export default function PreferencesPage() {
           key !== 'created_at' &&
           key !== 'updated_at'
         ) {
-          setValue(key as any, value);
+          setValue(key as keyof typeof defaultPreferencesValues, value);
         }
       });
     }
@@ -237,7 +244,7 @@ export default function PreferencesPage() {
   }, [watchedValues, isDirty, isInitialized, debouncedUpdate]);
 
   // Sauvegarde manuelle
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: typeof defaultPreferencesValues) => {
     updateWithNotification(
       data,
       () => {
@@ -376,7 +383,9 @@ export default function PreferencesPage() {
               <RadioCardGroup
                 options={RISK_TOLERANCE_OPTIONS}
                 value={watch('risk_tolerance')}
-                onChange={value => setValue('risk_tolerance', value as any)}
+                onChange={value =>
+                  setValue('risk_tolerance', value as 'LOW' | 'MEDIUM' | 'HIGH')
+                }
                 label="Tolérance au risque"
                 description="Quel niveau de risque êtes-vous prêt à accepter ?"
                 error={errors.risk_tolerance?.message}
@@ -386,7 +395,12 @@ export default function PreferencesPage() {
               <RadioCardGroup
                 options={INVESTMENT_HORIZON_OPTIONS}
                 value={watch('investment_horizon')}
-                onChange={value => setValue('investment_horizon', value as any)}
+                onChange={value =>
+                  setValue(
+                    'investment_horizon',
+                    value as 'SHORT_TERM' | 'MEDIUM_TERM' | 'LONG_TERM'
+                  )
+                }
                 label="Horizon d'investissement"
                 description="Sur quelle période envisagez-vous vos investissements ?"
                 error={errors.investment_horizon?.message}
@@ -396,7 +410,12 @@ export default function PreferencesPage() {
               <RadioCardGroup
                 options={TRADING_STYLE_OPTIONS}
                 value={watch('trading_style')}
-                onChange={value => setValue('trading_style', value as any)}
+                onChange={value =>
+                  setValue(
+                    'trading_style',
+                    value as 'CONSERVATIVE' | 'BALANCED' | 'AGGRESSIVE'
+                  )
+                }
                 label="Style de trading"
                 description="Quelle approche correspond le mieux à votre stratégie ?"
                 error={errors.trading_style?.message}
@@ -458,7 +477,7 @@ export default function PreferencesPage() {
               maxItems={20}
               allowCustom={true}
               customValidator={validateAssetSymbol}
-              error={errors.preferred_assets?.message}
+              error={getErrorMessage(errors.preferred_assets)}
             />
           </div>
 
@@ -478,7 +497,7 @@ export default function PreferencesPage() {
               maxItems={15}
               allowCustom={true}
               customValidator={validateTechnicalIndicator}
-              error={errors.technical_indicators?.message}
+              error={getErrorMessage(errors.technical_indicators)}
             />
           </div>
 

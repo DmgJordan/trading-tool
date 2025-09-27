@@ -6,12 +6,12 @@ interface RadioCardOption {
   description: string;
   icon?: string;
   color?: string;
-  characteristics?: string[];
+  characteristics?: readonly string[];
   badge?: string;
 }
 
 interface RadioCardGroupProps {
-  options: RadioCardOption[];
+  options: readonly RadioCardOption[];
   value: string;
   onChange: (value: string) => void;
   label: string;

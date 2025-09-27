@@ -57,10 +57,12 @@ const derivePerpPositions = (
       position.unrealizedPnl ||
       position.unrealized_pnl;
 
-    const side =
+    const side = String(
       (base?.side as string | undefined) ||
-      position.side ||
-      (position as { dir?: string }).dir;
+        position.side ||
+        (position as { dir?: string }).dir ||
+        ''
+    );
 
     const symbol =
       (position.symbol ||

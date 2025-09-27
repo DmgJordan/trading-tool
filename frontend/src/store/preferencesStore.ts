@@ -34,10 +34,10 @@ export const usePreferencesStore = create<PreferencesStore>()(
             isLoading: false,
             error: null,
           });
-        } catch (error: any) {
+        } catch (error: unknown) {
           const errorMessage =
-            error.response?.data?.detail ||
-            'Erreur lors du chargement des préférences';
+            (error as { response?: { data?: { detail?: string } } }).response
+              ?.data?.detail || 'Erreur lors du chargement des préférences';
           set({
             isLoading: false,
             error: errorMessage,
@@ -50,9 +50,10 @@ export const usePreferencesStore = create<PreferencesStore>()(
         try {
           const defaults = await preferencesApi.getDefaults();
           set({ defaults, error: null });
-        } catch (error: any) {
+        } catch (error: unknown) {
           const errorMessage =
-            error.response?.data?.detail ||
+            (error as { response?: { data?: { detail?: string } } }).response
+              ?.data?.detail ||
             'Erreur lors du chargement des valeurs par défaut';
           set({ error: errorMessage });
           throw error;
@@ -63,9 +64,10 @@ export const usePreferencesStore = create<PreferencesStore>()(
         try {
           const validationInfo = await preferencesApi.getValidationInfo();
           set({ validationInfo, error: null });
-        } catch (error: any) {
+        } catch (error: unknown) {
           const errorMessage =
-            error.response?.data?.detail ||
+            (error as { response?: { data?: { detail?: string } } }).response
+              ?.data?.detail ||
             'Erreur lors du chargement des informations de validation';
           set({ error: errorMessage });
           throw error;
@@ -95,21 +97,21 @@ export const usePreferencesStore = create<PreferencesStore>()(
             error: null,
             lastSaved: new Date().toISOString(),
           });
-        } catch (error: any) {
+        } catch (error: unknown) {
           // Revert optimistic update en cas d'erreur
           const { preferences: currentPreferences } = get();
           if (currentPreferences) {
             // Recalculer l'état précédent en retirant les modifications optimistes
             const revertedPreferences = { ...currentPreferences };
             Object.keys(preferencesUpdate).forEach(key => {
-              delete (revertedPreferences as any)[key];
+              delete (revertedPreferences as Record<string, unknown>)[key];
             });
             set({ preferences: revertedPreferences });
           }
 
           const errorMessage =
-            error.response?.data?.detail ||
-            'Erreur lors de la sauvegarde des préférences';
+            (error as { response?: { data?: { detail?: string } } }).response
+              ?.data?.detail || 'Erreur lors de la sauvegarde des préférences';
           set({
             isSaving: false,
             error: errorMessage,
@@ -130,10 +132,10 @@ export const usePreferencesStore = create<PreferencesStore>()(
             error: null,
             lastSaved: new Date().toISOString(),
           });
-        } catch (error: any) {
+        } catch (error: unknown) {
           const errorMessage =
-            error.response?.data?.detail ||
-            'Erreur lors de la réinitialisation';
+            (error as { response?: { data?: { detail?: string } } }).response
+              ?.data?.detail || 'Erreur lors de la réinitialisation';
           set({
             isSaving: false,
             error: errorMessage,
@@ -240,9 +242,10 @@ export const usePreferencesActions = () => {
     try {
       await updatePreferences(preferences);
       onSuccess?.(usePreferencesStore.getState().preferences!);
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage =
-        error.response?.data?.detail || 'Erreur lors de la sauvegarde';
+        (error as { response?: { data?: { detail?: string } } }).response?.data
+          ?.detail || 'Erreur lors de la sauvegarde';
       onError?.(errorMessage);
     }
   };
@@ -259,9 +262,10 @@ export const usePreferencesActions = () => {
       try {
         await resetToDefaults();
         onSuccess?.();
-      } catch (error: any) {
+      } catch (error: unknown) {
         const errorMessage =
-          error.response?.data?.detail || 'Erreur lors de la réinitialisation';
+          (error as { response?: { data?: { detail?: string } } }).response
+            ?.data?.detail || 'Erreur lors de la réinitialisation';
         onError?.(errorMessage);
       }
     }

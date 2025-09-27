@@ -67,11 +67,12 @@ export const useRecommendationsStore = create<RecommendationsStore>()(
             isLoading: false,
             error: null,
           });
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error('loadRecommendations: Error', error);
           const errorMessage =
-            error.response?.data?.detail ||
-            error.message ||
+            (error as { response?: { data?: { detail?: string } } }).response
+              ?.data?.detail ||
+            (error as Error).message ||
             'Erreur lors du chargement des recommandations';
           set({
             isLoading: false,
@@ -119,10 +120,11 @@ export const useRecommendationsStore = create<RecommendationsStore>()(
 
           // Recharger les stats
           get().loadStats();
-        } catch (error: any) {
+        } catch (error: unknown) {
           const errorMessage =
-            error.response?.data?.detail ||
-            error.message ||
+            (error as { response?: { data?: { detail?: string } } }).response
+              ?.data?.detail ||
+            (error as Error).message ||
             'Erreur lors de la génération des recommandations';
           set({
             isGenerating: false,
@@ -162,13 +164,14 @@ export const useRecommendationsStore = create<RecommendationsStore>()(
 
           // Recharger les stats
           get().loadStats();
-        } catch (error: any) {
+        } catch (error: unknown) {
           // Rollback optimistic update en cas d'erreur
           get().loadRecommendations();
 
           const errorMessage =
-            error.response?.data?.detail ||
-            error.message ||
+            (error as { response?: { data?: { detail?: string } } }).response
+              ?.data?.detail ||
+            (error as Error).message ||
             "Erreur lors de l'acceptation de la recommandation";
           set({ error: errorMessage });
           throw error;
@@ -205,13 +208,14 @@ export const useRecommendationsStore = create<RecommendationsStore>()(
 
           // Recharger les stats
           get().loadStats();
-        } catch (error: any) {
+        } catch (error: unknown) {
           // Rollback optimistic update en cas d'erreur
           get().loadRecommendations();
 
           const errorMessage =
-            error.response?.data?.detail ||
-            error.message ||
+            (error as { response?: { data?: { detail?: string } } }).response
+              ?.data?.detail ||
+            (error as Error).message ||
             'Erreur lors du rejet de la recommandation';
           set({ error: errorMessage });
           throw error;
@@ -224,7 +228,7 @@ export const useRecommendationsStore = create<RecommendationsStore>()(
           const stats = await aiRecommendationsApiWithRetry.getDashboardStats();
           console.log('loadStats: Success', stats);
           set({ stats, error: null });
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.warn('loadStats: Error (non-critical)', error);
           // Les erreurs de stats ne sont pas critiques, on les log mais on ne bloque pas l'UI
         }
@@ -251,7 +255,7 @@ export const useRecommendationsStore = create<RecommendationsStore>()(
           // Recharger simplement sans utiliser refreshRecommendations pour éviter la récursion
           recommendationsCache.clearCache();
           await get().loadRecommendations();
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.warn(
             'Erreur lors du nettoyage des recommandations expirées:',
             error

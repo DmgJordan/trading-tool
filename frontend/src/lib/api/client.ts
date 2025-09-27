@@ -1,9 +1,12 @@
 import axios from 'axios';
+import type { AuthTokens } from '../types/auth';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 // Import dynamique pour éviter les cycles de dépendances
-let getAuthStore: () => any;
+let getAuthStore:
+  | (() => { token: string | null; logout: () => void })
+  | undefined;
 
 // Instance axios centralisée pour toute l'application
 const apiClient = axios.create({
@@ -32,8 +35,8 @@ apiClient.interceptors.request.use(config => {
   if (!access_token && getAuthStore) {
     try {
       const store = getAuthStore();
-      if (store?.tokens?.access_token) {
-        access_token = store.tokens.access_token;
+      if (store?.token) {
+        access_token = store.token;
       }
     } catch (error) {
       console.error("Erreur lors de l'accès au store Zustand:", error);
@@ -65,7 +68,7 @@ apiClient.interceptors.response.use(
             }
           );
 
-          const newTokens = refreshResponse.data;
+          const newTokens = refreshResponse.data as AuthTokens;
           localStorage.setItem('auth_tokens', JSON.stringify(newTokens));
 
           // Relancer la requête originale
@@ -86,8 +89,13 @@ apiClient.interceptors.response.use(
 );
 
 // Fonction pour initialiser la référence au store
-export const initializeAuthStore = (store: any) => {
-  getAuthStore = () => store;
+export const initializeAuthStore = (
+  storeGetter: () => {
+    token: string | null;
+    logout: () => void;
+  }
+) => {
+  getAuthStore = storeGetter;
 };
 
 export default apiClient;

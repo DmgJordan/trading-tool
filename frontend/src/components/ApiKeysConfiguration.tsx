@@ -220,7 +220,9 @@ export default function ApiKeysConfiguration() {
       );
       setter({
         status: 'success',
-        message: response.data.message || 'Connexion réussie !',
+        message:
+          (response.data as { message?: string })?.message ||
+          'Connexion réussie !',
       });
     } catch (error) {
       setter({
