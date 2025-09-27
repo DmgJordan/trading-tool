@@ -4,7 +4,11 @@ export interface SingleAssetAnalysisRequest {
   ticker: string;
   exchange?: string;
   profile: 'short' | 'medium' | 'long';
-  model?: 'claude-3-haiku-20240307' | 'claude-3-sonnet-20240229' | 'claude-3-opus-20240229' | 'claude-3-5-sonnet-20241022';
+  model?:
+    | 'claude-3-haiku-20240307'
+    | 'claude-3-sonnet-20240229'
+    | 'claude-3-opus-20240229'
+    | 'claude-3-5-sonnet-20241022';
   custom_prompt?: string;
 }
 export interface SingleAssetAnalysisResponse {
@@ -41,13 +45,15 @@ export const claudeApi = {
   /**
    * Analyser un seul actif avec données techniques
    */
-  analyzeSingleAsset: async (request: SingleAssetAnalysisRequest): Promise<SingleAssetAnalysisResponse> => {
+  analyzeSingleAsset: async (
+    request: SingleAssetAnalysisRequest
+  ): Promise<SingleAssetAnalysisResponse> => {
     const response = await apiClient.post('/claude/analyze-single-asset', {
       ticker: request.ticker,
       exchange: request.exchange || 'binance',
       profile: request.profile,
       model: request.model || 'claude-3-5-sonnet-20241022',
-      custom_prompt: request.custom_prompt
+      custom_prompt: request.custom_prompt,
     });
     return response.data;
   },

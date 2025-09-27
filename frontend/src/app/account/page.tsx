@@ -36,7 +36,9 @@ export default function AccountPage() {
                     Nom d&apos;utilisateur
                   </label>
                   <div className="px-4 py-3 bg-gray-50 rounded-lg border-2 border-gray-200">
-                    <span className="text-black font-medium">{user?.username}</span>
+                    <span className="text-black font-medium">
+                      {user?.username}
+                    </span>
                   </div>
                 </div>
 
@@ -45,13 +47,16 @@ export default function AccountPage() {
                     Email
                   </label>
                   <div className="px-4 py-3 bg-gray-50 rounded-lg border-2 border-gray-200">
-                    <span className="text-black font-medium">{user?.email}</span>
+                    <span className="text-black font-medium">
+                      {user?.email}
+                    </span>
                   </div>
                 </div>
 
                 <div className="pt-4">
                   <p className="text-xs text-gray-500">
-                    Pour modifier ces informations, contactez l&apos;administrateur.
+                    Pour modifier ces informations, contactez
+                    l&apos;administrateur.
                   </p>
                 </div>
               </div>

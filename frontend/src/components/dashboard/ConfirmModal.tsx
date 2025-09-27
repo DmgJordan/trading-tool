@@ -25,23 +25,23 @@ export default function ConfirmModal({
   cancelText = 'Annuler',
   confirmColor = 'blue',
   isLoading = false,
-  icon
+  icon,
 }: ConfirmModalProps) {
   if (!isOpen) return null;
 
   const colorClasses = {
     green: {
       button: 'bg-green-600 hover:bg-green-700 focus:ring-green-500',
-      icon: 'text-green-600'
+      icon: 'text-green-600',
     },
     red: {
       button: 'bg-red-600 hover:bg-red-700 focus:ring-red-500',
-      icon: 'text-red-600'
+      icon: 'text-red-600',
     },
     blue: {
       button: 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500',
-      icon: 'text-blue-600'
-    }
+      icon: 'text-blue-600',
+    },
   };
 
   const handleBackdropClick = (e: React.MouseEvent) => {
@@ -82,15 +82,11 @@ export default function ConfirmModal({
                   {icon}
                 </div>
               )}
-              <h3 className="text-lg font-semibold text-gray-900">
-                {title}
-              </h3>
+              <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
             </div>
 
             {/* Message */}
-            <p className="text-sm text-gray-600 mb-6">
-              {message}
-            </p>
+            <p className="text-sm text-gray-600 mb-6">{message}</p>
 
             {/* Boutons d'action */}
             <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
@@ -167,7 +163,7 @@ export function AcceptRecommendationModal({
   isLoading = false,
   symbol,
   action,
-  targetPrice
+  targetPrice,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -206,7 +202,7 @@ export function RejectRecommendationModal({
   onConfirm,
   isLoading = false,
   symbol,
-  action
+  action,
 }: {
   isOpen: boolean;
   onClose: () => void;

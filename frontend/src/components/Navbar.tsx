@@ -35,16 +35,16 @@ export default function Navbar() {
           {/* Menu desktop */}
           <div className="hidden md:flex items-center space-x-6">
             <div className="flex items-baseline space-x-6">
-                <button
-                    onClick={() => router.push('/dashboard')}
-                    className={`px-4 py-3 rounded-lg text-sm font-semibold transition-colors ${
-                        pathname === '/dashboard'
-                            ? 'bg-black text-white'
-                            : 'text-black hover:bg-gray-100'
-                    }`}
-                >
-                    Dashboard
-                </button>
+              <button
+                onClick={() => router.push('/dashboard')}
+                className={`px-4 py-3 rounded-lg text-sm font-semibold transition-colors ${
+                  pathname === '/dashboard'
+                    ? 'bg-black text-white'
+                    : 'text-black hover:bg-gray-100'
+                }`}
+              >
+                Dashboard
+              </button>
               <button
                 onClick={() => router.push('/')}
                 className={`px-4 py-3 rounded-lg text-sm font-semibold transition-colors ${
@@ -93,8 +93,18 @@ export default function Navbar() {
                   </span>
                 </div>
                 <span className="text-sm font-medium">{user?.username}</span>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
                 </svg>
               </button>
 
@@ -102,7 +112,9 @@ export default function Navbar() {
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border-2 border-gray-100">
                   <div className="py-2">
                     <div className="px-4 py-2 border-b border-gray-100">
-                      <p className="text-sm font-medium text-black">{user?.username}</p>
+                      <p className="text-sm font-medium text-black">
+                        {user?.username}
+                      </p>
                       <p className="text-xs text-gray-600">{user?.email}</p>
                     </div>
                     <button
@@ -225,7 +237,9 @@ export default function Navbar() {
                   </span>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-black">{user?.username}</p>
+                  <p className="text-sm font-medium text-black">
+                    {user?.username}
+                  </p>
                   <p className="text-xs text-gray-600">{user?.email}</p>
                 </div>
               </div>

@@ -14,7 +14,8 @@ export default function Home() {
             Configuration du Trading Tool
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            Vérifiez la connexion avec le backend et la base de données avant de commencer votre session de trading.
+            Vérifiez la connexion avec le backend et la base de données avant de
+            commencer votre session de trading.
           </p>
         </div>
 

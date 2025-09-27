@@ -8,7 +8,8 @@ import Navbar from '../../components/Navbar';
 // Version simplifiée du dashboard pour débogage
 export default function DebugDashboard() {
   const { user, isAuthenticated } = useAuthStore();
-  const { recommendations, isLoading, error, loadRecommendations } = useRecommendationsStore();
+  const { recommendations, isLoading, error, loadRecommendations } =
+    useRecommendationsStore();
 
   useEffect(() => {
     console.log('Debug Dashboard mounted');
@@ -26,7 +27,7 @@ export default function DebugDashboard() {
     user: !!user,
     recommendations: recommendations.length,
     isLoading,
-    error
+    error,
   });
 
   if (!isAuthenticated || !user) {
@@ -50,12 +51,16 @@ export default function DebugDashboard() {
         <div className="bg-white rounded-lg p-6 mb-6">
           <h2 className="text-lg font-semibold mb-4">État du store</h2>
           <pre className="text-sm bg-gray-100 p-4 rounded">
-            {JSON.stringify({
-              recommendationsCount: recommendations.length,
-              isLoading,
-              error,
-              user: user?.username
-            }, null, 2)}
+            {JSON.stringify(
+              {
+                recommendationsCount: recommendations.length,
+                isLoading,
+                error,
+                user: user?.username,
+              },
+              null,
+              2
+            )}
           </pre>
         </div>
 

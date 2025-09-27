@@ -24,7 +24,7 @@ export default function RangeSlider({
   error,
   disabled = false,
   showValue = true,
-  className = ''
+  className = '',
 }: RangeSliderProps) {
   const [internalValue, setInternalValue] = useState(value ?? config.min);
   const [isDragging, setIsDragging] = useState(false);
@@ -56,9 +56,10 @@ export default function RangeSlider({
     }
   };
 
-  const formatValue = config.formatValue || ((val) => `${val}${config.unit}`);
+  const formatValue = config.formatValue || (val => `${val}${config.unit}`);
   const safeInternalValue = internalValue ?? config.min;
-  const percentage = ((safeInternalValue - config.min) / (config.max - config.min)) * 100;
+  const percentage =
+    ((safeInternalValue - config.min) / (config.max - config.min)) * 100;
 
   // Calculer la couleur basée sur la valeur (vert = sûr, rouge = risqué)
   const getSliderColor = () => {
@@ -87,13 +88,17 @@ export default function RangeSlider({
         </div>
         {showValue && (
           <div className="text-right">
-            <span className={`text-lg font-bold ${
-              disabled ? 'text-gray-400' : 'text-black'
-            }`}>
+            <span
+              className={`text-lg font-bold ${
+                disabled ? 'text-gray-400' : 'text-black'
+              }`}
+            >
               {formatValue(safeInternalValue)}
             </span>
             <div className="text-xs text-gray-500">
-              {config.min}{config.unit} - {config.max}{config.unit}
+              {config.min}
+              {config.unit} - {config.max}
+              {config.unit}
             </div>
           </div>
         )}
@@ -137,18 +142,31 @@ export default function RangeSlider({
 
       {/* Marqueurs de valeurs importantes */}
       <div className="flex justify-between text-xs text-gray-400">
-        <span>{config.min}{config.unit}</span>
+        <span>
+          {config.min}
+          {config.unit}
+        </span>
         {config.max > 10 && (
-          <span>{Math.round((config.min + config.max) / 2)}{config.unit}</span>
+          <span>
+            {Math.round((config.min + config.max) / 2)}
+            {config.unit}
+          </span>
         )}
-        <span>{config.max}{config.unit}</span>
+        <span>
+          {config.max}
+          {config.unit}
+        </span>
       </div>
 
       {/* Message d'erreur */}
       {error && (
         <p className="text-sm text-red-600 flex items-center">
           <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            <path
+              fillRule="evenodd"
+              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+              clipRule="evenodd"
+            />
           </svg>
           {error}
         </p>

@@ -93,7 +93,9 @@ export const ohlcvApi = {
   /**
    * Récupère les symboles populaires d'un exchange
    */
-  getExchangeSymbols: async (request: ExchangeSymbolsRequest): Promise<ExchangeSymbolsResponse> => {
+  getExchangeSymbols: async (
+    request: ExchangeSymbolsRequest
+  ): Promise<ExchangeSymbolsResponse> => {
     const response = await apiClient.post('/ohlcv/symbols', request);
     return response.data;
   },
@@ -101,8 +103,13 @@ export const ohlcvApi = {
   /**
    * Analyse multi-timeframes pour un symbole selon le profil de trading
    */
-  getMultiTimeframeAnalysis: async (request: MultiTimeframeRequest): Promise<MultiTimeframeResponse> => {
-    const response = await apiClient.post('/ohlcv/multi-timeframe-analysis', request);
+  getMultiTimeframeAnalysis: async (
+    request: MultiTimeframeRequest
+  ): Promise<MultiTimeframeResponse> => {
+    const response = await apiClient.post(
+      '/ohlcv/multi-timeframe-analysis',
+      request
+    );
     return response.data;
-  }
+  },
 };

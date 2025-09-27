@@ -5,7 +5,10 @@ interface LoadingSkeletonProps {
   className?: string;
 }
 
-export default function LoadingSkeleton({ count = 3, className = '' }: LoadingSkeletonProps) {
+export default function LoadingSkeleton({
+  count = 3,
+  className = '',
+}: LoadingSkeletonProps) {
   return (
     <div className={`space-y-4 ${className}`}>
       {Array.from({ length: count }).map((_, index) => (

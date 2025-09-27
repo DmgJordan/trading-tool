@@ -126,22 +126,22 @@ export const RISK_TOLERANCE_OPTIONS = [
     label: 'Prudent',
     description: 'Je préfère la sécurité et minimiser les pertes',
     color: 'text-green-600',
-    icon: '🛡️'
+    icon: '🛡️',
   },
   {
     value: 'MEDIUM',
     label: 'Équilibré',
-    description: 'J\'accepte un risque modéré pour un rendement décent',
+    description: "J'accepte un risque modéré pour un rendement décent",
     color: 'text-blue-600',
-    icon: '⚖️'
+    icon: '⚖️',
   },
   {
     value: 'HIGH',
     label: 'Agressif',
     description: 'Je vise des rendements élevés malgré les risques',
     color: 'text-red-600',
-    icon: '🚀'
-  }
+    icon: '🚀',
+  },
 ] as const;
 
 export const INVESTMENT_HORIZON_OPTIONS = [
@@ -149,20 +149,20 @@ export const INVESTMENT_HORIZON_OPTIONS = [
     value: 'SHORT_TERM',
     label: 'Court terme',
     description: 'Quelques jours à quelques semaines',
-    duration: '< 1 mois'
+    duration: '< 1 mois',
   },
   {
     value: 'MEDIUM_TERM',
     label: 'Moyen terme',
     description: 'Quelques mois à une année',
-    duration: '1-12 mois'
+    duration: '1-12 mois',
   },
   {
     value: 'LONG_TERM',
     label: 'Long terme',
-    description: 'Plus d\'une année',
-    duration: '> 1 an'
-  }
+    description: "Plus d'une année",
+    duration: '> 1 an',
+  },
 ] as const;
 
 export const TRADING_STYLE_OPTIONS = [
@@ -170,20 +170,32 @@ export const TRADING_STYLE_OPTIONS = [
     value: 'CONSERVATIVE',
     label: 'Conservateur',
     description: 'Stratégie défensive privilégiant la préservation du capital',
-    characteristics: ['Positions petites', 'Stop-loss stricts', 'Diversification']
+    characteristics: [
+      'Positions petites',
+      'Stop-loss stricts',
+      'Diversification',
+    ],
   },
   {
     value: 'BALANCED',
     label: 'Équilibré',
     description: 'Approche mixte entre croissance et sécurité',
-    characteristics: ['Positions moyennes', 'Gestion risque/reward', 'Flexible']
+    characteristics: [
+      'Positions moyennes',
+      'Gestion risque/reward',
+      'Flexible',
+    ],
   },
   {
     value: 'AGGRESSIVE',
     label: 'Agressif',
     description: 'Stratégie offensive visant des gains importants',
-    characteristics: ['Positions importantes', 'Leverage possible', 'Haute volatilité']
-  }
+    characteristics: [
+      'Positions importantes',
+      'Leverage possible',
+      'Haute volatilité',
+    ],
+  },
 ] as const;
 
 export const SLIDER_CONFIGS: Record<string, SliderConfig> = {
@@ -192,20 +204,20 @@ export const SLIDER_CONFIGS: Record<string, SliderConfig> = {
     max: 100,
     step: 0.1,
     unit: '%',
-    formatValue: (value: number) => `${value.toFixed(1)}%`
+    formatValue: (value: number) => `${value.toFixed(1)}%`,
   },
   stop_loss_percentage: {
     min: 0.1,
     max: 50,
     step: 0.1,
     unit: '%',
-    formatValue: (value: number) => `${value.toFixed(1)}%`
+    formatValue: (value: number) => `${value.toFixed(1)}%`,
   },
   take_profit_ratio: {
     min: 0.1,
     max: 10,
     step: 0.1,
     unit: 'x',
-    formatValue: (value: number) => `${value.toFixed(1)}x`
-  }
+    formatValue: (value: number) => `${value.toFixed(1)}x`,
+  },
 };

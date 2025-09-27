@@ -55,7 +55,11 @@ const normalizeSide = (side?: string) => {
   return side;
 };
 
-export default function PositionsView({ perpPositions, spotPositions, className = '' }: PositionsViewProps) {
+export default function PositionsView({
+  perpPositions,
+  spotPositions,
+  className = '',
+}: PositionsViewProps) {
   const [activeTab, setActiveTab] = useState<'perp' | 'spot'>('perp');
 
   const tabs = [
@@ -68,26 +72,30 @@ export default function PositionsView({ perpPositions, spotPositions, className 
       {/* Onglets */}
       <div className="border-b border-gray-200">
         <nav className="flex space-x-8" aria-label="Tabs">
-          {tabs.map((tab) => (
+          {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as 'perp' | 'spot')}
               className={`
                 py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 flex items-center gap-2
-                ${activeTab === tab.id
-                  ? 'border-black text-black'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ${
+                  activeTab === tab.id
+                    ? 'border-black text-black'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }
               `}
             >
               {tab.label}
-              <span className={`
+              <span
+                className={`
                 py-0.5 px-2 rounded-full text-xs font-medium
-                ${activeTab === tab.id
-                  ? 'bg-black text-white'
-                  : 'bg-gray-100 text-gray-600'
+                ${
+                  activeTab === tab.id
+                    ? 'bg-black text-white'
+                    : 'bg-gray-100 text-gray-600'
                 }
-              `}>
+              `}
+              >
                 {tab.count}
               </span>
             </button>
@@ -99,14 +107,26 @@ export default function PositionsView({ perpPositions, spotPositions, className 
       {activeTab === 'perp' && (
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-black">Positions perpétuelles</h3>
-            <p className="text-sm text-gray-500">Vos positions à levier ouvertes</p>
+            <h3 className="text-lg font-semibold text-black">
+              Positions perpétuelles
+            </h3>
+            <p className="text-sm text-gray-500">
+              Vos positions à levier ouvertes
+            </p>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  {['Marché', 'Sens', 'Taille', 'Prix d' + 'entrée', 'Prix actuel', 'PNL latent', 'ROE'].map(header => (
+                  {[
+                    'Marché',
+                    'Sens',
+                    'Taille',
+                    'Prix d&apos;entrée',
+                    'Prix actuel',
+                    'PNL latent',
+                    'ROE',
+                  ].map(header => (
                     <th
                       key={header}
                       scope="col"
@@ -126,7 +146,8 @@ export default function PositionsView({ perpPositions, spotPositions, className 
                         Aucune position perpétuelle
                       </h4>
                       <p className="text-gray-500">
-                        Ouvrez votre première position pour commencer le trading à levier.
+                        Ouvrez votre première position pour commencer le trading
+                        à levier.
                       </p>
                     </td>
                   </tr>
@@ -135,23 +156,35 @@ export default function PositionsView({ perpPositions, spotPositions, className 
                     const pnlValue = Number(position.pnl);
                     const entryValue = Number(position.entryPx);
                     const markValue = Number(position.markPx);
-                    const roe = entryValue > 0 && Number.isFinite(markValue) && Number.isFinite(entryValue)
-                      ? ((markValue - entryValue) / entryValue) * 100
-                      : NaN;
+                    const roe =
+                      entryValue > 0 &&
+                      Number.isFinite(markValue) &&
+                      Number.isFinite(entryValue)
+                        ? ((markValue - entryValue) / entryValue) * 100
+                        : NaN;
 
                     return (
-                      <tr key={`${position.symbol}-${index}`} className="hover:bg-gray-50">
+                      <tr
+                        key={`${position.symbol}-${index}`}
+                        className="hover:bg-gray-50"
+                      >
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="font-medium text-black">{position.symbol}</div>
+                          <div className="font-medium text-black">
+                            {position.symbol}
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            normalizeSide(position.side) === 'Long' || normalizeSide(position.side) === 'Achat'
-                              ? 'bg-green-100 text-green-800'
-                              : normalizeSide(position.side) === 'Short' || normalizeSide(position.side) === 'Vente'
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
+                          <span
+                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              normalizeSide(position.side) === 'Long' ||
+                              normalizeSide(position.side) === 'Achat'
+                                ? 'bg-green-100 text-green-800'
+                                : normalizeSide(position.side) === 'Short' ||
+                                    normalizeSide(position.side) === 'Vente'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-gray-100 text-gray-800'
+                            }`}
+                          >
                             {normalizeSide(position.side)}
                           </span>
                         </td>
@@ -165,22 +198,35 @@ export default function PositionsView({ perpPositions, spotPositions, className 
                           {formatNumber(position.markPx, 2)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <span className={
-                            Number.isFinite(pnlValue) && pnlValue > 0 ? 'text-green-600' :
-                            Number.isFinite(pnlValue) && pnlValue < 0 ? 'text-red-600' : 'text-gray-900'
-                          }>
+                          <span
+                            className={
+                              Number.isFinite(pnlValue) && pnlValue > 0
+                                ? 'text-green-600'
+                                : Number.isFinite(pnlValue) && pnlValue < 0
+                                  ? 'text-red-600'
+                                  : 'text-gray-900'
+                            }
+                          >
                             {formatCurrency(position.pnl)}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           {Number.isFinite(roe) ? (
-                            <span className={
-                              roe > 0 ? 'text-green-600' :
-                              roe < 0 ? 'text-red-600' : 'text-gray-900'
-                            }>
-                              {roe > 0 ? '+' : ''}{roe.toFixed(2)}%
+                            <span
+                              className={
+                                roe > 0
+                                  ? 'text-green-600'
+                                  : roe < 0
+                                    ? 'text-red-600'
+                                    : 'text-gray-900'
+                              }
+                            >
+                              {roe > 0 ? '+' : ''}
+                              {roe.toFixed(2)}%
                             </span>
-                          ) : '—'}
+                          ) : (
+                            '—'
+                          )}
                         </td>
                       </tr>
                     );
@@ -196,13 +242,21 @@ export default function PositionsView({ perpPositions, spotPositions, className 
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
           <div className="px-6 py-4 border-b border-gray-200">
             <h3 className="text-lg font-semibold text-black">Actifs spot</h3>
-            <p className="text-sm text-gray-500">Vos soldes d'actifs disponibles</p>
+            <p className="text-sm text-gray-500">
+              Vos soldes d&apos;actifs disponibles
+            </p>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  {['Actif', 'Solde total', 'Disponible', 'Valeur USD', 'Allocation'].map(header => (
+                  {[
+                    'Actif',
+                    'Solde total',
+                    'Disponible',
+                    'Valeur USD',
+                    'Allocation',
+                  ].map(header => (
                     <th
                       key={header}
                       scope="col"
@@ -228,17 +282,28 @@ export default function PositionsView({ perpPositions, spotPositions, className 
                   </tr>
                 ) : (
                   (() => {
-                    const totalUsdValue = spotPositions.reduce((sum, pos) => sum + Number(pos.usdValue || 0), 0);
+                    const totalUsdValue = spotPositions.reduce(
+                      (sum, pos) => sum + Number(pos.usdValue || 0),
+                      0
+                    );
 
                     return spotPositions.map((position, index) => {
                       const usdValue = Number(position.usdValue || 0);
-                      const allocation = totalUsdValue > 0 ? (usdValue / totalUsdValue) * 100 : 0;
+                      const allocation =
+                        totalUsdValue > 0
+                          ? (usdValue / totalUsdValue) * 100
+                          : 0;
 
                       return (
-                        <tr key={`${position.asset}-${index}`} className="hover:bg-gray-50">
+                        <tr
+                          key={`${position.asset}-${index}`}
+                          className="hover:bg-gray-50"
+                        >
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              <div className="font-medium text-black">{position.asset}</div>
+                              <div className="font-medium text-black">
+                                {position.asset}
+                              </div>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -251,7 +316,9 @@ export default function PositionsView({ perpPositions, spotPositions, className 
                             {formatCurrency(position.usdValue)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {allocation > 0.01 ? `${allocation.toFixed(2)}%` : '<0.01%'}
+                            {allocation > 0.01
+                              ? `${allocation.toFixed(2)}%`
+                              : '<0.01%'}
                           </td>
                         </tr>
                       );

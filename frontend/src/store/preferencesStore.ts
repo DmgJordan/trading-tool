@@ -3,12 +3,10 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import {
   TradingPreferences,
   TradingPreferencesUpdate,
-  TradingPreferencesDefault,
-  PreferencesValidationInfo,
   PreferencesState,
-  PreferencesActions
+  PreferencesActions,
 } from '../lib/types/preferences';
-import { preferencesApi, withErrorHandling } from '../lib/api/preferences';
+import { preferencesApi } from '../lib/api/preferences';
 
 interface PreferencesStore extends PreferencesState, PreferencesActions {}
 
@@ -37,7 +35,9 @@ export const usePreferencesStore = create<PreferencesStore>()(
             error: null,
           });
         } catch (error: any) {
-          const errorMessage = error.response?.data?.detail || 'Erreur lors du chargement des préférences';
+          const errorMessage =
+            error.response?.data?.detail ||
+            'Erreur lors du chargement des préférences';
           set({
             isLoading: false,
             error: errorMessage,
@@ -51,7 +51,9 @@ export const usePreferencesStore = create<PreferencesStore>()(
           const defaults = await preferencesApi.getDefaults();
           set({ defaults, error: null });
         } catch (error: any) {
-          const errorMessage = error.response?.data?.detail || 'Erreur lors du chargement des valeurs par défaut';
+          const errorMessage =
+            error.response?.data?.detail ||
+            'Erreur lors du chargement des valeurs par défaut';
           set({ error: errorMessage });
           throw error;
         }
@@ -62,13 +64,17 @@ export const usePreferencesStore = create<PreferencesStore>()(
           const validationInfo = await preferencesApi.getValidationInfo();
           set({ validationInfo, error: null });
         } catch (error: any) {
-          const errorMessage = error.response?.data?.detail || 'Erreur lors du chargement des informations de validation';
+          const errorMessage =
+            error.response?.data?.detail ||
+            'Erreur lors du chargement des informations de validation';
           set({ error: errorMessage });
           throw error;
         }
       },
 
-      updatePreferences: async (preferencesUpdate: TradingPreferencesUpdate) => {
+      updatePreferences: async (
+        preferencesUpdate: TradingPreferencesUpdate
+      ) => {
         try {
           set({ isSaving: true, error: null });
 
@@ -76,11 +82,12 @@ export const usePreferencesStore = create<PreferencesStore>()(
           const currentPreferences = get().preferences;
           if (currentPreferences) {
             set({
-              preferences: { ...currentPreferences, ...preferencesUpdate }
+              preferences: { ...currentPreferences, ...preferencesUpdate },
             });
           }
 
-          const updatedPreferences = await preferencesApi.updatePreferences(preferencesUpdate);
+          const updatedPreferences =
+            await preferencesApi.updatePreferences(preferencesUpdate);
 
           set({
             preferences: updatedPreferences,
@@ -100,7 +107,9 @@ export const usePreferencesStore = create<PreferencesStore>()(
             set({ preferences: revertedPreferences });
           }
 
-          const errorMessage = error.response?.data?.detail || 'Erreur lors de la sauvegarde des préférences';
+          const errorMessage =
+            error.response?.data?.detail ||
+            'Erreur lors de la sauvegarde des préférences';
           set({
             isSaving: false,
             error: errorMessage,
@@ -122,7 +131,9 @@ export const usePreferencesStore = create<PreferencesStore>()(
             lastSaved: new Date().toISOString(),
           });
         } catch (error: any) {
-          const errorMessage = error.response?.data?.detail || 'Erreur lors de la réinitialisation';
+          const errorMessage =
+            error.response?.data?.detail ||
+            'Erreur lors de la réinitialisation';
           set({
             isSaving: false,
             error: errorMessage,
@@ -139,7 +150,7 @@ export const usePreferencesStore = create<PreferencesStore>()(
       name: 'preferences-store',
       storage: createJSONStorage(() => localStorage),
       // Persister seulement les données essentielles, pas les états de chargement
-      partialize: (state) => ({
+      partialize: state => ({
         preferences: state.preferences,
         defaults: state.defaults,
         validationInfo: state.validationInfo,
@@ -179,7 +190,7 @@ export const useInitializePreferences = () => {
     defaults,
     validationInfo,
     isLoading,
-    error
+    error,
   } = usePreferencesStore();
 
   const initialize = async () => {
@@ -188,15 +199,16 @@ export const useInitializePreferences = () => {
       await Promise.all([
         loadPreferences(),
         loadDefaults(),
-        loadValidationInfo()
+        loadValidationInfo(),
       ]);
     } catch (error) {
-      console.error('Erreur lors de l\'initialisation des préférences:', error);
+      console.error("Erreur lors de l'initialisation des préférences:", error);
       // L'erreur sera gérée par le store et affichée dans l'UI
     }
   };
 
-  const isInitialized = preferences !== null && defaults !== null && validationInfo !== null;
+  const isInitialized =
+    preferences !== null && defaults !== null && validationInfo !== null;
 
   return {
     initialize,
@@ -205,7 +217,7 @@ export const useInitializePreferences = () => {
     error,
     preferences,
     defaults,
-    validationInfo
+    validationInfo,
   };
 };
 
@@ -217,7 +229,7 @@ export const usePreferencesActions = () => {
     clearError,
     isSaving,
     error,
-    lastSaved
+    lastSaved,
   } = usePreferencesStore();
 
   const updateWithNotification = async (
@@ -229,7 +241,8 @@ export const usePreferencesActions = () => {
       await updatePreferences(preferences);
       onSuccess?.(usePreferencesStore.getState().preferences!);
     } catch (error: any) {
-      const errorMessage = error.response?.data?.detail || 'Erreur lors de la sauvegarde';
+      const errorMessage =
+        error.response?.data?.detail || 'Erreur lors de la sauvegarde';
       onError?.(errorMessage);
     }
   };
@@ -238,12 +251,17 @@ export const usePreferencesActions = () => {
     onSuccess?: () => void,
     onError?: (error: string) => void
   ) => {
-    if (window.confirm('Êtes-vous sûr de vouloir réinitialiser toutes vos préférences aux valeurs par défaut ?')) {
+    if (
+      window.confirm(
+        'Êtes-vous sûr de vouloir réinitialiser toutes vos préférences aux valeurs par défaut ?'
+      )
+    ) {
       try {
         await resetToDefaults();
         onSuccess?.();
       } catch (error: any) {
-        const errorMessage = error.response?.data?.detail || 'Erreur lors de la réinitialisation';
+        const errorMessage =
+          error.response?.data?.detail || 'Erreur lors de la réinitialisation';
         onError?.(errorMessage);
       }
     }
@@ -255,7 +273,7 @@ export const usePreferencesActions = () => {
     clearError,
     isSaving,
     error,
-    lastSaved
+    lastSaved,
   };
 };
 

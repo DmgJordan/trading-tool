@@ -59,7 +59,7 @@ export default function PortfolioOverview({
   spotPositions,
   portfolioSummary,
   onAction,
-  className = ''
+  className = '',
 }: PortfolioOverviewProps) {
   const quickActions = [
     {
@@ -119,16 +119,23 @@ export default function PortfolioOverview({
               <div className="text-2xl font-bold text-black">
                 {formatCurrency(portfolioSummary?.accountValue)}
               </div>
-              <div className={`flex items-center gap-2 text-sm ${
-                totalPnl > 0 ? 'text-green-600' :
-                totalPnl < 0 ? 'text-red-600' : 'text-gray-500'
-              }`}>
+              <div
+                className={`flex items-center gap-2 text-sm ${
+                  totalPnl > 0
+                    ? 'text-green-600'
+                    : totalPnl < 0
+                      ? 'text-red-600'
+                      : 'text-gray-500'
+                }`}
+              >
                 <span className="font-medium">
-                  {totalPnl > 0 ? '+' : ''}{formatCurrency(totalPnl)}
+                  {totalPnl > 0 ? '+' : ''}
+                  {formatCurrency(totalPnl)}
                 </span>
                 {pnlPercentage !== 0 && (
                   <span>
-                    ({totalPnl > 0 ? '+' : ''}{pnlPercentage.toFixed(2)}%)
+                    ({totalPnl > 0 ? '+' : ''}
+                    {pnlPercentage.toFixed(2)}%)
                   </span>
                 )}
               </div>
@@ -142,19 +149,25 @@ export default function PortfolioOverview({
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
           <div>
-            <p className="text-xs text-gray-500 uppercase tracking-wide">Marge utilisée</p>
+            <p className="text-xs text-gray-500 uppercase tracking-wide">
+              Marge utilisée
+            </p>
             <p className="text-lg font-semibold text-black mt-1">
               {formatCurrency(portfolioSummary?.totalMarginUsed)}
             </p>
           </div>
           <div>
-            <p className="text-xs text-gray-500 uppercase tracking-wide">Solde retirable</p>
+            <p className="text-xs text-gray-500 uppercase tracking-wide">
+              Solde retirable
+            </p>
             <p className="text-lg font-semibold text-black mt-1">
               {formatCurrency(portfolioSummary?.withdrawableBalance)}
             </p>
           </div>
           <div className="col-span-2 md:col-span-1">
-            <p className="text-xs text-gray-500 uppercase tracking-wide">Positions</p>
+            <p className="text-xs text-gray-500 uppercase tracking-wide">
+              Positions
+            </p>
             <p className="text-lg font-semibold text-black mt-1">
               {perpPositions.length} Perp • {spotPositions.length} Spot
             </p>
@@ -177,12 +190,14 @@ export default function PortfolioOverview({
           </div>
           <div className="grid md:grid-cols-2 gap-4">
             {topPerpPositions.map((position, index) => {
-              const pnlValue = Number(position.pnl);
               const entryValue = Number(position.entryPx);
               const markValue = Number(position.markPx);
-              const pnlPercentage = entryValue > 0 && Number.isFinite(markValue) && Number.isFinite(entryValue)
-                ? ((markValue - entryValue) / entryValue) * 100
-                : undefined;
+              const pnlPercentage =
+                entryValue > 0 &&
+                Number.isFinite(markValue) &&
+                Number.isFinite(entryValue)
+                  ? ((markValue - entryValue) / entryValue) * 100
+                  : undefined;
 
               return (
                 <PositionCard
@@ -218,19 +233,27 @@ export default function PortfolioOverview({
                 key={`${position.asset}-${index}`}
                 className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
               >
-                <h4 className="font-semibold text-black mb-2">{position.asset}</h4>
+                <h4 className="font-semibold text-black mb-2">
+                  {position.asset}
+                </h4>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-500">Total</span>
-                    <span className="font-medium">{formatNumber(position.total)}</span>
+                    <span className="font-medium">
+                      {formatNumber(position.total)}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Disponible</span>
-                    <span className="font-medium">{formatNumber(position.available)}</span>
+                    <span className="font-medium">
+                      {formatNumber(position.available)}
+                    </span>
                   </div>
                   <div className="flex justify-between border-t pt-2">
                     <span className="text-gray-500">Valeur USD</span>
-                    <span className="font-semibold text-black">{formatCurrency(position.usdValue)}</span>
+                    <span className="font-semibold text-black">
+                      {formatCurrency(position.usdValue)}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -249,7 +272,10 @@ export default function PortfolioOverview({
           <p className="text-gray-500 mb-6">
             Commencez par déposer des fonds et ouvrir votre première position.
           </p>
-          <QuickActions actions={quickActions.slice(0, 2)} className="justify-center" />
+          <QuickActions
+            actions={quickActions.slice(0, 2)}
+            className="justify-center"
+          />
         </div>
       )}
     </div>

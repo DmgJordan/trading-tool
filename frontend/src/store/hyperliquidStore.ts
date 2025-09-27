@@ -14,7 +14,9 @@ interface HyperliquidState {
 }
 
 interface HyperliquidActions {
-  fetchUserInfo: (options?: { useTestnet?: boolean }) => Promise<HyperliquidConnectorResponse>;
+  fetchUserInfo: (options?: {
+    useTestnet?: boolean;
+  }) => Promise<HyperliquidConnectorResponse>;
   setUseTestnet: (useTestnet: boolean) => Promise<void>;
   clearError: () => void;
 }
@@ -33,10 +35,14 @@ export const useHyperliquidStore = create<HyperliquidStore>()((set, get) => ({
     set({ isLoading: true, error: null });
 
     try {
-      const response = await hyperliquidApi.getUserInfo({ useTestnet: targetUseTestnet });
+      const response = await hyperliquidApi.getUserInfo({
+        useTestnet: targetUseTestnet,
+      });
 
       if (response.status !== 'success' || !response.data) {
-        throw new Error(response.message || 'Impossible de récupérer les données Hyperliquid');
+        throw new Error(
+          response.message || 'Impossible de récupérer les données Hyperliquid'
+        );
       }
 
       set({
@@ -49,8 +55,10 @@ export const useHyperliquidStore = create<HyperliquidStore>()((set, get) => ({
 
       return response;
     } catch (error: unknown) {
-      const message = (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-        || (error instanceof Error ? error.message : 'Erreur inconnue');
+      const message =
+        (error as { response?: { data?: { detail?: string } } })?.response?.data
+          ?.detail ||
+        (error instanceof Error ? error.message : 'Erreur inconnue');
 
       set({ isLoading: false, error: message });
       throw error;

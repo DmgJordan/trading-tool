@@ -7,7 +7,7 @@ import { useHyperliquidStore } from '../../store/hyperliquidStore';
 import {
   HyperliquidFill,
   HyperliquidPerpPosition,
-  HyperliquidSpotUserState
+  HyperliquidSpotUserState,
 } from '../../lib/types/hyperliquid';
 
 // Composants trading réutilisés
@@ -17,80 +17,57 @@ import PortfolioOverview from '../trading/PortfolioOverview';
 import PositionsView from '../trading/PositionsView';
 import OrdersView from '../trading/OrdersView';
 
-// Fonctions utilitaires (copiées de la page trading)
-const formatCurrency = (value?: number | null) => {
-  if (value === undefined || value === null || Number.isNaN(value)) {
-    return '—';
-  }
-  return new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 2,
-  }).format(value);
-};
-
-const formatNumber = (value?: string | number | null, digits = 4) => {
-  if (value === undefined || value === null) return '—';
-  const numeric = typeof value === 'number' ? value : Number(value);
-  if (!Number.isFinite(numeric)) return String(value);
-  return new Intl.NumberFormat('fr-FR', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: digits,
-  }).format(numeric);
-};
-
-const formatTimestamp = (value?: number) => {
-  if (!value) return '—';
-  const isSeconds = value < 1e12;
-  const date = new Date(isSeconds ? value * 1000 : value);
-  return new Intl.DateTimeFormat('fr-FR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  }).format(date);
-};
-
-const derivePerpPositions = (positions: HyperliquidPerpPosition[] | null | undefined) => {
+const derivePerpPositions = (
+  positions: HyperliquidPerpPosition[] | null | undefined
+) => {
   if (!Array.isArray(positions)) return [];
 
-  return positions.map((position) => {
-    const nested = position?.position && typeof position.position === 'object'
-      ? position.position
-      : undefined;
+  return positions.map(position => {
+    const nested =
+      position?.position && typeof position.position === 'object'
+        ? position.position
+        : undefined;
 
     const base = nested && typeof nested === 'object' ? nested : position;
 
-    const size = (base?.szi as string | undefined)
-      || (base?.sz as string | undefined)
-      || (base?.size as string | undefined)
-      || position.sz
-      || position.size;
+    const size =
+      (base?.szi as string | undefined) ||
+      (base?.sz as string | undefined) ||
+      (base?.size as string | undefined) ||
+      position.sz ||
+      position.size;
 
-    const entryPx = (base?.entryPx as string | undefined)
-      || (base?.entry_px as string | undefined)
-      || position.entryPx
-      || position.entry_px;
+    const entryPx =
+      (base?.entryPx as string | undefined) ||
+      (base?.entry_px as string | undefined) ||
+      position.entryPx ||
+      position.entry_px;
 
-    const markPx = (base?.markPx as string | undefined)
-      || (base?.mark_px as string | undefined)
-      || (base?.oraclePx as string | undefined)
-      || (base?.oracle_px as string | undefined)
-      || position.markPx
-      || position.mark_px;
+    const markPx =
+      (base?.markPx as string | undefined) ||
+      (base?.mark_px as string | undefined) ||
+      (base?.oraclePx as string | undefined) ||
+      (base?.oracle_px as string | undefined) ||
+      position.markPx ||
+      position.mark_px;
 
-    const pnl = (base?.unrealizedPnl as string | undefined)
-      || (base?.unrealized_pnl as string | undefined)
-      || position.unrealizedPnl
-      || position.unrealized_pnl;
+    const pnl =
+      (base?.unrealizedPnl as string | undefined) ||
+      (base?.unrealized_pnl as string | undefined) ||
+      position.unrealizedPnl ||
+      position.unrealized_pnl;
 
-    const side = (base?.side as string | undefined)
-      || position.side
-      || (position as { dir?: string }).dir;
+    const side =
+      (base?.side as string | undefined) ||
+      position.side ||
+      (position as { dir?: string }).dir;
 
-    const symbol = (position.symbol || position.coin || position.asset || (base?.coin as string)) ?? '—';
+    const symbol =
+      (position.symbol ||
+        position.coin ||
+        position.asset ||
+        (base?.coin as string)) ??
+      '—';
 
     return {
       symbol,
@@ -103,7 +80,9 @@ const derivePerpPositions = (positions: HyperliquidPerpPosition[] | null | undef
   });
 };
 
-const deriveSpotPositions = (spotState: HyperliquidSpotUserState | null | undefined) => {
+const deriveSpotPositions = (
+  spotState: HyperliquidSpotUserState | null | undefined
+) => {
   if (!spotState) return [];
 
   const positionsArray = Array.isArray(spotState.assetPositions)
@@ -114,15 +93,18 @@ const deriveSpotPositions = (spotState: HyperliquidSpotUserState | null | undefi
 
   if (positionsArray) {
     return positionsArray.map(position => ({
-      asset: (position as { coin?: string; asset?: string; symbol?: string }).coin
-        || (position as { asset?: string }).asset
-        || (position as { symbol?: string }).symbol
-        || '—',
-      total: (position as { total?: string; balance?: string }).total
-        || (position as { balance?: string }).balance,
+      asset:
+        (position as { coin?: string; asset?: string; symbol?: string }).coin ||
+        (position as { asset?: string }).asset ||
+        (position as { symbol?: string }).symbol ||
+        '—',
+      total:
+        (position as { total?: string; balance?: string }).total ||
+        (position as { balance?: string }).balance,
       available: (position as { available?: string }).available,
-      usdValue: (position as { usdValue?: string; usd_value?: string }).usdValue
-        || (position as { usd_value?: string }).usd_value,
+      usdValue:
+        (position as { usdValue?: string; usd_value?: string }).usdValue ||
+        (position as { usd_value?: string }).usd_value,
     }));
   }
 
@@ -131,7 +113,10 @@ const deriveSpotPositions = (spotState: HyperliquidSpotUserState | null | undefi
     return Object.entries(balances)
       .map(([asset, value]) => ({
         asset,
-        total: typeof value === 'string' || typeof value === 'number' ? String(value) : undefined,
+        total:
+          typeof value === 'string' || typeof value === 'number'
+            ? String(value)
+            : undefined,
       }))
       .filter(entry => entry.total !== undefined);
   }
@@ -146,7 +131,8 @@ const computeFillValue = (fill: HyperliquidFill) => {
 
   const numericSize = Number(size);
   const numericPrice = Number(price);
-  if (!Number.isFinite(numericSize) || !Number.isFinite(numericPrice)) return null;
+  if (!Number.isFinite(numericSize) || !Number.isFinite(numericPrice))
+    return null;
   return numericSize * numericPrice;
 };
 
@@ -154,7 +140,9 @@ interface HyperliquidSectionProps {
   className?: string;
 }
 
-export default function HyperliquidSection({ className = '' }: HyperliquidSectionProps) {
+export default function HyperliquidSection({
+  className = '',
+}: HyperliquidSectionProps) {
   const router = useRouter();
   const data = useHyperliquidStore(state => state.data);
   const isLoading = useHyperliquidStore(state => state.isLoading);
@@ -170,55 +158,77 @@ export default function HyperliquidSection({ className = '' }: HyperliquidSectio
 
   // Calcul des données dérivées
   const perpPositions = useMemo(
-    () => derivePerpPositions(data?.userState?.perpPositions ?? data?.userState?.assetPositions),
-    [data?.userState?.perpPositions, data?.userState?.assetPositions],
+    () =>
+      derivePerpPositions(
+        data?.userState?.perpPositions ?? data?.userState?.assetPositions
+      ),
+    [data?.userState?.perpPositions, data?.userState?.assetPositions]
   );
 
   const spotPositions = useMemo(
     () => deriveSpotPositions(data?.spotUserState),
-    [data?.spotUserState],
+    [data?.spotUserState]
   );
 
-  const fills = useMemo(() => (Array.isArray(data?.fills) ? data?.fills.slice(0, 25) : []), [data?.fills]);
-  const openOrders = useMemo(() => (Array.isArray(data?.openOrders) ? data?.openOrders : []), [data?.openOrders]);
+  const fills = useMemo(
+    () => (Array.isArray(data?.fills) ? data?.fills.slice(0, 25) : []),
+    [data?.fills]
+  );
+  const openOrders = useMemo(
+    () => (Array.isArray(data?.openOrders) ? data?.openOrders : []),
+    [data?.openOrders]
+  );
 
   // Configuration des onglets Hyperliquid
-  const hyperTabs = useMemo(() => [
-    {
-      id: 'portfolio',
-      label: 'Portfolio',
-      icon: '📊',
-      count: undefined,
-    },
-    {
-      id: 'positions',
-      label: 'Positions',
-      icon: '📈',
-      count: (perpPositions.length + spotPositions.length) || undefined,
-    },
-    {
-      id: 'orders',
-      label: 'Ordres',
-      icon: '📋',
-      count: (openOrders.length + fills.length) || undefined,
-    },
-  ], [perpPositions.length, spotPositions.length, openOrders.length, fills.length]);
+  const hyperTabs = useMemo(
+    () => [
+      {
+        id: 'portfolio',
+        label: 'Portfolio',
+        icon: '📊',
+        count: undefined,
+      },
+      {
+        id: 'positions',
+        label: 'Positions',
+        icon: '📈',
+        count: perpPositions.length + spotPositions.length || undefined,
+      },
+      {
+        id: 'orders',
+        label: 'Ordres',
+        icon: '📋',
+        count: openOrders.length + fills.length || undefined,
+      },
+    ],
+    [
+      perpPositions.length,
+      spotPositions.length,
+      openOrders.length,
+      fills.length,
+    ]
+  );
 
   // Calcul du volume 14 jours (simulation)
   const volume14d = useMemo(() => {
     if (!fills.length) return null;
     const recent = fills.slice(0, 10);
-    return recent.reduce((sum, fill) => {
-      const value = computeFillValue(fill);
-      return sum + (value || 0);
-    }, 0) * 14;
+    return (
+      recent.reduce((sum, fill) => {
+        const value = computeFillValue(fill);
+        return sum + (value || 0);
+      }, 0) * 14
+    );
   }, [fills]);
 
   // Frais moyens (simulation)
-  const fees = useMemo(() => ({
-    taker: 0.0005, // 0.05%
-    maker: 0.0002, // 0.02%
-  }), []);
+  const fees = useMemo(
+    () => ({
+      taker: 0.0005, // 0.05%
+      maker: 0.0002, // 0.02%
+    }),
+    []
+  );
 
   // Chargement initial des données Hyperliquid
   useEffect(() => {
@@ -276,9 +286,13 @@ export default function HyperliquidSection({ className = '' }: HyperliquidSectio
         </div>
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="bg-white border border-gray-200 rounded-lg px-4 py-3 shadow-sm">
-            <p className="text-xs text-gray-500 uppercase tracking-wide">Réseau</p>
+            <p className="text-xs text-gray-500 uppercase tracking-wide">
+              Réseau
+            </p>
             <div className="flex items-center gap-3 mt-1">
-              <span className="text-sm font-semibold text-black">{networkLabel}</span>
+              <span className="text-sm font-semibold text-black">
+                {networkLabel}
+              </span>
               <select
                 value={useTestnet ? 'testnet' : 'mainnet'}
                 onChange={handleNetworkChange}
@@ -294,7 +308,9 @@ export default function HyperliquidSection({ className = '' }: HyperliquidSectio
             onClick={handleRefresh}
             disabled={isLoading}
             className={`inline-flex items-center justify-center px-5 py-3 rounded-lg text-sm font-semibold transition-colors border-2 border-black ${
-              isLoading ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-black text-white hover:bg-white hover:text-black'
+              isLoading
+                ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                : 'bg-black text-white hover:bg-white hover:text-black'
             }`}
           >
             {isLoading ? 'Rafraîchissement…' : 'Rafraîchir'}
@@ -305,7 +321,9 @@ export default function HyperliquidSection({ className = '' }: HyperliquidSectio
       {/* Gestion des erreurs */}
       {error && (
         <div className="border-l-4 border-red-500 bg-red-50 px-4 py-3 rounded-md text-sm text-red-700 flex flex-col gap-2">
-          <div className="font-semibold">Erreur lors de la récupération des données Hyperliquid</div>
+          <div className="font-semibold">
+            Erreur lors de la récupération des données Hyperliquid
+          </div>
           <span>{error}</span>
           <div className="flex gap-3">
             <button
@@ -330,7 +348,10 @@ export default function HyperliquidSection({ className = '' }: HyperliquidSectio
       {/* Message si aucune donnée */}
       {!isLoading && !data && !error && (
         <div className="border border-dashed border-gray-300 rounded-xl bg-white px-6 py-5 text-sm text-gray-600">
-          Aucune donnée Hyperliquid n&apos;a encore été récupérée. Vérifiez que votre clé API <em>et</em> votre adresse publique Hyperliquid sont bien configurées puis utilisez le bouton « Rafraîchir » pour charger vos informations de trading.
+          Aucune donnée Hyperliquid n&apos;a encore été récupérée. Vérifiez que
+          votre clé API <em>et</em> votre adresse publique Hyperliquid sont bien
+          configurées puis utilisez le bouton « Rafraîchir » pour charger vos
+          informations de trading.
         </div>
       )}
 
@@ -372,10 +393,7 @@ export default function HyperliquidSection({ className = '' }: HyperliquidSectio
             )}
 
             {activeHyperTab === 'orders' && (
-              <OrdersView
-                openOrders={openOrders}
-                fills={fills}
-              />
+              <OrdersView openOrders={openOrders} fills={fills} />
             )}
           </div>
         </div>
@@ -384,7 +402,8 @@ export default function HyperliquidSection({ className = '' }: HyperliquidSectio
       {/* Footer avec dernière mise à jour */}
       {retrievedAt && (
         <p className="text-xs text-gray-500 text-right">
-          Dernière mise à jour Hyperliquid : {new Intl.DateTimeFormat('fr-FR', {
+          Dernière mise à jour Hyperliquid :{' '}
+          {new Intl.DateTimeFormat('fr-FR', {
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',

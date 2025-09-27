@@ -20,7 +20,6 @@ export function middleware(request: NextRequest) {
 
   // En SSR, on ne peut pas accéder au localStorage, mais on peut utiliser les cookies
   // Si un système de cookies JWT est implémenté plus tard
-  const authCookie = request.cookies.get('auth_token');
 
   // Pour l'instant, on laisse l'AuthProvider côté client gérer la logique
   // Mais on ajoute des headers pour optimiser le processus

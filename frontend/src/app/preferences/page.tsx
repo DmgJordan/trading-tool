@@ -2,59 +2,171 @@
 
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import Navbar from '../../components/Navbar';
 import RangeSlider from '../../components/preferences/RangeSlider';
-import MultiSelect, { MultiSelectOption } from '../../components/preferences/MultiSelect';
+import MultiSelect, {
+  MultiSelectOption,
+} from '../../components/preferences/MultiSelect';
 import RadioCardGroup from '../../components/preferences/RadioCardGroup';
-import ToggleSwitch, { ToggleGroup } from '../../components/preferences/ToggleSwitch';
-import { useInitializePreferences, usePreferencesActions, useAutoSavePreferences } from '../../store/preferencesStore';
-import { useAuthStore } from '../../store/authStore';
+import { ToggleGroup } from '../../components/preferences/ToggleSwitch';
 import {
-  tradingPreferencesSchema,
-  TradingPreferencesData,
+  useInitializePreferences,
+  usePreferencesActions,
+  useAutoSavePreferences,
+} from '../../store/preferencesStore';
+import {
   validateAssetSymbol,
   validateTechnicalIndicator,
-  defaultPreferencesValues
+  defaultPreferencesValues,
 } from '../../lib/validation/preferences';
 import {
   RISK_TOLERANCE_OPTIONS,
   INVESTMENT_HORIZON_OPTIONS,
   TRADING_STYLE_OPTIONS,
-  SLIDER_CONFIGS
+  SLIDER_CONFIGS,
 } from '../../lib/types/preferences';
 
 // Options pour les cryptomonnaies populaires
 const CRYPTO_OPTIONS: MultiSelectOption[] = [
-  { value: 'BTC', label: 'Bitcoin', description: 'La première cryptomonnaie', category: 'Major', isPopular: true },
-  { value: 'ETH', label: 'Ethereum', description: 'Plateforme de contrats intelligents', category: 'Major', isPopular: true },
-  { value: 'SOL', label: 'Solana', description: 'Blockchain haute performance', category: 'Layer 1', isPopular: true },
-  { value: 'ADA', label: 'Cardano', description: 'Blockchain proof-of-stake', category: 'Layer 1' },
-  { value: 'DOT', label: 'Polkadot', description: 'Interopérabilité blockchain', category: 'Layer 1' },
-  { value: 'AVAX', label: 'Avalanche', description: 'Plateforme DeFi rapide', category: 'Layer 1' },
-  { value: 'MATIC', label: 'Polygon', description: 'Solution de mise à l\'échelle Ethereum', category: 'Layer 2' },
-  { value: 'LINK', label: 'Chainlink', description: 'Oracle décentralisé', category: 'Infrastructure' },
-  { value: 'UNI', label: 'Uniswap', description: 'Exchange décentralisé', category: 'DeFi' },
-  { value: 'AAVE', label: 'Aave', description: 'Protocole de prêt DeFi', category: 'DeFi' }
+  {
+    value: 'BTC',
+    label: 'Bitcoin',
+    description: 'La première cryptomonnaie',
+    category: 'Major',
+    isPopular: true,
+  },
+  {
+    value: 'ETH',
+    label: 'Ethereum',
+    description: 'Plateforme de contrats intelligents',
+    category: 'Major',
+    isPopular: true,
+  },
+  {
+    value: 'SOL',
+    label: 'Solana',
+    description: 'Blockchain haute performance',
+    category: 'Layer 1',
+    isPopular: true,
+  },
+  {
+    value: 'ADA',
+    label: 'Cardano',
+    description: 'Blockchain proof-of-stake',
+    category: 'Layer 1',
+  },
+  {
+    value: 'DOT',
+    label: 'Polkadot',
+    description: 'Interopérabilité blockchain',
+    category: 'Layer 1',
+  },
+  {
+    value: 'AVAX',
+    label: 'Avalanche',
+    description: 'Plateforme DeFi rapide',
+    category: 'Layer 1',
+  },
+  {
+    value: 'MATIC',
+    label: 'Polygon',
+    description: "Solution de mise à l'échelle Ethereum",
+    category: 'Layer 2',
+  },
+  {
+    value: 'LINK',
+    label: 'Chainlink',
+    description: 'Oracle décentralisé',
+    category: 'Infrastructure',
+  },
+  {
+    value: 'UNI',
+    label: 'Uniswap',
+    description: 'Exchange décentralisé',
+    category: 'DeFi',
+  },
+  {
+    value: 'AAVE',
+    label: 'Aave',
+    description: 'Protocole de prêt DeFi',
+    category: 'DeFi',
+  },
 ];
 
 // Options pour les indicateurs techniques
 const INDICATOR_OPTIONS: MultiSelectOption[] = [
-  { value: 'RSI', label: 'RSI', description: 'Relative Strength Index', category: 'Momentum', isPopular: true },
-  { value: 'MACD', label: 'MACD', description: 'Moving Average Convergence Divergence', category: 'Momentum', isPopular: true },
-  { value: 'SMA', label: 'SMA', description: 'Simple Moving Average', category: 'Trend', isPopular: true },
-  { value: 'EMA', label: 'EMA', description: 'Exponential Moving Average', category: 'Trend' },
-  { value: 'BB', label: 'Bollinger Bands', description: 'Bandes de Bollinger', category: 'Volatility' },
-  { value: 'STOCH', label: 'Stochastic', description: 'Oscillateur stochastique', category: 'Momentum' },
-  { value: 'ADX', label: 'ADX', description: 'Average Directional Index', category: 'Trend' },
-  { value: 'CCI', label: 'CCI', description: 'Commodity Channel Index', category: 'Momentum' },
-  { value: 'ATR', label: 'ATR', description: 'Average True Range', category: 'Volatility' },
-  { value: 'VWAP', label: 'VWAP', description: 'Volume Weighted Average Price', category: 'Volume' },
-  { value: 'OBV', label: 'OBV', description: 'On Balance Volume', category: 'Volume' }
+  {
+    value: 'RSI',
+    label: 'RSI',
+    description: 'Relative Strength Index',
+    category: 'Momentum',
+    isPopular: true,
+  },
+  {
+    value: 'MACD',
+    label: 'MACD',
+    description: 'Moving Average Convergence Divergence',
+    category: 'Momentum',
+    isPopular: true,
+  },
+  {
+    value: 'SMA',
+    label: 'SMA',
+    description: 'Simple Moving Average',
+    category: 'Trend',
+    isPopular: true,
+  },
+  {
+    value: 'EMA',
+    label: 'EMA',
+    description: 'Exponential Moving Average',
+    category: 'Trend',
+  },
+  {
+    value: 'BB',
+    label: 'Bollinger Bands',
+    description: 'Bandes de Bollinger',
+    category: 'Volatility',
+  },
+  {
+    value: 'STOCH',
+    label: 'Stochastic',
+    description: 'Oscillateur stochastique',
+    category: 'Momentum',
+  },
+  {
+    value: 'ADX',
+    label: 'ADX',
+    description: 'Average Directional Index',
+    category: 'Trend',
+  },
+  {
+    value: 'CCI',
+    label: 'CCI',
+    description: 'Commodity Channel Index',
+    category: 'Momentum',
+  },
+  {
+    value: 'ATR',
+    label: 'ATR',
+    description: 'Average True Range',
+    category: 'Volatility',
+  },
+  {
+    value: 'VWAP',
+    label: 'VWAP',
+    description: 'Volume Weighted Average Price',
+    category: 'Volume',
+  },
+  {
+    value: 'OBV',
+    label: 'OBV',
+    description: 'On Balance Volume',
+    category: 'Volume',
+  },
 ];
 
 export default function PreferencesPage() {
-  const { user } = useAuthStore();
   const {
     initialize,
     isInitialized,
@@ -62,7 +174,6 @@ export default function PreferencesPage() {
     error: initError,
     preferences,
     defaults,
-    validationInfo
   } = useInitializePreferences();
 
   const {
@@ -71,7 +182,7 @@ export default function PreferencesPage() {
     clearError,
     isSaving,
     error: saveError,
-    lastSaved
+    lastSaved,
   } = usePreferencesActions();
 
   const { debouncedUpdate } = useAutoSavePreferences(3000); // Auto-save après 3 secondes
@@ -81,18 +192,17 @@ export default function PreferencesPage() {
     email_alerts: true,
     push_notifications: false,
     telegram_alerts: false,
-    discord_alerts: false
+    discord_alerts: false,
   });
 
   // Configuration du formulaire
   const {
-    register,
     handleSubmit,
     watch,
     setValue,
-    formState: { errors, isDirty }
+    formState: { errors, isDirty },
   } = useForm({
-    defaultValues: preferences || defaults || defaultPreferencesValues
+    defaultValues: preferences || defaults || defaultPreferencesValues,
   });
 
   // Initialiser les préférences au chargement
@@ -106,7 +216,12 @@ export default function PreferencesPage() {
   useEffect(() => {
     if (preferences) {
       Object.entries(preferences).forEach(([key, value]) => {
-        if (key !== 'id' && key !== 'user_id' && key !== 'created_at' && key !== 'updated_at') {
+        if (
+          key !== 'id' &&
+          key !== 'user_id' &&
+          key !== 'created_at' &&
+          key !== 'updated_at'
+        ) {
           setValue(key as any, value);
         }
       });
@@ -129,7 +244,7 @@ export default function PreferencesPage() {
         setShowSuccess(true);
         setTimeout(() => setShowSuccess(false), 3000);
       },
-      (error) => console.error('Erreur de sauvegarde:', error)
+      error => console.error('Erreur de sauvegarde:', error)
     );
   };
 
@@ -140,7 +255,7 @@ export default function PreferencesPage() {
         setShowSuccess(true);
         setTimeout(() => setShowSuccess(false), 3000);
       },
-      (error) => console.error('Erreur de reset:', error)
+      error => console.error('Erreur de reset:', error)
     );
   };
 
@@ -168,7 +283,9 @@ export default function PreferencesPage() {
         <Navbar />
         <main className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-12 py-12">
           <div className="text-center">
-            <div className="text-red-600 text-xl mb-4">Erreur de chargement</div>
+            <div className="text-red-600 text-xl mb-4">
+              Erreur de chargement
+            </div>
             <p className="text-gray-600 mb-4">{initError}</p>
             <button
               onClick={initialize}
@@ -193,7 +310,8 @@ export default function PreferencesPage() {
             Préférences de Trading IA
           </h1>
           <p className="text-lg text-gray-600">
-            Configurez vos préférences pour obtenir des recommandations personnalisées de notre IA de trading.
+            Configurez vos préférences pour obtenir des recommandations
+            personnalisées de notre IA de trading.
           </p>
         </div>
 
@@ -201,10 +319,20 @@ export default function PreferencesPage() {
         {showSuccess && (
           <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
             <div className="flex items-center">
-              <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              <svg
+                className="w-5 h-5 text-green-500 mr-2"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                  clipRule="evenodd"
+                />
               </svg>
-              <span className="text-green-700 font-medium">Préférences sauvegardées avec succès !</span>
+              <span className="text-green-700 font-medium">
+                Préférences sauvegardées avec succès !
+              </span>
             </div>
           </div>
         )}
@@ -213,12 +341,23 @@ export default function PreferencesPage() {
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <svg className="w-5 h-5 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                <svg
+                  className="w-5 h-5 text-red-500 mr-2"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                    clipRule="evenodd"
+                  />
                 </svg>
                 <span className="text-red-700 font-medium">{saveError}</span>
               </div>
-              <button onClick={clearError} className="text-red-500 hover:text-red-700">
+              <button
+                onClick={clearError}
+                className="text-red-500 hover:text-red-700"
+              >
                 ×
               </button>
             </div>
@@ -237,7 +376,7 @@ export default function PreferencesPage() {
               <RadioCardGroup
                 options={RISK_TOLERANCE_OPTIONS}
                 value={watch('risk_tolerance')}
-                onChange={(value) => setValue('risk_tolerance', value as any)}
+                onChange={value => setValue('risk_tolerance', value as any)}
                 label="Tolérance au risque"
                 description="Quel niveau de risque êtes-vous prêt à accepter ?"
                 error={errors.risk_tolerance?.message}
@@ -247,7 +386,7 @@ export default function PreferencesPage() {
               <RadioCardGroup
                 options={INVESTMENT_HORIZON_OPTIONS}
                 value={watch('investment_horizon')}
-                onChange={(value) => setValue('investment_horizon', value as any)}
+                onChange={value => setValue('investment_horizon', value as any)}
                 label="Horizon d'investissement"
                 description="Sur quelle période envisagez-vous vos investissements ?"
                 error={errors.investment_horizon?.message}
@@ -257,7 +396,7 @@ export default function PreferencesPage() {
               <RadioCardGroup
                 options={TRADING_STYLE_OPTIONS}
                 value={watch('trading_style')}
-                onChange={(value) => setValue('trading_style', value as any)}
+                onChange={value => setValue('trading_style', value as any)}
                 label="Style de trading"
                 description="Quelle approche correspond le mieux à votre stratégie ?"
                 error={errors.trading_style?.message}
@@ -274,7 +413,7 @@ export default function PreferencesPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <RangeSlider
                 value={watch('max_position_size')}
-                onChange={(value) => setValue('max_position_size', value)}
+                onChange={value => setValue('max_position_size', value)}
                 config={SLIDER_CONFIGS.max_position_size}
                 label="Taille maximale de position"
                 description="Pourcentage maximum de votre portefeuille pour une seule position"
@@ -283,7 +422,7 @@ export default function PreferencesPage() {
 
               <RangeSlider
                 value={watch('stop_loss_percentage')}
-                onChange={(value) => setValue('stop_loss_percentage', value)}
+                onChange={value => setValue('stop_loss_percentage', value)}
                 config={SLIDER_CONFIGS.stop_loss_percentage}
                 label="Stop-loss par défaut"
                 description="Pourcentage de perte acceptable avant de couper une position"
@@ -293,7 +432,7 @@ export default function PreferencesPage() {
               <div className="lg:col-span-2">
                 <RangeSlider
                   value={watch('take_profit_ratio')}
-                  onChange={(value) => setValue('take_profit_ratio', value)}
+                  onChange={value => setValue('take_profit_ratio', value)}
                   config={SLIDER_CONFIGS.take_profit_ratio}
                   label="Ratio risk/reward"
                   description="Ratio entre le gain espéré et la perte potentielle"
@@ -312,7 +451,7 @@ export default function PreferencesPage() {
             <MultiSelect
               options={CRYPTO_OPTIONS}
               selected={watch('preferred_assets') || []}
-              onChange={(selected) => setValue('preferred_assets', selected)}
+              onChange={selected => setValue('preferred_assets', selected)}
               label="Cryptomonnaies préférées"
               description="Sélectionnez jusqu'à 20 cryptomonnaies que vous souhaitez trader"
               placeholder="Rechercher des cryptomonnaies..."
@@ -332,7 +471,7 @@ export default function PreferencesPage() {
             <MultiSelect
               options={INDICATOR_OPTIONS}
               selected={watch('technical_indicators') || []}
-              onChange={(selected) => setValue('technical_indicators', selected)}
+              onChange={selected => setValue('technical_indicators', selected)}
               label="Indicateurs préférés"
               description="Sélectionnez jusqu'à 15 indicateurs techniques pour l'analyse"
               placeholder="Rechercher des indicateurs..."
@@ -357,30 +496,34 @@ export default function PreferencesPage() {
                   key: 'email_alerts',
                   label: 'Alertes par email',
                   description: 'Recevoir les recommandations par email',
-                  checked: notifications.email_alerts
+                  checked: notifications.email_alerts,
                 },
                 {
                   key: 'push_notifications',
                   label: 'Notifications push',
                   description: 'Notifications directes dans votre navigateur',
-                  checked: notifications.push_notifications
+                  checked: notifications.push_notifications,
                 },
                 {
                   key: 'telegram_alerts',
                   label: 'Alertes Telegram',
-                  description: 'Recevoir les signaux via Telegram (bientôt disponible)',
+                  description:
+                    'Recevoir les signaux via Telegram (bientôt disponible)',
                   checked: notifications.telegram_alerts,
-                  disabled: true
+                  disabled: true,
                 },
                 {
                   key: 'discord_alerts',
                   label: 'Alertes Discord',
-                  description: 'Recevoir les signaux via Discord (bientôt disponible)',
+                  description:
+                    'Recevoir les signaux via Discord (bientôt disponible)',
                   checked: notifications.discord_alerts,
-                  disabled: true
-                }
+                  disabled: true,
+                },
               ]}
-              onChange={(key, checked) => setNotifications(prev => ({ ...prev, [key]: checked }))}
+              onChange={(key, checked) =>
+                setNotifications(prev => ({ ...prev, [key]: checked }))
+              }
             />
           </div>
 
@@ -398,7 +541,8 @@ export default function PreferencesPage() {
 
               {lastSaved && (
                 <span className="text-sm text-gray-500">
-                  Dernière sauvegarde : {new Date(lastSaved).toLocaleTimeString()}
+                  Dernière sauvegarde :{' '}
+                  {new Date(lastSaved).toLocaleTimeString()}
                 </span>
               )}
             </div>

@@ -14,7 +14,7 @@ interface RouteGuardProps {
 export default function RouteGuard({
   children,
   requireAuth = true,
-  fallback
+  fallback,
 }: RouteGuardProps) {
   const [isLoading, setIsLoading] = useState(true);
   const { isAuthenticated, refreshToken } = useAuthStore();
@@ -38,7 +38,10 @@ export default function RouteGuard({
           }
         }
       } catch (error) {
-        console.warn('Erreur lors de la vérification de l\'authentification:', error);
+        console.warn(
+          "Erreur lors de la vérification de l'authentification:",
+          error
+        );
       } finally {
         setIsLoading(false);
       }
@@ -63,7 +66,14 @@ export default function RouteGuard({
         return;
       }
     }
-  }, [isLoading, isAuthenticated, requireAuth, isPublicRoute, router, pathname]);
+  }, [
+    isLoading,
+    isAuthenticated,
+    requireAuth,
+    isPublicRoute,
+    router,
+    pathname,
+  ]);
 
   // Affichage pendant le chargement
   if (isLoading) {
@@ -101,6 +111,8 @@ export function useRouteGuard(requireAuth: boolean = true) {
     isAuthenticated,
     isPublicRoute,
     shouldRedirect,
-    canAccess: requireAuth ? isAuthenticated : !isAuthenticated || !isPublicRoute
+    canAccess: requireAuth
+      ? isAuthenticated
+      : !isAuthenticated || !isPublicRoute,
   };
 }

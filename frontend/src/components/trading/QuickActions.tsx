@@ -16,9 +16,16 @@ interface QuickActionsProps {
   className?: string;
 }
 
-export default function QuickActions({ actions, className = '' }: QuickActionsProps) {
-  const getButtonClasses = (variant: QuickAction['variant'] = 'secondary', disabled = false) => {
-    const baseClasses = 'inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 border-2';
+export default function QuickActions({
+  actions,
+  className = '',
+}: QuickActionsProps) {
+  const getButtonClasses = (
+    variant: QuickAction['variant'] = 'secondary',
+    disabled = false
+  ) => {
+    const baseClasses =
+      'inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 border-2';
 
     if (disabled) {
       return `${baseClasses} bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed`;
@@ -39,7 +46,7 @@ export default function QuickActions({ actions, className = '' }: QuickActionsPr
 
   return (
     <div className={`flex flex-wrap gap-3 ${className}`}>
-      {actions.map((action) => (
+      {actions.map(action => (
         <button
           key={action.id}
           onClick={action.onClick}

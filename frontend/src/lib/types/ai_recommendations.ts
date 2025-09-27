@@ -1,6 +1,10 @@
 export type RecommendationAction = 'BUY' | 'SELL' | 'HOLD';
 export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH';
-export type RecommendationStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
+export type RecommendationStatus =
+  | 'PENDING'
+  | 'ACCEPTED'
+  | 'REJECTED'
+  | 'EXPIRED';
 
 export interface AIRecommendation {
   id: number;
@@ -114,7 +118,7 @@ export const RECOMMENDATION_ACTIONS = [
     color: 'text-green-600',
     bgColor: 'bg-green-50',
     borderColor: 'border-green-200',
-    icon: '📈'
+    icon: '📈',
   },
   {
     value: 'SELL',
@@ -122,7 +126,7 @@ export const RECOMMENDATION_ACTIONS = [
     color: 'text-red-600',
     bgColor: 'bg-red-50',
     borderColor: 'border-red-200',
-    icon: '📉'
+    icon: '📉',
   },
   {
     value: 'HOLD',
@@ -130,8 +134,8 @@ export const RECOMMENDATION_ACTIONS = [
     color: 'text-blue-600',
     bgColor: 'bg-blue-50',
     borderColor: 'border-blue-200',
-    icon: '⏸️'
-  }
+    icon: '⏸️',
+  },
 ] as const;
 
 export const RISK_LEVELS = [
@@ -140,22 +144,22 @@ export const RISK_LEVELS = [
     label: 'Faible',
     color: 'text-green-600',
     bgColor: 'bg-green-100',
-    icon: '🟢'
+    icon: '🟢',
   },
   {
     value: 'MEDIUM',
     label: 'Moyen',
     color: 'text-yellow-600',
     bgColor: 'bg-yellow-100',
-    icon: '🟡'
+    icon: '🟡',
   },
   {
     value: 'HIGH',
     label: 'Élevé',
     color: 'text-red-600',
     bgColor: 'bg-red-100',
-    icon: '🔴'
-  }
+    icon: '🔴',
+  },
 ] as const;
 
 export const RECOMMENDATION_STATUS = [
@@ -163,26 +167,26 @@ export const RECOMMENDATION_STATUS = [
     value: 'PENDING',
     label: 'En attente',
     color: 'text-gray-600',
-    bgColor: 'bg-gray-100'
+    bgColor: 'bg-gray-100',
   },
   {
     value: 'ACCEPTED',
     label: 'Acceptée',
     color: 'text-green-600',
-    bgColor: 'bg-green-100'
+    bgColor: 'bg-green-100',
   },
   {
     value: 'REJECTED',
     label: 'Rejetée',
     color: 'text-red-600',
-    bgColor: 'bg-red-100'
+    bgColor: 'bg-red-100',
   },
   {
     value: 'EXPIRED',
     label: 'Expirée',
     color: 'text-orange-600',
-    bgColor: 'bg-orange-100'
-  }
+    bgColor: 'bg-orange-100',
+  },
 ] as const;
 
 // Utilitaires pour formater les données
@@ -228,7 +232,10 @@ export const isRecommendationExpired = (expiresAt: string): boolean => {
   return new Date(expiresAt) < new Date();
 };
 
-export const isRecommendationExpiringSoon = (expiresAt: string, hoursThreshold: number = 2): boolean => {
+export const isRecommendationExpiringSoon = (
+  expiresAt: string,
+  hoursThreshold: number = 2
+): boolean => {
   const expiryTime = new Date(expiresAt);
   const thresholdTime = new Date(Date.now() + hoursThreshold * 60 * 60 * 1000);
   return expiryTime < thresholdTime;

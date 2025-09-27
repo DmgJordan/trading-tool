@@ -33,7 +33,12 @@ const formatPercentage = (value?: number) => {
   return `${(value * 100).toFixed(4)}%`;
 };
 
-export default function MetricsHeader({ portfolioSummary, volume14d, fees, className = '' }: MetricsHeaderProps) {
+export default function MetricsHeader({
+  portfolioSummary,
+  volume14d,
+  fees,
+  className = '',
+}: MetricsHeaderProps) {
   const pnlData = useMemo(() => {
     const pnl = portfolioSummary?.totalUnrealizedPnl ?? 0;
     const accountValue = portfolioSummary?.accountValue ?? 0;
@@ -62,18 +67,29 @@ export default function MetricsHeader({ portfolioSummary, volume14d, fees, class
       label: 'PNL',
       value: (
         <div className="flex flex-col items-end">
-          <span className={`font-semibold ${
-            pnlData.isPositive ? 'text-green-600' :
-            pnlData.isNegative ? 'text-red-600' : 'text-gray-900'
-          }`}>
+          <span
+            className={`font-semibold ${
+              pnlData.isPositive
+                ? 'text-green-600'
+                : pnlData.isNegative
+                  ? 'text-red-600'
+                  : 'text-gray-900'
+            }`}
+          >
             {formatCurrency(pnlData.value)}
           </span>
           {pnlData.percentage !== 0 && (
-            <span className={`text-xs ${
-              pnlData.isPositive ? 'text-green-600' :
-              pnlData.isNegative ? 'text-red-600' : 'text-gray-500'
-            }`}>
-              {pnlData.isPositive ? '+' : ''}{pnlData.percentage.toFixed(2)}%
+            <span
+              className={`text-xs ${
+                pnlData.isPositive
+                  ? 'text-green-600'
+                  : pnlData.isNegative
+                    ? 'text-red-600'
+                    : 'text-gray-500'
+              }`}
+            >
+              {pnlData.isPositive ? '+' : ''}
+              {pnlData.percentage.toFixed(2)}%
             </span>
           )}
         </div>
@@ -88,16 +104,16 @@ export default function MetricsHeader({ portfolioSummary, volume14d, fees, class
   ];
 
   return (
-    <div className={`bg-white border border-gray-200 rounded-xl p-6 shadow-sm ${className}`}>
+    <div
+      className={`bg-white border border-gray-200 rounded-xl p-6 shadow-sm ${className}`}
+    >
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
         {metrics.map((metric, index) => (
           <div key={index} className="text-center md:text-left">
             <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">
               {metric.label}
             </p>
-            <div className={`text-lg ${metric.className}`}>
-              {metric.value}
-            </div>
+            <div className={`text-lg ${metric.className}`}>{metric.value}</div>
           </div>
         ))}
       </div>

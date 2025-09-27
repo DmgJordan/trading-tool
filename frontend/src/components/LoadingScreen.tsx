@@ -7,36 +7,41 @@ interface LoadingScreenProps {
 }
 
 export default function LoadingScreen({
-  message = "Chargement...",
+  message = 'Chargement...',
   size = 'medium',
-  variant = 'fullscreen'
+  variant = 'fullscreen',
 }: LoadingScreenProps) {
   const sizeClasses = {
     small: 'w-6 h-6',
     medium: 'w-8 h-8',
-    large: 'w-12 h-12'
+    large: 'w-12 h-12',
   };
 
   const logoSizeClasses = {
     small: 'w-8 h-8 text-lg',
     medium: 'w-12 h-12 text-xl',
-    large: 'w-16 h-16 text-2xl'
+    large: 'w-16 h-16 text-2xl',
   };
 
-  const containerClasses = variant === 'fullscreen'
-    ? 'min-h-screen bg-white flex items-center justify-center'
-    : 'flex items-center justify-center p-8';
+  const containerClasses =
+    variant === 'fullscreen'
+      ? 'min-h-screen bg-white flex items-center justify-center'
+      : 'flex items-center justify-center p-8';
 
   return (
     <div className={containerClasses}>
       <div className="text-center">
         {/* Logo de l'application */}
-        <div className={`${logoSizeClasses[size]} bg-black rounded-full flex items-center justify-center mx-auto mb-4`}>
+        <div
+          className={`${logoSizeClasses[size]} bg-black rounded-full flex items-center justify-center mx-auto mb-4`}
+        >
           <span className="text-white font-bold">T</span>
         </div>
 
         {/* Spinner de chargement */}
-        <div className={`animate-spin ${sizeClasses[size]} border-4 border-black border-t-transparent rounded-full mx-auto mb-4`}></div>
+        <div
+          className={`animate-spin ${sizeClasses[size]} border-4 border-black border-t-transparent rounded-full mx-auto mb-4`}
+        ></div>
 
         {/* Message de chargement */}
         <p className="text-gray-600 font-medium">{message}</p>
@@ -45,7 +50,10 @@ export default function LoadingScreen({
         {variant === 'fullscreen' && (
           <div className="mt-6 w-48 mx-auto">
             <div className="w-full bg-gray-200 rounded-full h-1">
-              <div className="bg-black h-1 rounded-full animate-pulse" style={{ width: '60%' }}></div>
+              <div
+                className="bg-black h-1 rounded-full animate-pulse"
+                style={{ width: '60%' }}
+              ></div>
             </div>
           </div>
         )}
@@ -57,8 +65,8 @@ export default function LoadingScreen({
 // Composant LoadingOverlay pour les chargements en surimpression
 export function LoadingOverlay({
   isVisible,
-  message = "Chargement...",
-  onCancel
+  message = 'Chargement...',
+  onCancel,
 }: {
   isVisible: boolean;
   message?: string;
@@ -87,7 +95,7 @@ export function LoadingOverlay({
 // Composant LoadingSkeleton pour le contenu en cours de chargement
 export function LoadingSkeleton({
   lines = 3,
-  className = ""
+  className = '',
 }: {
   lines?: number;
   className?: string;

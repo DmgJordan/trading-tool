@@ -31,12 +31,12 @@ export default function RadioCardGroup({
   error,
   disabled = false,
   columns = 3,
-  className = ''
+  className = '',
 }: RadioCardGroupProps) {
   const gridClasses = {
     1: 'grid-cols-1',
     2: 'grid-cols-1 md:grid-cols-2',
-    3: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+    3: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
   };
 
   return (
@@ -46,14 +46,12 @@ export default function RadioCardGroup({
         <label className="block text-sm font-medium text-gray-700 mb-2">
           {label}
         </label>
-        {description && (
-          <p className="text-sm text-gray-500">{description}</p>
-        )}
+        {description && <p className="text-sm text-gray-500">{description}</p>}
       </div>
 
       {/* Options en cartes */}
       <div className={`grid gap-4 ${gridClasses[columns]}`}>
-        {options.map((option) => {
+        {options.map(option => {
           const isSelected = value === option.value;
           const isDisabled = disabled;
 
@@ -65,18 +63,20 @@ export default function RadioCardGroup({
                 isDisabled
                   ? 'cursor-not-allowed opacity-50 bg-gray-50 border-gray-200'
                   : isSelected
-                  ? 'border-black bg-black text-white shadow-lg transform scale-[1.02]'
-                  : 'border-gray-200 bg-white hover:border-gray-400 hover:shadow-md'
+                    ? 'border-black bg-black text-white shadow-lg transform scale-[1.02]'
+                    : 'border-gray-200 bg-white hover:border-gray-400 hover:shadow-md'
               }`}
             >
               {/* Badge */}
               {option.badge && (
                 <div className="absolute top-2 right-2">
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                    isSelected
-                      ? 'bg-white text-black'
-                      : 'bg-blue-100 text-blue-800'
-                  }`}>
+                  <span
+                    className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      isSelected
+                        ? 'bg-white text-black'
+                        : 'bg-blue-100 text-blue-800'
+                    }`}
+                  >
                     {option.badge}
                   </span>
                 </div>
@@ -87,17 +87,21 @@ export default function RadioCardGroup({
                 {option.icon && (
                   <span className="text-2xl mr-3">{option.icon}</span>
                 )}
-                <h3 className={`text-lg font-semibold ${
-                  isSelected ? 'text-white' : option.color || 'text-gray-900'
-                }`}>
+                <h3
+                  className={`text-lg font-semibold ${
+                    isSelected ? 'text-white' : option.color || 'text-gray-900'
+                  }`}
+                >
                   {option.label}
                 </h3>
               </div>
 
               {/* Description */}
-              <p className={`text-sm mb-3 ${
-                isSelected ? 'text-gray-200' : 'text-gray-600'
-              }`}>
+              <p
+                className={`text-sm mb-3 ${
+                  isSelected ? 'text-gray-200' : 'text-gray-600'
+                }`}
+              >
                 {option.description}
               </p>
 
@@ -134,8 +138,16 @@ export default function RadioCardGroup({
               {isSelected && (
                 <div className="absolute top-4 left-4">
                   <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
-                    <svg className="w-4 h-4 text-black" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    <svg
+                      className="w-4 h-4 text-black"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                   </div>
                 </div>
@@ -160,7 +172,11 @@ export default function RadioCardGroup({
       {error && (
         <p className="text-sm text-red-600 flex items-center">
           <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            <path
+              fillRule="evenodd"
+              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+              clipRule="evenodd"
+            />
           </svg>
           {error}
         </p>

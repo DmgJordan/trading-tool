@@ -14,7 +14,12 @@ interface PnlChartProps {
   className?: string;
 }
 
-export default function PnlChart({ data = [], width = 200, height = 60, className = '' }: PnlChartProps) {
+export default function PnlChart({
+  data = [],
+  width = 200,
+  height = 60,
+  className = '',
+}: PnlChartProps) {
   const chartData = useMemo(() => {
     if (!data.length) {
       // Données de démonstration si aucune donnée fournie
@@ -50,7 +55,6 @@ export default function PnlChart({ data = [], width = 200, height = 60, classNam
   }, [chartData, width, height]);
 
   const strokeColor = isPositive ? '#16a34a' : '#dc2626'; // green-600 or red-600
-  const fillColor = isPositive ? 'rgba(22, 163, 74, 0.1)' : 'rgba(220, 38, 38, 0.1)';
 
   return (
     <div className={`${className}`}>
@@ -86,9 +90,9 @@ export default function PnlChart({ data = [], width = 200, height = 60, classNam
         {minPnl < 0 && maxPnl > 0 && (
           <line
             x1="0"
-            y1={height - ((-minPnl) / (maxPnl - minPnl)) * height}
+            y1={height - (-minPnl / (maxPnl - minPnl)) * height}
             x2={width}
-            y2={height - ((-minPnl) / (maxPnl - minPnl)) * height}
+            y2={height - (-minPnl / (maxPnl - minPnl)) * height}
             stroke="#9ca3af"
             strokeWidth="1"
             strokeDasharray="2,2"
@@ -99,8 +103,13 @@ export default function PnlChart({ data = [], width = 200, height = 60, classNam
         {/* Point final */}
         {chartData.length > 0 && (
           <circle
-            cx={(chartData.length - 1) / (chartData.length - 1) * width}
-            cy={height - ((chartData[chartData.length - 1].pnl - minPnl) / (maxPnl - minPnl || 1)) * height}
+            cx={((chartData.length - 1) / (chartData.length - 1)) * width}
+            cy={
+              height -
+              ((chartData[chartData.length - 1].pnl - minPnl) /
+                (maxPnl - minPnl || 1)) *
+                height
+            }
             r="3"
             fill={strokeColor}
             stroke="white"

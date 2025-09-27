@@ -14,7 +14,7 @@ const apiClient = axios.create({
 });
 
 // Intercepteur pour ajouter le token d'accès aux requêtes
-apiClient.interceptors.request.use((config) => {
+apiClient.interceptors.request.use(config => {
   // Essayer d'abord localStorage pour les tokens existants
   let access_token = null;
   const storedTokens = localStorage.getItem('auth_tokens');
@@ -36,7 +36,7 @@ apiClient.interceptors.request.use((config) => {
         access_token = store.tokens.access_token;
       }
     } catch (error) {
-      console.error('Erreur lors de l\'accès au store Zustand:', error);
+      console.error("Erreur lors de l'accès au store Zustand:", error);
     }
   }
 
@@ -49,8 +49,8 @@ apiClient.interceptors.request.use((config) => {
 
 // Intercepteur pour gérer l'expiration des tokens
 apiClient.interceptors.response.use(
-  (response) => response,
-  async (error) => {
+  response => response,
+  async error => {
     if (error.response?.status === 401) {
       const tokens = localStorage.getItem('auth_tokens');
       if (tokens) {
@@ -58,9 +58,12 @@ apiClient.interceptors.response.use(
           const { refresh_token } = JSON.parse(tokens);
 
           // Appel direct pour éviter l'interception
-          const refreshResponse = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-            refresh_token
-          });
+          const refreshResponse = await axios.post(
+            `${API_BASE_URL}/auth/refresh`,
+            {
+              refresh_token,
+            }
+          );
 
           const newTokens = refreshResponse.data;
           localStorage.setItem('auth_tokens', JSON.stringify(newTokens));

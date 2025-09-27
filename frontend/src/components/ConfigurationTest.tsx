@@ -12,11 +12,15 @@ export default function ConfigurationTest() {
   const [testResult, setTestResult] = useState<TestResult>({
     backend: null,
     database: null,
-    message: ''
+    message: '',
   });
 
   const testBackendConnection = async () => {
-    setTestResult(prev => ({ ...prev, backend: 'testing', message: 'Test de connexion au backend...' }));
+    setTestResult(prev => ({
+      ...prev,
+      backend: 'testing',
+      message: 'Test de connexion au backend...',
+    }));
 
     try {
       const response = await fetch('http://localhost:8000/health', {
@@ -31,7 +35,7 @@ export default function ConfigurationTest() {
         setTestResult(prev => ({
           ...prev,
           backend: 'success',
-          message: 'Connexion backend réussie !'
+          message: 'Connexion backend réussie !',
         }));
       } else {
         throw new Error(`HTTP ${response.status}`);
@@ -40,13 +44,17 @@ export default function ConfigurationTest() {
       setTestResult(prev => ({
         ...prev,
         backend: 'error',
-        message: `Erreur backend: ${error instanceof Error ? error.message : 'Connexion échouée'}`
+        message: `Erreur backend: ${error instanceof Error ? error.message : 'Connexion échouée'}`,
       }));
     }
   };
 
   const testDatabaseConnection = async () => {
-    setTestResult(prev => ({ ...prev, database: 'testing', message: 'Test de connexion à la base de données...' }));
+    setTestResult(prev => ({
+      ...prev,
+      database: 'testing',
+      message: 'Test de connexion à la base de données...',
+    }));
 
     try {
       const response = await fetch('http://localhost:8000/db-health', {
@@ -61,7 +69,7 @@ export default function ConfigurationTest() {
         setTestResult(prev => ({
           ...prev,
           database: 'success',
-          message: 'Connexion base de données réussie !'
+          message: 'Connexion base de données réussie !',
         }));
       } else {
         throw new Error(`HTTP ${response.status}`);
@@ -70,7 +78,7 @@ export default function ConfigurationTest() {
       setTestResult(prev => ({
         ...prev,
         database: 'error',
-        message: `Erreur base de données: ${error instanceof Error ? error.message : 'Connexion échouée'}`
+        message: `Erreur base de données: ${error instanceof Error ? error.message : 'Connexion échouée'}`,
       }));
     }
   };
@@ -114,14 +122,18 @@ export default function ConfigurationTest() {
 
       <div className="space-y-6">
         {/* Test Backend */}
-        <div className={`p-6 rounded-xl border-2 transition-all duration-300 ${getStatusColor(testResult.backend)}`}>
+        <div
+          className={`p-6 rounded-xl border-2 transition-all duration-300 ${getStatusColor(testResult.backend)}`}
+        >
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center space-x-4">
               <div className="flex-shrink-0">
                 {getStatusIcon(testResult.backend)}
               </div>
               <div>
-                <h3 className="font-semibold text-black text-lg">Connexion Backend</h3>
+                <h3 className="font-semibold text-black text-lg">
+                  Connexion Backend
+                </h3>
                 <p className="text-gray-700 mt-1">FastAPI sur port 8000</p>
               </div>
             </div>
@@ -136,14 +148,18 @@ export default function ConfigurationTest() {
         </div>
 
         {/* Test Database */}
-        <div className={`p-6 rounded-xl border-2 transition-all duration-300 ${getStatusColor(testResult.database)}`}>
+        <div
+          className={`p-6 rounded-xl border-2 transition-all duration-300 ${getStatusColor(testResult.database)}`}
+        >
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center space-x-4">
               <div className="flex-shrink-0">
                 {getStatusIcon(testResult.database)}
               </div>
               <div>
-                <h3 className="font-semibold text-black text-lg">Connexion Base de Données</h3>
+                <h3 className="font-semibold text-black text-lg">
+                  Connexion Base de Données
+                </h3>
                 <p className="text-gray-700 mt-1">PostgreSQL</p>
               </div>
             </div>
@@ -161,7 +177,9 @@ export default function ConfigurationTest() {
       {/* Message de statut */}
       {testResult.message && (
         <div className="mt-8 p-5 bg-gray-100 rounded-xl border-2 border-gray-300">
-          <p className="text-black text-center font-medium">{testResult.message}</p>
+          <p className="text-black text-center font-medium">
+            {testResult.message}
+          </p>
         </div>
       )}
 
@@ -172,7 +190,10 @@ export default function ConfigurationTest() {
             testBackendConnection();
             setTimeout(() => testDatabaseConnection(), 1000);
           }}
-          disabled={testResult.backend === 'testing' || testResult.database === 'testing'}
+          disabled={
+            testResult.backend === 'testing' ||
+            testResult.database === 'testing'
+          }
           className="w-full px-8 py-4 bg-black text-white rounded-xl hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold text-lg shadow-md hover:shadow-lg"
         >
           Tester Toute la Configuration

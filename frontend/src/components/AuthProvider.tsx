@@ -24,9 +24,5 @@ export default function AuthProvider({ children }: AuthProviderProps) {
   }
 
   // Utiliser RouteGuard pour protéger les routes
-  return (
-    <RouteGuard>
-      {children}
-    </RouteGuard>
-  );
+  return <RouteGuard>{children}</RouteGuard>;
 }

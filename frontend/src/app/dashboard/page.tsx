@@ -6,7 +6,7 @@ import { useAuthStore } from '../../store/authStore';
 import { AIRecommendation } from '../../lib/types/ai_recommendations';
 import {
   useRecommendationsStore,
-  useInitializeRecommendations
+  useInitializeRecommendations,
 } from '../../store/recommendationsStore';
 import Navbar from '../../components/Navbar';
 import DashboardHeader from '../../components/dashboard/DashboardHeader';
@@ -14,7 +14,7 @@ import RecommendationGrid from '../../components/dashboard/RecommendationGrid';
 import HyperliquidSection from '../../components/dashboard/HyperliquidSection';
 import {
   AcceptRecommendationModal,
-  RejectRecommendationModal
+  RejectRecommendationModal,
 } from '../../components/dashboard/ConfirmModal';
 import { StatsLoadingSkeleton } from '../../components/dashboard/LoadingSkeleton';
 
@@ -36,11 +36,13 @@ export default function DashboardPage() {
     rejectRecommendation,
     loadRecommendations,
     loadStats,
-    clearError
+    clearError,
   } = useRecommendationsStore();
 
   // Calculs dérivés simples
-  const pendingRecommendations = recommendations.filter(r => r.status === 'PENDING');
+  const pendingRecommendations = recommendations.filter(
+    r => r.status === 'PENDING'
+  );
   const isAnyLoading = isLoading || isGenerating;
 
   // État local pour les modales
@@ -51,7 +53,7 @@ export default function DashboardPage() {
   }>({
     isOpen: false,
     recommendation: null,
-    isLoading: false
+    isLoading: false,
   });
 
   const [rejectModal, setRejectModal] = useState<{
@@ -61,7 +63,7 @@ export default function DashboardPage() {
   }>({
     isOpen: false,
     recommendation: null,
-    isLoading: false
+    isLoading: false,
   });
 
   // État pour les notifications toast
@@ -72,7 +74,7 @@ export default function DashboardPage() {
   }>({
     message: '',
     type: 'success',
-    isVisible: false
+    isVisible: false,
   });
 
   // Redirection si non authentifié
@@ -85,7 +87,10 @@ export default function DashboardPage() {
 
   // Initialisation des données
   useEffect(() => {
-    console.log('Dashboard useEffect - Auth status:', { isAuthenticated, user: !!user });
+    console.log('Dashboard useEffect - Auth status:', {
+      isAuthenticated,
+      user: !!user,
+    });
     if (isAuthenticated && user) {
       console.log('Initializing dashboard...');
       initialize().catch(error => {
@@ -121,7 +126,8 @@ export default function DashboardPage() {
       await generateRecommendations();
       showToast('Nouvelles recommandations générées avec succès!', 'success');
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Erreur lors de la génération';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Erreur lors de la génération';
       showToast(errorMessage, 'error');
     }
   };
@@ -132,7 +138,7 @@ export default function DashboardPage() {
       setAcceptModal({
         isOpen: true,
         recommendation,
-        isLoading: false
+        isLoading: false,
       });
     }
   };
@@ -143,7 +149,7 @@ export default function DashboardPage() {
       setRejectModal({
         isOpen: true,
         recommendation,
-        isLoading: false
+        isLoading: false,
       });
     }
   };
@@ -157,7 +163,8 @@ export default function DashboardPage() {
       setAcceptModal({ isOpen: false, recommendation: null, isLoading: false });
       showToast('Recommandation acceptée avec succès!', 'success');
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Erreur lors de l\'acceptation';
+      const errorMessage =
+        error instanceof Error ? error.message : "Erreur lors de l'acceptation";
       showToast(errorMessage, 'error');
       setAcceptModal(prev => ({ ...prev, isLoading: false }));
     }
@@ -172,7 +179,8 @@ export default function DashboardPage() {
       setRejectModal({ isOpen: false, recommendation: null, isLoading: false });
       showToast('Recommandation rejetée', 'success');
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Erreur lors du rejet';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Erreur lors du rejet';
       showToast(errorMessage, 'error');
       setRejectModal(prev => ({ ...prev, isLoading: false }));
     }
@@ -192,7 +200,11 @@ export default function DashboardPage() {
     return null;
   }
 
-  console.log('Dashboard render - loading states:', { isLoading, isGenerating, recommendationsCount: recommendations.length });
+  console.log('Dashboard render - loading states:', {
+    isLoading,
+    isGenerating,
+    recommendationsCount: recommendations.length,
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -218,7 +230,8 @@ export default function DashboardPage() {
               Vos recommandations
             </h2>
             <p className="text-sm text-gray-600">
-              {pendingRecommendations.length} recommandation{pendingRecommendations.length !== 1 ? 's' : ''} en attente
+              {pendingRecommendations.length} recommandation
+              {pendingRecommendations.length !== 1 ? 's' : ''} en attente
             </p>
           </div>
 
@@ -228,8 +241,16 @@ export default function DashboardPage() {
               disabled={isAnyLoading}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
             >
-              <svg className={`w-4 h-4 ${isAnyLoading ? 'animate-spin' : ''}`} fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+              <svg
+                className={`w-4 h-4 ${isAnyLoading ? 'animate-spin' : ''}`}
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                  clipRule="evenodd"
+                />
               </svg>
               <span>Actualiser</span>
             </button>
@@ -239,7 +260,11 @@ export default function DashboardPage() {
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors flex items-center space-x-2"
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+                <path
+                  fillRule="evenodd"
+                  d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"
+                  clipRule="evenodd"
+                />
               </svg>
               <span>Préférences</span>
             </button>
@@ -273,7 +298,13 @@ export default function DashboardPage() {
       {/* Modales de confirmation */}
       <AcceptRecommendationModal
         isOpen={acceptModal.isOpen}
-        onClose={() => setAcceptModal({ isOpen: false, recommendation: null, isLoading: false })}
+        onClose={() =>
+          setAcceptModal({
+            isOpen: false,
+            recommendation: null,
+            isLoading: false,
+          })
+        }
         onConfirm={handleAcceptConfirm}
         isLoading={acceptModal.isLoading}
         symbol={acceptModal.recommendation?.symbol || ''}
@@ -283,7 +314,13 @@ export default function DashboardPage() {
 
       <RejectRecommendationModal
         isOpen={rejectModal.isOpen}
-        onClose={() => setRejectModal({ isOpen: false, recommendation: null, isLoading: false })}
+        onClose={() =>
+          setRejectModal({
+            isOpen: false,
+            recommendation: null,
+            isLoading: false,
+          })
+        }
         onConfirm={handleRejectConfirm}
         isLoading={rejectModal.isLoading}
         symbol={rejectModal.recommendation?.symbol || ''}
@@ -293,24 +330,44 @@ export default function DashboardPage() {
       {/* Toast notifications */}
       {toast.isVisible && (
         <div className="fixed bottom-4 right-4 z-50">
-          <div className={`px-6 py-4 rounded-lg shadow-lg text-white max-w-sm ${
-            toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'
-          }`}>
+          <div
+            className={`px-6 py-4 rounded-lg shadow-lg text-white max-w-sm ${
+              toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'
+            }`}
+          >
             <div className="flex items-center space-x-2">
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 {toast.type === 'success' ? (
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  <path
+                    fillRule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clipRule="evenodd"
+                  />
                 ) : (
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                    clipRule="evenodd"
+                  />
                 )}
               </svg>
               <span className="text-sm font-medium">{toast.message}</span>
               <button
-                onClick={() => setToast(prev => ({ ...prev, isVisible: false }))}
+                onClick={() =>
+                  setToast(prev => ({ ...prev, isVisible: false }))
+                }
                 className="ml-2 text-white hover:text-gray-200"
               >
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                <svg
+                  className="w-4 h-4"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               </button>
             </div>

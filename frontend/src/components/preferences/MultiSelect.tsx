@@ -37,7 +37,7 @@ export default function MultiSelect({
   disabled = false,
   allowCustom = false,
   customValidator,
-  className = ''
+  className = '',
 }: MultiSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -49,7 +49,10 @@ export default function MultiSelect({
   // Fermer le dropdown en cliquant à l'extérieur
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
         setShowCustomInput(false);
         setCustomInput('');
@@ -68,21 +71,25 @@ export default function MultiSelect({
   }, [isOpen]);
 
   // Filtrer les options selon la recherche
-  const filteredOptions = options.filter(option =>
-    option.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    option.value.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    option.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredOptions = options.filter(
+    option =>
+      option.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      option.value.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      option.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Grouper par catégorie
-  const groupedOptions = filteredOptions.reduce((groups, option) => {
-    const category = option.category || 'Autres';
-    if (!groups[category]) {
-      groups[category] = [];
-    }
-    groups[category].push(option);
-    return groups;
-  }, {} as Record<string, MultiSelectOption[]>);
+  const groupedOptions = filteredOptions.reduce(
+    (groups, option) => {
+      const category = option.category || 'Autres';
+      if (!groups[category]) {
+        groups[category] = [];
+      }
+      groups[category].push(option);
+      return groups;
+    },
+    {} as Record<string, MultiSelectOption[]>
+  );
 
   const handleToggleOption = (value: string) => {
     if (disabled) return;
@@ -104,7 +111,8 @@ export default function MultiSelect({
   };
 
   const handleAddCustom = () => {
-    if (!customInput.trim() || selected.includes(customInput.toUpperCase())) return;
+    if (!customInput.trim() || selected.includes(customInput.toUpperCase()))
+      return;
 
     const validation = customValidator?.(customInput) || { isValid: true };
     if (!validation.isValid) return;
@@ -127,8 +135,8 @@ export default function MultiSelect({
     }
   };
 
-  const selectedOptions = selected.map(value =>
-    options.find(opt => opt.value === value) || { value, label: value }
+  const selectedOptions = selected.map(
+    value => options.find(opt => opt.value === value) || { value, label: value }
   );
 
   const canAddMore = !maxItems || selected.length < maxItems;
@@ -140,7 +148,9 @@ export default function MultiSelect({
         <label className="block text-sm font-medium text-gray-700">
           {label}
           {maxItems && (
-            <span className="text-gray-500 ml-1">({selected.length}/{maxItems})</span>
+            <span className="text-gray-500 ml-1">
+              ({selected.length}/{maxItems})
+            </span>
           )}
         </label>
         {description && (
@@ -151,7 +161,7 @@ export default function MultiSelect({
       {/* Selected items */}
       {selected.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-3">
-          {selectedOptions.map((option) => (
+          {selectedOptions.map(option => (
             <span
               key={option.value}
               className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border-2 ${
@@ -181,8 +191,8 @@ export default function MultiSelect({
           disabled
             ? 'bg-gray-100 border-gray-200 cursor-not-allowed'
             : isOpen
-            ? 'border-black bg-white'
-            : 'border-gray-300 hover:border-gray-400 bg-white'
+              ? 'border-black bg-white'
+              : 'border-gray-300 hover:border-gray-400 bg-white'
         }`}
         onClick={() => !disabled && canAddMore && setIsOpen(!isOpen)}
       >
@@ -190,8 +200,10 @@ export default function MultiSelect({
           ref={inputRef}
           type="text"
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder={canAddMore ? placeholder : `Maximum ${maxItems} éléments atteint`}
+          onChange={e => setSearchTerm(e.target.value)}
+          placeholder={
+            canAddMore ? placeholder : `Maximum ${maxItems} éléments atteint`
+          }
           disabled={disabled || !canAddMore}
           className="w-full px-4 py-3 bg-transparent outline-none disabled:cursor-not-allowed"
           onFocus={() => !disabled && canAddMore && setIsOpen(true)}
@@ -211,7 +223,7 @@ export default function MultiSelect({
               onClick={() => setShowCustomInput(true)}
               className="w-full px-4 py-2 text-left hover:bg-gray-50 border-b border-gray-200 text-blue-600"
             >
-              + Ajouter "{searchTerm.toUpperCase()}"
+              + Ajouter &quot;{searchTerm.toUpperCase()}&quot;
             </button>
           )}
 
@@ -222,7 +234,7 @@ export default function MultiSelect({
                 <input
                   type="text"
                   value={customInput}
-                  onChange={(e) => setCustomInput(e.target.value)}
+                  onChange={e => setCustomInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Saisir un nouvel élément..."
                   className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm"
@@ -248,16 +260,14 @@ export default function MultiSelect({
                   {category}
                 </div>
               )}
-              {categoryOptions.map((option) => {
+              {categoryOptions.map(option => {
                 const isSelected = selected.includes(option.value);
                 return (
                   <div
                     key={option.value}
                     onClick={() => handleToggleOption(option.value)}
                     className={`px-4 py-3 cursor-pointer transition-colors ${
-                      isSelected
-                        ? 'bg-black text-white'
-                        : 'hover:bg-gray-50'
+                      isSelected ? 'bg-black text-white' : 'hover:bg-gray-50'
                     }`}
                   >
                     <div className="flex justify-between items-center">
@@ -271,14 +281,24 @@ export default function MultiSelect({
                           )}
                         </div>
                         {option.description && (
-                          <div className={`text-xs ${isSelected ? 'text-gray-300' : 'text-gray-500'}`}>
+                          <div
+                            className={`text-xs ${isSelected ? 'text-gray-300' : 'text-gray-500'}`}
+                          >
                             {option.description}
                           </div>
                         )}
                       </div>
                       {isSelected && (
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        <svg
+                          className="w-5 h-5"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                            clipRule="evenodd"
+                          />
                         </svg>
                       )}
                     </div>
@@ -300,7 +320,11 @@ export default function MultiSelect({
       {error && (
         <p className="text-sm text-red-600 mt-2 flex items-center">
           <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            <path
+              fillRule="evenodd"
+              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+              clipRule="evenodd"
+            />
           </svg>
           {error}
         </p>

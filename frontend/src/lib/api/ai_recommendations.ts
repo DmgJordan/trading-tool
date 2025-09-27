@@ -4,7 +4,7 @@ import {
   AIRecommendationRequest,
   AIRecommendationResponse,
   RecommendationAction_Update,
-  DashboardStats
+  DashboardStats,
 } from '../types/ai_recommendations';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -18,7 +18,7 @@ const api = axios.create({
 });
 
 // Intercepteur pour ajouter le token d'accès aux requêtes
-api.interceptors.request.use((config) => {
+api.interceptors.request.use(config => {
   const tokens = localStorage.getItem('auth_tokens');
   if (tokens) {
     const { access_token } = JSON.parse(tokens);
@@ -31,8 +31,8 @@ api.interceptors.request.use((config) => {
 
 // Intercepteur pour gérer l'expiration des tokens
 api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
+  response => response,
+  async error => {
     if (error.response?.status === 401) {
       // Token expiré, essayer de le rafraîchir
       const tokens = localStorage.getItem('auth_tokens');
@@ -41,9 +41,12 @@ api.interceptors.response.use(
           const { refresh_token } = JSON.parse(tokens);
 
           // Appel pour rafraîchir le token
-          const refreshResponse = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-            refresh_token
-          });
+          const refreshResponse = await axios.post(
+            `${API_BASE_URL}/auth/refresh`,
+            {
+              refresh_token,
+            }
+          );
 
           const newTokens = refreshResponse.data;
 
@@ -86,19 +89,27 @@ export const aiRecommendationsApi = {
   /**
    * Génère de nouvelles recommandations IA
    */
-  generateRecommendations: async (request?: AIRecommendationRequest): Promise<GenerateRecommendationsResponse> => {
+  generateRecommendations: async (
+    request?: AIRecommendationRequest
+  ): Promise<GenerateRecommendationsResponse> => {
     try {
-      const response = await api.post('/ai-recommendations/generate-recommendations', request || {});
+      const response = await api.post(
+        '/ai-recommendations/generate-recommendations',
+        request || {}
+      );
       return response.data;
     } catch (error: any) {
       // Si l'endpoint n'existe pas encore, simuler une réponse
       if (error.response?.status === 404) {
-        console.warn('Endpoint /ai-recommendations/generate-recommendations not found, simulating response');
+        console.warn(
+          'Endpoint /ai-recommendations/generate-recommendations not found, simulating response'
+        );
         return {
           recommendations: [],
           generated_at: new Date().toISOString(),
           total_count: 0,
-          message: 'Service de recommandations IA non disponible pour le moment'
+          message:
+            'Service de recommandations IA non disponible pour le moment',
         };
       }
       throw error;
@@ -115,7 +126,9 @@ export const aiRecommendationsApi = {
     } catch (error: any) {
       // Si l'endpoint n'existe pas encore, retourner un tableau vide
       if (error.response?.status === 404) {
-        console.warn('Endpoint /ai-recommendations/ not found, returning empty array');
+        console.warn(
+          'Endpoint /ai-recommendations/ not found, returning empty array'
+        );
         return [];
       }
       throw error;
@@ -133,10 +146,13 @@ export const aiRecommendationsApi = {
   /**
    * Accepte une recommandation
    */
-  acceptRecommendation: async (id: number, note?: string): Promise<AIRecommendation> => {
+  acceptRecommendation: async (
+    id: number,
+    note?: string
+  ): Promise<AIRecommendation> => {
     const update: RecommendationAction_Update = {
       status: 'ACCEPTED',
-      user_note: note
+      user_note: note,
     };
     const response = await api.put(`/ai-recommendations/${id}/accept`, update);
     return response.data;
@@ -145,10 +161,13 @@ export const aiRecommendationsApi = {
   /**
    * Rejette une recommandation
    */
-  rejectRecommendation: async (id: number, note?: string): Promise<AIRecommendation> => {
+  rejectRecommendation: async (
+    id: number,
+    note?: string
+  ): Promise<AIRecommendation> => {
     const update: RecommendationAction_Update = {
       status: 'REJECTED',
-      user_note: note
+      user_note: note,
     };
     const response = await api.put(`/ai-recommendations/${id}/reject`, update);
     return response.data;
@@ -171,7 +190,9 @@ export const aiRecommendationsApi = {
     if (status) params.append('status', status);
     if (action) params.append('action', action);
 
-    const response = await api.get(`/ai-recommendations/history?${params.toString()}`);
+    const response = await api.get(
+      `/ai-recommendations/history?${params.toString()}`
+    );
     return response.data;
   },
 
@@ -185,7 +206,9 @@ export const aiRecommendationsApi = {
     } catch (error: any) {
       // Si l'endpoint n'existe pas encore, retourner des stats par défaut
       if (error.response?.status === 404) {
-        console.warn('Endpoint /ai-recommendations/stats not found, returning default stats');
+        console.warn(
+          'Endpoint /ai-recommendations/stats not found, returning default stats'
+        );
         return {
           total_recommendations: 0,
           pending_recommendations: 0,
@@ -193,7 +216,7 @@ export const aiRecommendationsApi = {
           rejected_recommendations: 0,
           total_estimated_pnl: 0,
           total_estimated_pnl_percentage: 0,
-          last_generated_at: null
+          last_generated_at: null,
         };
       }
       throw error;
@@ -203,7 +226,10 @@ export const aiRecommendationsApi = {
   /**
    * Supprime les recommandations expirées
    */
-  cleanupExpiredRecommendations: async (): Promise<{ deleted_count: number; message: string }> => {
+  cleanupExpiredRecommendations: async (): Promise<{
+    deleted_count: number;
+    message: string;
+  }> => {
     const response = await api.delete('/ai-recommendations/cleanup-expired');
     return response.data;
   },
@@ -211,20 +237,22 @@ export const aiRecommendationsApi = {
   /**
    * Valide les paramètres de génération de recommandations
    */
-  validateGenerationRequest: async (request: AIRecommendationRequest): Promise<{ isValid: boolean; errors?: Record<string, string[]> }> => {
+  validateGenerationRequest: async (
+    request: AIRecommendationRequest
+  ): Promise<{ isValid: boolean; errors?: Record<string, string[]> }> => {
     try {
-      const response = await api.post('/ai-recommendations/validate-request', request);
+      await api.post('/ai-recommendations/validate-request', request);
       return { isValid: true };
     } catch (error: any) {
       if (error.response?.status === 422) {
         return {
           isValid: false,
-          errors: error.response.data.detail || {}
+          errors: error.response.data.detail || {},
         };
       }
       throw error;
     }
-  }
+  },
 };
 
 // Types spécifiques pour les réponses API avec gestion d'erreurs
@@ -248,8 +276,9 @@ export const withErrorHandling = async <T>(
     return { data, isLoading: false };
   } catch (error: any) {
     const apiError: RecommendationsApiError = {
-      detail: error.response?.data?.detail || error.message || 'Erreur inconnue',
-      status_code: error.response?.status || 500
+      detail:
+        error.response?.data?.detail || error.message || 'Erreur inconnue',
+      status_code: error.response?.status || 500,
     };
     return { error: apiError, isLoading: false };
   }
@@ -288,8 +317,10 @@ export const withRetry = async <T>(
 export const aiRecommendationsApiWithRetry = {
   generateRecommendations: (request?: AIRecommendationRequest) =>
     withRetry(() => aiRecommendationsApi.generateRecommendations(request)),
-  getRecommendations: () => withRetry(() => aiRecommendationsApi.getRecommendations()),
-  getDashboardStats: () => withRetry(() => aiRecommendationsApi.getDashboardStats()),
+  getRecommendations: () =>
+    withRetry(() => aiRecommendationsApi.getRecommendations()),
+  getDashboardStats: () =>
+    withRetry(() => aiRecommendationsApi.getDashboardStats()),
   acceptRecommendation: (id: number, note?: string) =>
     withRetry(() => aiRecommendationsApi.acceptRecommendation(id, note)),
   rejectRecommendation: (id: number, note?: string) =>
@@ -299,11 +330,14 @@ export const aiRecommendationsApiWithRetry = {
 // Utilitaires pour la gestion du cache local
 export const recommendationsCache = {
   setRecommendations: (recommendations: AIRecommendation[]) => {
-    localStorage.setItem('recommendations_cache', JSON.stringify({
-      data: recommendations,
-      timestamp: Date.now(),
-      ttl: 5 * 60 * 1000 // 5 minutes
-    }));
+    localStorage.setItem(
+      'recommendations_cache',
+      JSON.stringify({
+        data: recommendations,
+        timestamp: Date.now(),
+        ttl: 5 * 60 * 1000, // 5 minutes
+      })
+    );
   },
 
   getRecommendations: (): AIRecommendation[] | null => {
@@ -325,7 +359,7 @@ export const recommendationsCache = {
 
   clearCache: () => {
     localStorage.removeItem('recommendations_cache');
-  }
+  },
 };
 
 export default aiRecommendationsApi;

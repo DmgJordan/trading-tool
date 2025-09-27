@@ -6,9 +6,8 @@ import {
   ExchangeListResponse,
   MultiTimeframeRequest,
   MultiTimeframeResponse,
-  CurrentPriceInfo,
   MAIndicators,
-  VolumeIndicators
+  VolumeIndicators,
 } from '../lib/api';
 
 interface MultiTimeframeState {
@@ -27,13 +26,16 @@ export default function CCXTTest() {
     data: null,
     exchange: '',
     symbol: '',
-    profile: 'medium'
+    profile: 'medium',
   });
 
-  const [availableData, setAvailableData] = useState<ExchangeListResponse | null>(null);
+  const [availableData, setAvailableData] =
+    useState<ExchangeListResponse | null>(null);
   const [selectedExchange, setSelectedExchange] = useState('binance');
   const [selectedSymbol, setSelectedSymbol] = useState('BTC/USDT');
-  const [selectedProfile, setSelectedProfile] = useState<'short' | 'medium' | 'long'>('medium');
+  const [selectedProfile, setSelectedProfile] = useState<
+    'short' | 'medium' | 'long'
+  >('medium');
 
   // Charger les exchanges disponibles au montage
   useEffect(() => {
@@ -56,14 +58,14 @@ export default function CCXTTest() {
       data: null,
       exchange: selectedExchange,
       symbol: selectedSymbol,
-      profile: selectedProfile
+      profile: selectedProfile,
     });
 
     try {
       const request: MultiTimeframeRequest = {
         exchange: selectedExchange,
         symbol: selectedSymbol,
-        profile: selectedProfile
+        profile: selectedProfile,
       };
 
       const result = await ohlcvApi.getMultiTimeframeAnalysis(request);
@@ -74,9 +76,8 @@ export default function CCXTTest() {
         data: result,
         exchange: selectedExchange,
         symbol: selectedSymbol,
-        profile: selectedProfile
+        profile: selectedProfile,
       });
-
     } catch (error) {
       setTestState({
         status: 'error',
@@ -84,7 +85,7 @@ export default function CCXTTest() {
         data: null,
         exchange: selectedExchange,
         symbol: selectedSymbol,
-        profile: selectedProfile
+        profile: selectedProfile,
       });
     }
   };
@@ -116,7 +117,10 @@ export default function CCXTTest() {
   };
 
   const formatNumber = (num: number, decimals: number = 2) => {
-    return num.toLocaleString('fr-FR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+    return num.toLocaleString('fr-FR', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    });
   };
 
   const getProfileLabel = (profile: string) => {
@@ -169,25 +173,34 @@ export default function CCXTTest() {
     </div>
   );
 
-  const renderVolumeCard = (title: string, volume: VolumeIndicators, tf: string) => (
+  const renderVolumeCard = (
+    title: string,
+    volume: VolumeIndicators,
+    tf: string
+  ) => (
     <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl border-2 border-gray-300">
       <div className="text-center mb-2">
         <h4 className="text-sm font-semibold text-gray-700">{title}</h4>
         <div className="text-xs text-gray-500">{tf}</div>
       </div>
       <div className="text-center">
-        <div className={`text-lg font-bold ${volume.spike_ratio >= 1.5 ? 'text-orange-600' : 'text-green-600'}`}>
+        <div
+          className={`text-lg font-bold ${volume.spike_ratio >= 1.5 ? 'text-orange-600' : 'text-green-600'}`}
+        >
           {formatNumber(volume.spike_ratio, 2)}x
         </div>
         <div className="text-sm text-gray-600 mt-1">Volume Spike</div>
-        <div className="text-xs mt-1">Current: {formatNumber(volume.current, 0)}</div>
+        <div className="text-xs mt-1">
+          Current: {formatNumber(volume.current, 0)}
+        </div>
         <div className="text-xs">Avg20: {formatNumber(volume.avg20, 0)}</div>
       </div>
     </div>
   );
 
   const renderCandles = (candles: number[][]) => {
-    if (!candles || candles.length === 0) return <div>Aucune données de bougies</div>;
+    if (!candles || candles.length === 0)
+      return <div>Aucune données de bougies</div>;
 
     return (
       <div className="bg-gray-50 rounded-xl border-2 border-gray-300 p-4 max-h-96 overflow-y-auto">
@@ -195,12 +208,25 @@ export default function CCXTTest() {
           {candles.slice(-10).map((candle, index) => (
             <div key={index} className="bg-white p-2 rounded border text-xs">
               <div className="grid grid-cols-3 gap-2">
-                <div><strong>Date:</strong> {new Date(candle[0]).toLocaleString('fr-FR')}</div>
-                <div><strong>O:</strong> {candle[1].toFixed(4)}</div>
-                <div><strong>H:</strong> {candle[2].toFixed(4)}</div>
-                <div><strong>L:</strong> {candle[3].toFixed(4)}</div>
-                <div><strong>C:</strong> {candle[4].toFixed(4)}</div>
-                <div><strong>V:</strong> {candle[5].toFixed(2)}</div>
+                <div>
+                  <strong>Date:</strong>{' '}
+                  {new Date(candle[0]).toLocaleString('fr-FR')}
+                </div>
+                <div>
+                  <strong>O:</strong> {candle[1].toFixed(4)}
+                </div>
+                <div>
+                  <strong>H:</strong> {candle[2].toFixed(4)}
+                </div>
+                <div>
+                  <strong>L:</strong> {candle[3].toFixed(4)}
+                </div>
+                <div>
+                  <strong>C:</strong> {candle[4].toFixed(4)}
+                </div>
+                <div>
+                  <strong>V:</strong> {candle[5].toFixed(2)}
+                </div>
               </div>
             </div>
           ))}
@@ -221,24 +247,29 @@ export default function CCXTTest() {
           Analyse Multi-Timeframes
         </h2>
         <p className="text-gray-600">
-          Analyse technique sur plusieurs timeframes selon votre profil de trading
+          Analyse technique sur plusieurs timeframes selon votre profil de
+          trading
         </p>
       </div>
 
       {/* Configuration des paramètres */}
       <div className="mb-8 p-6 bg-gray-50 rounded-xl border border-gray-300">
-        <h3 className="text-xl font-semibold text-black mb-4">Paramètres d'analyse</h3>
+        <h3 className="text-xl font-semibold text-black mb-4">
+          Paramètres d&apos;analyse
+        </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Exchange */}
           <div>
-            <label className="block text-sm font-medium text-black mb-2">Exchange</label>
+            <label className="block text-sm font-medium text-black mb-2">
+              Exchange
+            </label>
             <select
               value={selectedExchange}
-              onChange={(e) => setSelectedExchange(e.target.value)}
+              onChange={e => setSelectedExchange(e.target.value)}
               className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-black focus:outline-none"
             >
-              {availableData?.exchanges.map((exchange) => (
+              {availableData?.exchanges.map(exchange => (
                 <option key={exchange} value={exchange}>
                   {exchange.charAt(0).toUpperCase() + exchange.slice(1)}
                 </option>
@@ -248,10 +279,12 @@ export default function CCXTTest() {
 
           {/* Symbole */}
           <div>
-            <label className="block text-sm font-medium text-black mb-2">Symbole</label>
+            <label className="block text-sm font-medium text-black mb-2">
+              Symbole
+            </label>
             <select
               value={selectedSymbol}
-              onChange={(e) => setSelectedSymbol(e.target.value)}
+              onChange={e => setSelectedSymbol(e.target.value)}
               className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-black focus:outline-none"
             >
               <option value="BTC/USDT">BTC/USDT</option>
@@ -267,10 +300,16 @@ export default function CCXTTest() {
 
           {/* Profil de trading */}
           <div>
-            <label className="block text-sm font-medium text-black mb-2">Profil de trading</label>
+            <label className="block text-sm font-medium text-black mb-2">
+              Profil de trading
+            </label>
             <select
               value={selectedProfile}
-              onChange={(e) => setSelectedProfile(e.target.value as 'short' | 'medium' | 'long')}
+              onChange={e =>
+                setSelectedProfile(
+                  e.target.value as 'short' | 'medium' | 'long'
+                )
+              }
               className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-black focus:outline-none"
             >
               <option value="short">Court terme</option>
@@ -282,16 +321,22 @@ export default function CCXTTest() {
       </div>
 
       {/* Section de test */}
-      <div className={`p-6 rounded-xl border-2 transition-all duration-300 ${getStatusColor(testState.status)}`}>
+      <div
+        className={`p-6 rounded-xl border-2 transition-all duration-300 ${getStatusColor(testState.status)}`}
+      >
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center space-x-4">
             <div className="flex-shrink-0">
               {getStatusIcon(testState.status)}
             </div>
             <div>
-              <h3 className="font-semibold text-black text-lg">Analyse Multi-Timeframes</h3>
+              <h3 className="font-semibold text-black text-lg">
+                Analyse Multi-Timeframes
+              </h3>
               <p className="text-gray-700 mt-1">
-                {selectedExchange.charAt(0).toUpperCase() + selectedExchange.slice(1)} - {selectedSymbol} - {getProfileLabel(selectedProfile)}
+                {selectedExchange.charAt(0).toUpperCase() +
+                  selectedExchange.slice(1)}{' '}
+                - {selectedSymbol} - {getProfileLabel(selectedProfile)}
               </p>
             </div>
           </div>
@@ -300,7 +345,9 @@ export default function CCXTTest() {
             disabled={testState.status === 'testing'}
             className="px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-sm hover:shadow-md"
           >
-            {testState.status === 'testing' ? 'Analyse...' : 'Lancer l\'analyse'}
+            {testState.status === 'testing'
+              ? 'Analyse...'
+              : 'Lancer l&apos;analyse'}
           </button>
         </div>
       </div>
@@ -308,7 +355,9 @@ export default function CCXTTest() {
       {/* Message de statut */}
       {testState.message && (
         <div className="mt-8 p-5 bg-gray-100 rounded-xl border-2 border-gray-300">
-          <p className="text-black text-center font-medium">{testState.message}</p>
+          <p className="text-black text-center font-medium">
+            {testState.message}
+          </p>
         </div>
       )}
 
@@ -316,20 +365,33 @@ export default function CCXTTest() {
       {testState.data && (
         <div className="mt-8">
           <div className="mb-6 text-center">
-            <h3 className="text-2xl font-semibold text-black mb-2">📊 {testState.data.symbol}</h3>
+            <h3 className="text-2xl font-semibold text-black mb-2">
+              📊 {testState.data.symbol}
+            </h3>
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-2 border-gray-300 p-4 inline-block">
               <div className="text-3xl font-bold text-black">
                 ${formatNumber(testState.data.current_price.current_price, 4)}
               </div>
-              {testState.data.current_price.change_24h_percent !== null && testState.data.current_price.change_24h_percent !== undefined && (
-                <div className={`text-lg font-semibold mt-1 ${testState.data.current_price.change_24h_percent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {testState.data.current_price.change_24h_percent >= 0 ? '+' : ''}{formatNumber(testState.data.current_price.change_24h_percent, 2)}%
-                  <span className="text-sm text-gray-600 ml-1">24h</span>
-                </div>
-              )}
+              {testState.data.current_price.change_24h_percent !== null &&
+                testState.data.current_price.change_24h_percent !==
+                  undefined && (
+                  <div
+                    className={`text-lg font-semibold mt-1 ${testState.data.current_price.change_24h_percent >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                  >
+                    {testState.data.current_price.change_24h_percent >= 0
+                      ? '+'
+                      : ''}
+                    {formatNumber(
+                      testState.data.current_price.change_24h_percent,
+                      2
+                    )}
+                    %<span className="text-sm text-gray-600 ml-1">24h</span>
+                  </div>
+                )}
               {testState.data.current_price.volume_24h && (
                 <div className="text-sm text-gray-600 mt-1">
-                  Volume 24h: {formatNumber(testState.data.current_price.volume_24h, 0)}
+                  Volume 24h:{' '}
+                  {formatNumber(testState.data.current_price.volume_24h, 0)}
                 </div>
               )}
             </div>
@@ -337,17 +399,22 @@ export default function CCXTTest() {
 
           {/* Timeframe Principal */}
           <div className="mb-8">
-            <h4 className="text-lg font-semibold text-black mb-4">🎯 Timeframe Principal - {testState.data.tf}</h4>
+            <h4 className="text-lg font-semibold text-black mb-4">
+              🎯 Timeframe Principal - {testState.data.tf}
+            </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-
               {/* RSI Principal */}
               <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-4 rounded-xl border-2 border-gray-300">
                 <div className="text-center">
-                  <div className={`text-2xl font-bold ${getRSIColor(testState.data.features.rsi14)}`}>
+                  <div
+                    className={`text-2xl font-bold ${getRSIColor(testState.data.features.rsi14)}`}
+                  >
                     {formatNumber(testState.data.features.rsi14, 1)}
                   </div>
                   <div className="text-sm text-gray-600 mt-1">RSI (14)</div>
-                  <div className="text-xs mt-1 font-medium">{getRSILabel(testState.data.features.rsi14)}</div>
+                  <div className="text-xs mt-1 font-medium">
+                    {getRSILabel(testState.data.features.rsi14)}
+                  </div>
                 </div>
               </div>
 
@@ -363,32 +430,47 @@ export default function CCXTTest() {
               </div>
 
               {/* MA Principal */}
-              {renderMACard("Moyennes Mobiles", testState.data.features.ma, testState.data.tf)}
+              {renderMACard(
+                'Moyennes Mobiles',
+                testState.data.features.ma,
+                testState.data.tf
+              )}
 
               {/* Volume Principal */}
-              {renderVolumeCard("Volume", testState.data.features.volume, testState.data.tf)}
+              {renderVolumeCard(
+                'Volume',
+                testState.data.features.volume,
+                testState.data.tf
+              )}
             </div>
 
             {/* Bougies du Timeframe Principal */}
             <div className="mt-6">
-              <h5 className="text-md font-semibold text-black mb-3">📈 Dernières Bougies ({testState.data.tf})</h5>
+              <h5 className="text-md font-semibold text-black mb-3">
+                📈 Dernières Bougies ({testState.data.tf})
+              </h5>
               {renderCandles(testState.data.features.last_20_candles)}
             </div>
           </div>
 
           {/* Timeframe Supérieur */}
           <div className="mb-8">
-            <h4 className="text-lg font-semibold text-black mb-4">⬆️ Contexte Supérieur - {testState.data.higher_tf.tf}</h4>
+            <h4 className="text-lg font-semibold text-black mb-4">
+              ⬆️ Contexte Supérieur - {testState.data.higher_tf.tf}
+            </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-
               {/* RSI Supérieur */}
               <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border-2 border-gray-300">
                 <div className="text-center">
-                  <div className={`text-xl font-bold ${getRSIColor(testState.data.higher_tf.rsi14)}`}>
+                  <div
+                    className={`text-xl font-bold ${getRSIColor(testState.data.higher_tf.rsi14)}`}
+                  >
                     {formatNumber(testState.data.higher_tf.rsi14, 1)}
                   </div>
                   <div className="text-sm text-gray-600 mt-1">RSI</div>
-                  <div className="text-xs mt-1">{getRSILabel(testState.data.higher_tf.rsi14)}</div>
+                  <div className="text-xs mt-1">
+                    {getRSILabel(testState.data.higher_tf.rsi14)}
+                  </div>
                 </div>
               </div>
 
@@ -410,34 +492,48 @@ export default function CCXTTest() {
                   </div>
                   <div className="text-sm text-gray-600 mt-1">Structure</div>
                   <div className="text-xs mt-1">
-                    R: {formatNumber(testState.data.higher_tf.nearest_resistance)}
+                    R:{' '}
+                    {formatNumber(testState.data.higher_tf.nearest_resistance)}
                   </div>
                 </div>
               </div>
 
               {/* MA Supérieur */}
-              {renderMACard("MA Contexte", testState.data.higher_tf.ma, testState.data.higher_tf.tf)}
+              {renderMACard(
+                'MA Contexte',
+                testState.data.higher_tf.ma,
+                testState.data.higher_tf.tf
+              )}
             </div>
           </div>
 
           {/* Timeframe Inférieur */}
           <div className="mb-8">
-            <h4 className="text-lg font-semibold text-black mb-4">⬇️ Contexte Inférieur - {testState.data.lower_tf.tf}</h4>
+            <h4 className="text-lg font-semibold text-black mb-4">
+              ⬇️ Contexte Inférieur - {testState.data.lower_tf.tf}
+            </h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-
               {/* RSI Inférieur */}
               <div className="bg-gradient-to-br from-green-50 to-teal-50 p-4 rounded-xl border-2 border-gray-300">
                 <div className="text-center">
-                  <div className={`text-xl font-bold ${getRSIColor(testState.data.lower_tf.rsi14)}`}>
+                  <div
+                    className={`text-xl font-bold ${getRSIColor(testState.data.lower_tf.rsi14)}`}
+                  >
                     {formatNumber(testState.data.lower_tf.rsi14, 1)}
                   </div>
                   <div className="text-sm text-gray-600 mt-1">RSI</div>
-                  <div className="text-xs mt-1">{getRSILabel(testState.data.lower_tf.rsi14)}</div>
+                  <div className="text-xs mt-1">
+                    {getRSILabel(testState.data.lower_tf.rsi14)}
+                  </div>
                 </div>
               </div>
 
               {/* Volume Inférieur */}
-              {renderVolumeCard("Volume Court Terme", testState.data.lower_tf.volume, testState.data.lower_tf.tf)}
+              {renderVolumeCard(
+                'Volume Court Terme',
+                testState.data.lower_tf.volume,
+                testState.data.lower_tf.tf
+              )}
 
               {/* Info Timeframe */}
               <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl border-2 border-gray-300">
@@ -453,7 +549,9 @@ export default function CCXTTest() {
 
             {/* Dernières bougies */}
             <div>
-              <h5 className="text-md font-semibold text-black mb-3">📈 Dernières Bougies ({testState.data.lower_tf.tf})</h5>
+              <h5 className="text-md font-semibold text-black mb-3">
+                📈 Dernières Bougies ({testState.data.lower_tf.tf})
+              </h5>
               {renderCandles(testState.data.lower_tf.last_20_candles)}
             </div>
           </div>

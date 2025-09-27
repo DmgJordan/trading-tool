@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { AuthState, AuthActions, LoginRequest, RegisterRequest, User } from '../lib/types/auth';
+import {
+  AuthState,
+  AuthActions,
+  LoginRequest,
+  RegisterRequest,
+  User,
+} from '../lib/types/auth';
 import { authApi } from '../lib/api/auth';
 import { initializeAuthStore } from '../lib/api/client';
 
@@ -38,7 +44,9 @@ export const useAuthStore = create<AuthStore>()(
             error: null,
           });
         } catch (error: unknown) {
-          const errorMessage = (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Erreur de connexion';
+          const errorMessage =
+            (error as { response?: { data?: { detail?: string } } })?.response
+              ?.data?.detail || 'Erreur de connexion';
           set({
             user: null,
             tokens: null,
@@ -71,7 +79,9 @@ export const useAuthStore = create<AuthStore>()(
             error: null,
           });
         } catch (error: unknown) {
-          const errorMessage = (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Erreur lors de l\'inscription';
+          const errorMessage =
+            (error as { response?: { data?: { detail?: string } } })?.response
+              ?.data?.detail || "Erreur lors de l'inscription";
           set({
             user: null,
             tokens: null,
@@ -136,7 +146,9 @@ export const useAuthStore = create<AuthStore>()(
             error: null,
           });
         } catch (error: unknown) {
-          const errorMessage = (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Erreur lors de la mise à jour';
+          const errorMessage =
+            (error as { response?: { data?: { detail?: string } } })?.response
+              ?.data?.detail || 'Erreur lors de la mise à jour';
           set({
             isInitialized: true,
             isLoading: false,
@@ -162,7 +174,9 @@ export const useAuthStore = create<AuthStore>()(
 
           // Si l'utilisateur est marqué comme authentifié mais n'a pas de tokens, le déconnecter
           if (currentState.isAuthenticated && !tokens) {
-            console.warn('Utilisateur authentifié sans tokens - déconnexion forcée');
+            console.warn(
+              'Utilisateur authentifié sans tokens - déconnexion forcée'
+            );
             set({
               user: null,
               tokens: null,
@@ -183,7 +197,10 @@ export const useAuthStore = create<AuthStore>()(
           }
         } catch (error) {
           // Échec de l'initialisation, déconnecter par sécurité
-          console.warn('Échec de l\'initialisation de l\'authentification:', error);
+          console.warn(
+            "Échec de l'initialisation de l'authentification:",
+            error
+          );
           set({
             user: null,
             tokens: null,
@@ -195,11 +212,11 @@ export const useAuthStore = create<AuthStore>()(
         }
       },
     }),
-{
+    {
       name: 'auth-store',
       storage: createJSONStorage(() => localStorage),
       // Ne persister que l'utilisateur, pas les tokens (sécurité)
-      partialize: (state) => ({
+      partialize: state => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
       }),

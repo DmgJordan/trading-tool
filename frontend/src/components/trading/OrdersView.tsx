@@ -79,7 +79,11 @@ const normalizeSide = (side?: string) => {
   return side;
 };
 
-export default function OrdersView({ openOrders, fills, className = '' }: OrdersViewProps) {
+export default function OrdersView({
+  openOrders,
+  fills,
+  className = '',
+}: OrdersViewProps) {
   const [activeTab, setActiveTab] = useState<'open' | 'history'>('open');
 
   const tabs = [
@@ -94,7 +98,8 @@ export default function OrdersView({ openOrders, fills, className = '' }: Orders
 
     const numericSize = Number(size);
     const numericPrice = Number(price);
-    if (!Number.isFinite(numericSize) || !Number.isFinite(numericPrice)) return null;
+    if (!Number.isFinite(numericSize) || !Number.isFinite(numericPrice))
+      return null;
     return numericSize * numericPrice;
   };
 
@@ -103,26 +108,30 @@ export default function OrdersView({ openOrders, fills, className = '' }: Orders
       {/* Onglets */}
       <div className="border-b border-gray-200">
         <nav className="flex space-x-8" aria-label="Tabs">
-          {tabs.map((tab) => (
+          {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as 'open' | 'history')}
               className={`
                 py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 flex items-center gap-2
-                ${activeTab === tab.id
-                  ? 'border-black text-black'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ${
+                  activeTab === tab.id
+                    ? 'border-black text-black'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }
               `}
             >
               {tab.label}
-              <span className={`
+              <span
+                className={`
                 py-0.5 px-2 rounded-full text-xs font-medium
-                ${activeTab === tab.id
-                  ? 'bg-black text-white'
-                  : 'bg-gray-100 text-gray-600'
+                ${
+                  activeTab === tab.id
+                    ? 'bg-black text-white'
+                    : 'bg-gray-100 text-gray-600'
                 }
-              `}>
+              `}
+              >
                 {tab.count}
               </span>
             </button>
@@ -135,13 +144,23 @@ export default function OrdersView({ openOrders, fills, className = '' }: Orders
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
           <div className="px-6 py-4 border-b border-gray-200">
             <h3 className="text-lg font-semibold text-black">Ordres ouverts</h3>
-            <p className="text-sm text-gray-500">Ordres limites et conditionnels actifs</p>
+            <p className="text-sm text-gray-500">
+              Ordres limites et conditionnels actifs
+            </p>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  {['Marché', 'Sens', 'Taille', 'Prix', 'Type', 'Déclenchement', 'Actions'].map(header => (
+                  {[
+                    'Marché',
+                    'Sens',
+                    'Taille',
+                    'Prix',
+                    'Type',
+                    'Déclenchement',
+                    'Actions',
+                  ].map(header => (
                     <th
                       key={header}
                       scope="col"
@@ -167,18 +186,29 @@ export default function OrdersView({ openOrders, fills, className = '' }: Orders
                   </tr>
                 ) : (
                   openOrders.map((order, index) => (
-                    <tr key={`${order.symbol ?? order.coin}-${order.px ?? order.price}-${index}`} className="hover:bg-gray-50">
+                    <tr
+                      key={`${order.symbol ?? order.coin}-${order.px ?? order.price}-${index}`}
+                      className="hover:bg-gray-50"
+                    >
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="font-medium text-black">{order.symbol ?? order.coin ?? '—'}</div>
+                        <div className="font-medium text-black">
+                          {order.symbol ?? order.coin ?? '—'}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          normalizeSide(order.side ?? order.dir) === 'Long' || normalizeSide(order.side ?? order.dir) === 'Achat'
-                            ? 'bg-green-100 text-green-800'
-                            : normalizeSide(order.side ?? order.dir) === 'Short' || normalizeSide(order.side ?? order.dir) === 'Vente'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
+                        <span
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            normalizeSide(order.side ?? order.dir) === 'Long' ||
+                            normalizeSide(order.side ?? order.dir) === 'Achat'
+                              ? 'bg-green-100 text-green-800'
+                              : normalizeSide(order.side ?? order.dir) ===
+                                    'Short' ||
+                                  normalizeSide(order.side ?? order.dir) ===
+                                    'Vente'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-gray-100 text-gray-800'
+                          }`}
+                        >
                           {normalizeSide(order.side ?? order.dir)}
                         </span>
                       </td>
@@ -189,14 +219,20 @@ export default function OrdersView({ openOrders, fills, className = '' }: Orders
                         {formatNumber(order.px ?? order.price, 2)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                          order.isTrigger ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'
-                        }`}>
+                        <span
+                          className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                            order.isTrigger
+                              ? 'bg-orange-100 text-orange-800'
+                              : 'bg-blue-100 text-blue-800'
+                          }`}
+                        >
                           {order.isTrigger ? 'Conditionnel' : 'Limité'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {order.triggerPx ? formatNumber(order.triggerPx, 2) : '—'}
+                        {order.triggerPx
+                          ? formatNumber(order.triggerPx, 2)
+                          : '—'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button className="text-red-600 hover:text-red-900 text-sm font-medium">
@@ -217,7 +253,9 @@ export default function OrdersView({ openOrders, fills, className = '' }: Orders
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
           <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-black">Historique des trades</h3>
+              <h3 className="text-lg font-semibold text-black">
+                Historique des trades
+              </h3>
               <p className="text-sm text-gray-500">Vos dernières exécutions</p>
             </div>
             <div className="flex items-center gap-2">
@@ -233,7 +271,15 @@ export default function OrdersView({ openOrders, fills, className = '' }: Orders
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  {['Date', 'Marché', 'Sens', 'Taille', 'Prix', 'Valeur', 'Hash'].map(header => (
+                  {[
+                    'Date',
+                    'Marché',
+                    'Sens',
+                    'Taille',
+                    'Prix',
+                    'Valeur',
+                    'Hash',
+                  ].map(header => (
                     <th
                       key={header}
                       scope="col"
@@ -261,21 +307,32 @@ export default function OrdersView({ openOrders, fills, className = '' }: Orders
                   fills.map((fill, index) => {
                     const value = computeFillValue(fill);
                     return (
-                      <tr key={`${fill.time}-${fill.hash}-${index}`} className="hover:bg-gray-50">
+                      <tr
+                        key={`${fill.time}-${fill.hash}-${index}`}
+                        className="hover:bg-gray-50"
+                      >
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {formatTimestamp(fill.time)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="font-medium text-black">{fill.symbol ?? fill.coin ?? '—'}</div>
+                          <div className="font-medium text-black">
+                            {fill.symbol ?? fill.coin ?? '—'}
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            normalizeSide(fill.side ?? fill.dir) === 'Long' || normalizeSide(fill.side ?? fill.dir) === 'Achat'
-                              ? 'bg-green-100 text-green-800'
-                              : normalizeSide(fill.side ?? fill.dir) === 'Short' || normalizeSide(fill.side ?? fill.dir) === 'Vente'
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
+                          <span
+                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              normalizeSide(fill.side ?? fill.dir) === 'Long' ||
+                              normalizeSide(fill.side ?? fill.dir) === 'Achat'
+                                ? 'bg-green-100 text-green-800'
+                                : normalizeSide(fill.side ?? fill.dir) ===
+                                      'Short' ||
+                                    normalizeSide(fill.side ?? fill.dir) ===
+                                      'Vente'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-gray-100 text-gray-800'
+                            }`}
+                          >
                             {normalizeSide(fill.side ?? fill.dir)}
                           </span>
                         </td>
@@ -293,7 +350,9 @@ export default function OrdersView({ openOrders, fills, className = '' }: Orders
                             <span title={fill.hash}>
                               {fill.hash.slice(0, 8)}…{fill.hash.slice(-6)}
                             </span>
-                          ) : '—'}
+                          ) : (
+                            '—'
+                          )}
                         </td>
                       </tr>
                     );

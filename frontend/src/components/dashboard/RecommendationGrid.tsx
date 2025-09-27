@@ -24,7 +24,7 @@ export default function RecommendationGrid({
   isEmpty = false,
   emptyMessage = 'Aucune recommandation disponible',
   emptyAction,
-  className = ''
+  className = '',
 }: RecommendationGridProps) {
   const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
 
@@ -68,7 +68,8 @@ export default function RecommendationGrid({
           {emptyMessage}
         </h3>
         <p className="text-gray-600 mb-6 max-w-md mx-auto">
-          Générez vos premières recommandations IA pour commencer à recevoir des suggestions de trading personnalisées.
+          Générez vos premières recommandations IA pour commencer à recevoir des
+          suggestions de trading personnalisées.
         </p>
         {emptyAction}
       </div>
@@ -84,7 +85,8 @@ export default function RecommendationGrid({
             Recommandations ({recommendations.length})
           </h2>
           <p className="text-sm text-gray-600">
-            {recommendations.filter(r => r.status === 'PENDING').length} en attente d&apos;action
+            {recommendations.filter(r => r.status === 'PENDING').length} en
+            attente d&apos;action
           </p>
         </div>
 
@@ -97,7 +99,9 @@ export default function RecommendationGrid({
             Réduire tout
           </button>
           <button
-            onClick={() => setExpandedCards(new Set(recommendations.map(r => r.id)))}
+            onClick={() =>
+              setExpandedCards(new Set(recommendations.map(r => r.id)))
+            }
             className="text-xs text-gray-600 hover:text-gray-800 px-3 py-1 rounded border border-gray-300 hover:border-gray-400 transition-colors"
           >
             Étendre tout
@@ -107,7 +111,7 @@ export default function RecommendationGrid({
 
       {/* Grille de cartes */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {sortedRecommendations.map((recommendation) => (
+        {sortedRecommendations.map(recommendation => (
           <RecommendationCard
             key={recommendation.id}
             recommendation={recommendation}
@@ -160,7 +164,7 @@ export function FilteredRecommendationGrid({
   onAccept,
   onReject,
   filterType = 'all',
-  className = ''
+  className = '',
 }: Omit<RecommendationGridProps, 'isEmpty' | 'emptyMessage' | 'emptyAction'> & {
   filterType?: 'all' | 'pending' | 'buy' | 'sell' | 'hold' | 'high_confidence';
 }) {
@@ -186,7 +190,7 @@ export function FilteredRecommendationGrid({
       case 'pending':
         return 'Aucune recommandation en attente';
       case 'buy':
-        return 'Aucune recommandation d\'achat';
+        return "Aucune recommandation d'achat";
       case 'sell':
         return 'Aucune recommandation de vente';
       case 'hold':

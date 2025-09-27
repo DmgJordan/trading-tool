@@ -18,7 +18,7 @@ export default function GenerateButton({
   disabled = false,
   lastGenerated,
   pendingCount = 0,
-  className = ''
+  className = '',
 }: GenerateButtonProps) {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -120,8 +120,11 @@ export function CompactGenerateButton({
   onGenerate,
   isLoading,
   disabled = false,
-  className = ''
-}: Pick<GenerateButtonProps, 'onGenerate' | 'isLoading' | 'disabled' | 'className'>) {
+  className = '',
+}: Pick<
+  GenerateButtonProps,
+  'onGenerate' | 'isLoading' | 'disabled' | 'className'
+>) {
   const isDisabled = disabled || isLoading;
 
   return (
@@ -136,11 +139,7 @@ export function CompactGenerateButton({
       title="Générer nouvelles recommandations"
     >
       {isLoading ? (
-        <svg
-          className="animate-spin h-5 w-5"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
+        <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
           <circle
             className="opacity-25"
             cx="12"

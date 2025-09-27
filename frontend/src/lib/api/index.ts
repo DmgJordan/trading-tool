@@ -8,11 +8,16 @@ export { hyperliquidApi } from './hyperliquid';
 export { ohlcvApi } from './ohlcv';
 
 // Types pour faciliter les imports
-export type { AuthTokens, User, LoginRequest, RegisterRequest } from '../types/auth';
+export type {
+  AuthTokens,
+  User,
+  LoginRequest,
+  RegisterRequest,
+} from '../types/auth';
 export type {
   TradingPreferences,
   TradingPreferencesUpdate,
-  TradingPreferencesDefault
+  TradingPreferencesDefault,
 } from '../types/preferences';
 export type {
   ExchangeListResponse,
@@ -25,5 +30,5 @@ export type {
   HigherTFFeatures,
   LowerTFFeatures,
   MultiTimeframeRequest,
-  MultiTimeframeResponse
+  MultiTimeframeResponse,
 } from './ohlcv';

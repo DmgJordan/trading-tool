@@ -2,7 +2,7 @@ import {
   TradingPreferences,
   TradingPreferencesUpdate,
   TradingPreferencesDefault,
-  PreferencesValidationInfo
+  PreferencesValidationInfo,
 } from '../types/preferences';
 import apiClient from './client';
 
@@ -18,7 +18,9 @@ export const preferencesApi = {
   /**
    * Met à jour les préférences de trading (PATCH/PUT selon les champs fournis)
    */
-  updatePreferences: async (preferences: TradingPreferencesUpdate): Promise<TradingPreferences> => {
+  updatePreferences: async (
+    preferences: TradingPreferencesUpdate
+  ): Promise<TradingPreferences> => {
     const response = await apiClient.put('/users/me/preferences/', preferences);
     return response.data;
   },
@@ -26,15 +28,27 @@ export const preferencesApi = {
   /**
    * Crée ou remplace complètement les préférences de trading
    */
-  createPreferences: async (preferences: Omit<TradingPreferences, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<TradingPreferences> => {
-    const response = await apiClient.post('/users/me/preferences/', preferences);
+  createPreferences: async (
+    preferences: Omit<
+      TradingPreferences,
+      'id' | 'user_id' | 'created_at' | 'updated_at'
+    >
+  ): Promise<TradingPreferences> => {
+    const response = await apiClient.post(
+      '/users/me/preferences/',
+      preferences
+    );
     return response.data;
   },
 
   /**
    * Remet les préférences aux valeurs par défaut
    */
-  resetToDefaults: async (): Promise<{ status: string; message: string; preferences: TradingPreferences }> => {
+  resetToDefaults: async (): Promise<{
+    status: string;
+    message: string;
+    preferences: TradingPreferences;
+  }> => {
     const response = await apiClient.delete('/users/me/preferences/');
     return response.data;
   },
@@ -51,29 +65,33 @@ export const preferencesApi = {
    * Récupère les informations de validation (contraintes, options disponibles)
    */
   getValidationInfo: async (): Promise<PreferencesValidationInfo> => {
-    const response = await apiClient.get('/users/me/preferences/validation-info');
+    const response = await apiClient.get(
+      '/users/me/preferences/validation-info'
+    );
     return response.data;
   },
 
   /**
    * Valide des préférences sans les sauvegarder (optionnel pour validation côté serveur)
    */
-  validatePreferences: async (preferences: TradingPreferencesUpdate): Promise<{ isValid: boolean; errors?: Record<string, string[]> }> => {
+  validatePreferences: async (
+    preferences: TradingPreferencesUpdate
+  ): Promise<{ isValid: boolean; errors?: Record<string, string[]> }> => {
     try {
       // Cette route n'existe peut-être pas encore côté backend, mais utile pour l'avenir
-      const response = await apiClient.post('/users/me/preferences/validate', preferences);
+      await apiClient.post('/users/me/preferences/validate', preferences);
       return { isValid: true, errors: {} };
     } catch (error: any) {
       if (error.response?.status === 422) {
         // Erreurs de validation
         return {
           isValid: false,
-          errors: error.response.data.detail || {}
+          errors: error.response.data.detail || {},
         };
       }
       throw error;
     }
-  }
+  },
 };
 
 // Types spécifiques pour les réponses API avec gestion d'erreurs
@@ -97,8 +115,9 @@ export const withErrorHandling = async <T>(
     return { data, isLoading: false };
   } catch (error: any) {
     const apiError: PreferencesApiError = {
-      detail: error.response?.data?.detail || error.message || 'Erreur inconnue',
-      status_code: error.response?.status || 500
+      detail:
+        error.response?.data?.detail || error.message || 'Erreur inconnue',
+      status_code: error.response?.status || 500,
     };
     return { error: apiError, isLoading: false };
   }

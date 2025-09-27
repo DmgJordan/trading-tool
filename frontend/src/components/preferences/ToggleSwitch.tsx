@@ -19,34 +19,34 @@ export default function ToggleSwitch({
   disabled = false,
   size = 'md',
   color = 'blue',
-  className = ''
+  className = '',
 }: ToggleSwitchProps) {
   const sizeClasses = {
     sm: {
       switch: 'w-8 h-4',
       thumb: 'w-3 h-3',
       translate: checked ? 'translate-x-4' : 'translate-x-0.5',
-      text: 'text-sm'
+      text: 'text-sm',
     },
     md: {
       switch: 'w-11 h-6',
       thumb: 'w-5 h-5',
       translate: checked ? 'translate-x-5' : 'translate-x-0.5',
-      text: 'text-base'
+      text: 'text-base',
     },
     lg: {
       switch: 'w-14 h-7',
       thumb: 'w-6 h-6',
       translate: checked ? 'translate-x-7' : 'translate-x-0.5',
-      text: 'text-lg'
-    }
+      text: 'text-lg',
+    },
   };
 
   const colorClasses = {
     blue: checked ? 'bg-blue-600' : 'bg-gray-300',
     green: checked ? 'bg-green-600' : 'bg-gray-300',
     red: checked ? 'bg-red-600' : 'bg-gray-300',
-    purple: checked ? 'bg-purple-600' : 'bg-gray-300'
+    purple: checked ? 'bg-purple-600' : 'bg-gray-300',
   };
 
   const currentSize = sizeClasses[size];
@@ -77,7 +77,9 @@ export default function ToggleSwitch({
           {label}
         </label>
         {description && (
-          <p className={`text-sm ${disabled ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
+          <p
+            className={`text-sm ${disabled ? 'text-gray-400' : 'text-gray-500'} mt-1`}
+          >
             {description}
           </p>
         )}
@@ -104,16 +106,36 @@ export default function ToggleSwitch({
         {size !== 'sm' && (
           <>
             {/* Icône ON */}
-            <span className={`absolute left-1 ${checked ? 'opacity-100' : 'opacity-0'} transition-opacity duration-200`}>
-              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            <span
+              className={`absolute left-1 ${checked ? 'opacity-100' : 'opacity-0'} transition-opacity duration-200`}
+            >
+              <svg
+                className="w-3 h-3 text-white"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                  clipRule="evenodd"
+                />
               </svg>
             </span>
 
             {/* Icône OFF */}
-            <span className={`absolute right-1 ${!checked ? 'opacity-100' : 'opacity-0'} transition-opacity duration-200`}>
-              <svg className="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            <span
+              className={`absolute right-1 ${!checked ? 'opacity-100' : 'opacity-0'} transition-opacity duration-200`}
+            >
+              <svg
+                className="w-3 h-3 text-gray-400"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                  clipRule="evenodd"
+                />
               </svg>
             </span>
           </>
@@ -143,7 +165,7 @@ export function ToggleGroup({
   description,
   toggles,
   onChange,
-  className = ''
+  className = '',
 }: ToggleGroupProps) {
   return (
     <div className={`space-y-4 ${className}`}>
@@ -155,11 +177,11 @@ export function ToggleGroup({
       </div>
 
       <div className="space-y-3">
-        {toggles.map((toggle) => (
+        {toggles.map(toggle => (
           <ToggleSwitch
             key={toggle.key}
             checked={toggle.checked}
-            onChange={(checked) => onChange(toggle.key, checked)}
+            onChange={checked => onChange(toggle.key, checked)}
             label={toggle.label}
             description={toggle.description}
             disabled={toggle.disabled}
