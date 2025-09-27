@@ -7,8 +7,6 @@ import {
   claudeApi,
   SingleAssetAnalysisRequest,
   SingleAssetAnalysisResponse,
-  type MainTFFeatures,
-  type CurrentPriceInfo,
 } from '../../lib/api';
 import { usePreferencesStore } from '../../store/preferencesStore';
 
