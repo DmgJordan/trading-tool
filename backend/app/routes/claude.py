@@ -28,7 +28,7 @@ ccxt_service = CCXTService()
 
 @router.post("/test-connection")
 async def test_claude_connection(
-    model: ClaudeModel = ClaudeModel.HAIKU,
+    model: ClaudeModel = ClaudeModel.HAIKU_35,
     current_user: User = Depends(get_current_user)
 ):
     """

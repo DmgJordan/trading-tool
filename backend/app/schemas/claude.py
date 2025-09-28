@@ -4,10 +4,10 @@ from datetime import datetime
 from enum import Enum
 
 class ClaudeModel(str, Enum):
-    HAIKU = "claude-3-haiku-20240307"
-    SONNET = "claude-3-sonnet-20240229"
-    SONNET_35 = "claude-3-5-sonnet-20241022"
-    OPUS = "claude-3-opus-20240229"
+    HAIKU_35 = "claude-3-5-haiku-20241022"
+    SONNET_37 = "claude-3-7-sonnet-20250219"
+    SONNET_4 = "claude-sonnet-4-20250514"
+    OPUS_41 = "claude-opus-4-1-20250805"
 
 class TradingAction(str, Enum):
     BUY = "BUY"
@@ -37,7 +37,7 @@ class SingleAssetAnalysisRequest(BaseModel):
     ticker: str = Field(..., description="Ticker du symbole (ex: BTC/USDT)")
     exchange: str = Field(default="binance", description="Exchange à utiliser")
     profile: Literal["short", "medium", "long"] = Field(..., description="Profil de trading")
-    model: ClaudeModel = Field(default=ClaudeModel.SONNET_35, description="Modèle Claude")
+    model: ClaudeModel = Field(default=ClaudeModel.SONNET_4, description="Modèle Claude")
     custom_prompt: Optional[str] = Field(None, description="Instructions additionnelles")
 
     @field_validator('ticker')

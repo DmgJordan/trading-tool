@@ -18,18 +18,18 @@ class AnthropicConnector:
 
         # Configuration des timeouts par modèle
         self.model_timeouts = {
-            ClaudeModel.HAIKU: 15.0,
-            ClaudeModel.SONNET: 30.0,
-            ClaudeModel.SONNET_35: 45.0,
-            ClaudeModel.OPUS: 60.0
+            ClaudeModel.HAIKU_35: 15.0,
+            ClaudeModel.SONNET_37: 30.0,
+            ClaudeModel.SONNET_4: 45.0,
+            ClaudeModel.OPUS_41: 60.0
         }
 
         # Configuration des max_tokens par modèle
         self.model_max_tokens = {
-            ClaudeModel.HAIKU: 2048,
-            ClaudeModel.SONNET: 3072,
-            ClaudeModel.SONNET_35: 4096,
-            ClaudeModel.OPUS: 4096
+            ClaudeModel.HAIKU_35: 3072,
+            ClaudeModel.SONNET_37: 4096,
+            ClaudeModel.SONNET_4: 6144,
+            ClaudeModel.OPUS_41: 8192
         }
 
     async def test_connection(self, api_key: str) -> Dict[str, Any]:
@@ -58,7 +58,7 @@ class AnthropicConnector:
             ]
 
             request_payload = {
-                "model": ClaudeModel.HAIKU.value,
+                "model": ClaudeModel.HAIKU_35.value,
                 "max_tokens": 10,
                 "messages": messages,
                 "system": "Respond with just 'OK'."
@@ -153,7 +153,7 @@ class AnthropicConnector:
         api_key: str,
         system_prompt: str,
         user_prompt: str,
-        model: ClaudeModel = ClaudeModel.SONNET_35
+        model: ClaudeModel = ClaudeModel.SONNET_4
     ) -> Dict[str, Any]:
         """
         Méthode générique pour générer une analyse avec Claude

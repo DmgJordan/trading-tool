@@ -17,10 +17,10 @@ class ClaudePromptService:
 
     def __init__(self):
         self.base_system_prompts = {
-            ClaudeModel.HAIKU: self._get_haiku_system_prompt(),
-            ClaudeModel.SONNET: self._get_sonnet_system_prompt(),
-            ClaudeModel.SONNET_35: self._get_sonnet_35_system_prompt(),
-            ClaudeModel.OPUS: self._get_opus_system_prompt()
+            ClaudeModel.HAIKU_35: self._get_haiku_35_system_prompt(),
+            ClaudeModel.SONNET_37: self._get_sonnet_37_system_prompt(),
+            ClaudeModel.SONNET_4: self._get_sonnet_4_system_prompt(),
+            ClaudeModel.OPUS_41: self._get_opus_41_system_prompt()
         }
 
     def generate_trading_prompt(
@@ -48,7 +48,7 @@ class ClaudePromptService:
         """
         try:
             # Prompt système adapté au modèle
-            system_prompt = self.base_system_prompts.get(model, self.base_system_prompts[ClaudeModel.SONNET_35])
+            system_prompt = self.base_system_prompts.get(model, self.base_system_prompts[ClaudeModel.SONNET_4])
 
             # Construction du prompt utilisateur
             user_prompt = self._build_user_prompt(
@@ -231,8 +231,8 @@ Stratégies de protection adaptées au profil
 💡 **CONCLUSION ET PERSPECTIVES**
 Synthèse et vision à moyen terme"""
 
-    def _get_haiku_system_prompt(self) -> str:
-        """Prompt système optimisé pour Claude Haiku"""
+    def _get_haiku_35_system_prompt(self) -> str:
+        """Prompt système optimisé pour Claude Haiku 3.5"""
         return """Tu es un analyste trading expert, spécialisé dans les analyses rapides et précises.
 
 OBJECTIF: Fournir des analyses trading concises mais complètes, adaptées au profil de risque de l'utilisateur.
@@ -246,8 +246,8 @@ PRINCIPES:
 
 STYLE: Direct, facuel, sans jargon inutile. Concentré sur l'essentiel."""
 
-    def _get_sonnet_system_prompt(self) -> str:
-        """Prompt système optimisé pour Claude Sonnet"""
+    def _get_sonnet_37_system_prompt(self) -> str:
+        """Prompt système optimisé pour Claude Sonnet 3.7"""
         return """Tu es un analyste trading professionnel avec une expertise approfondie des marchés financiers.
 
 OBJECTIF: Fournir des analyses trading détaillées et nuancées, parfaitement adaptées au profil et aux préférences de l'utilisateur.
@@ -268,8 +268,8 @@ APPROCHE:
 
 STYLE: Professionnel, pédagogique, structuré. Équilibre entre détail et lisibilité."""
 
-    def _get_sonnet_35_system_prompt(self) -> str:
-        """Prompt système optimisé pour Claude 3.5 Sonnet"""
+    def _get_sonnet_4_system_prompt(self) -> str:
+        """Prompt système optimisé pour Claude Sonnet 4"""
         return """Tu es un analyste trading senior avec une vision holistique des marchés financiers.
 
 OBJECTIF: Fournir des analyses trading de niveau institutionnel, intégrant tous les facteurs pertinents pour une prise de décision optimale.
@@ -292,8 +292,8 @@ MÉTHODOLOGIE:
 
 STYLE: Expert mais accessible, nuancé, avec une perspective long-terme. Intègre l'incertitude et les probabilités."""
 
-    def _get_opus_system_prompt(self) -> str:
-        """Prompt système optimisé pour Claude Opus"""
+    def _get_opus_41_system_prompt(self) -> str:
+        """Prompt système optimisé pour Claude Opus 4.1"""
         return """Tu es un analyste trading institutionnel de niveau élite, avec une compréhension systémique des marchés financiers.
 
 OBJECTIF: Fournir des analyses trading exhaustives et sophistiquées, rivalisant avec les meilleures recherches institutionnelles.
