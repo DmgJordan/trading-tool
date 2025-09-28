@@ -8,34 +8,34 @@ interface ModelSelectorProps {
 
 const claudeModels = [
   {
-    id: 'claude-3-haiku-20240307',
-    name: 'Claude 3 Haiku',
-    description: 'Rapide et économique',
+    id: 'claude-3-5-haiku-20241022',
+    name: 'Claude Haiku 3.5',
+    description: 'Ultra-rapide et économique',
     icon: '⚡',
-    speed: 'Très rapide',
+    speed: 'Ultra rapide',
     cost: 'Faible',
   },
   {
-    id: 'claude-3-sonnet-20240229',
-    name: 'Claude 3 Sonnet',
-    description: 'Équilibre performance/coût',
-    icon: '⚖️',
+    id: 'claude-3-7-sonnet-20250219',
+    name: 'Claude Sonnet 3.7',
+    description: 'Réflexion étendue et équilibré',
+    icon: '💭',
     speed: 'Rapide',
     cost: 'Modéré',
   },
   {
-    id: 'claude-3-5-sonnet-20241022',
-    name: 'Claude 3.5 Sonnet',
-    description: 'Dernière version améliorée',
+    id: 'claude-sonnet-4-20250514',
+    name: 'Claude Sonnet 4',
+    description: 'Intelligence supérieure optimisée',
     icon: '🚀',
     speed: 'Rapide',
     cost: 'Modéré',
     recommended: true,
   },
   {
-    id: 'claude-3-opus-20240229',
-    name: 'Claude 3 Opus',
-    description: 'Analyse la plus approfondie',
+    id: 'claude-opus-4-1-20250805',
+    name: 'Claude Opus 4.1',
+    description: 'Analyse la plus puissante et précise',
     icon: '🎯',
     speed: 'Plus lent',
     cost: 'Élevé',
@@ -158,14 +158,17 @@ export default function ModelSelector({
           <div className="text-sm text-blue-800">
             <p className="font-medium mb-1">À propos des modèles Claude</p>
             <p>
-              <strong>Haiku</strong> : Idéal pour des analyses rapides et des
-              résumés courts.
+              <strong>Haiku 3.5</strong> : Ultra-rapide pour analyses immédiates
+              et résumés concis.
               <br />
-              <strong>Sonnet</strong> : Équilibre parfait entre qualité et
-              vitesse pour la plupart des cas.
+              <strong>Sonnet 3.7</strong> : Réflexion étendue avec excellent
+              équilibre performance/prix.
               <br />
-              <strong>Opus</strong> : Analyses les plus détaillées et nuancées,
-              recommandé pour des décisions importantes.
+              <strong>Sonnet 4</strong> : Intelligence supérieure pour analyses
+              complexes, recommandé.
+              <br />
+              <strong>Opus 4.1</strong> : Le plus puissant pour analyses
+              institutionnelles critiques.
             </p>
           </div>
         </div>
