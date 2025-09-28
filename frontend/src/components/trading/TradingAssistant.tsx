@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import ModelSelector from './ModelSelector';
 import ClaudeResponse from './ClaudeResponse';
+import TradeRecommendations from './TradeRecommendations';
 import {
   claudeApi,
   SingleAssetAnalysisRequest,
@@ -469,6 +470,15 @@ export default function TradingAssistant({
             selectedAssets={[analysisResult.ticker]}
             timestamp={new Date(analysisResult.timestamp)}
           />
+
+          {/* Recommandations de Trading */}
+          {analysisResult.trade_recommendations && (
+            <TradeRecommendations
+              recommendations={analysisResult.trade_recommendations}
+              ticker={analysisResult.ticker}
+              analysisTimestamp={new Date(analysisResult.timestamp)}
+            />
+          )}
         </>
       )}
     </div>

@@ -82,3 +82,74 @@ class SingleAssetAnalysisResponse(BaseModel):
 
     # Avertissements
     warnings: List[str] = Field(default=[], description="Avertissements")
+
+# Nouveaux schémas pour les recommandations de trading structurées
+
+class TradeDirection(str, Enum):
+    LONG = "long"
+    SHORT = "short"
+
+class TradeRecommendation(BaseModel):
+    """Recommandation de trading structurée"""
+
+    # Paramètres d'entrée
+    entry_price: float = Field(..., description="Prix d'entrée recommandé")
+    direction: TradeDirection = Field(..., description="Direction du trade (long/short)")
+
+    # Gestion des risques
+    stop_loss: float = Field(..., description="Prix de stop-loss")
+    take_profit_1: float = Field(..., description="Premier take-profit")
+    take_profit_2: float = Field(..., description="Deuxième take-profit")
+    take_profit_3: float = Field(..., description="Troisième take-profit")
+
+    # Métriques
+    confidence_level: int = Field(..., ge=0, le=100, description="Niveau de confiance (0-100)")
+    risk_reward_ratio: float = Field(..., description="Ratio risque/récompense")
+    portfolio_percentage: float = Field(..., ge=0.1, le=10.0, description="Pourcentage du portefeuille recommandé (0.1-10%)")
+
+    # Contexte
+    timeframe: str = Field(..., description="Horizon temporel du trade")
+    reasoning: str = Field(..., description="Justification technique détaillée")
+
+    @field_validator('risk_reward_ratio')
+    @classmethod
+    def validate_risk_reward(cls, v):
+        """Valide que le ratio risque/récompense est positif"""
+        if v <= 0:
+            raise ValueError("Le ratio risque/récompense doit être positif")
+        return v
+
+    @field_validator('stop_loss', 'take_profit_1', 'take_profit_2', 'take_profit_3')
+    @classmethod
+    def validate_prices(cls, v, values):
+        """Valide la cohérence des prix"""
+        if v <= 0:
+            raise ValueError("Les prix doivent être positifs")
+        return v
+
+class StructuredAnalysisResponse(BaseModel):
+    """Réponse d'analyse avec recommandations de trading structurées"""
+
+    # Métadonnées (comme avant)
+    request_id: str = Field(..., description="ID unique de la requête")
+    timestamp: datetime = Field(..., description="Timestamp de l'analyse")
+    model_used: ClaudeModel = Field(..., description="Modèle Claude utilisé")
+
+    # Données de base
+    ticker: str = Field(..., description="Ticker analysé")
+    exchange: str = Field(..., description="Exchange utilisé")
+    profile: str = Field(..., description="Profil de trading")
+
+    # Données techniques allégées (comme avant)
+    technical_data: TechnicalDataLight = Field(..., description="Données techniques sans bougies")
+
+    # Nouvelle structure d'analyse
+    claude_analysis: str = Field(..., description="Analyse textuelle complète de Claude")
+    trade_recommendations: List[TradeRecommendation] = Field(default=[], description="Recommandations de trading structurées")
+
+    # Métriques
+    tokens_used: Optional[int] = Field(None, description="Tokens consommés")
+    processing_time_ms: Optional[int] = Field(None, description="Temps de traitement")
+
+    # Avertissements
+    warnings: List[str] = Field(default=[], description="Avertissements")

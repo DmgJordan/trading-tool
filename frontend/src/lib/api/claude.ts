@@ -74,6 +74,19 @@ export interface SingleAssetAnalysisResponse {
   profile: string;
   technical_data: TechnicalDataLight;
   claude_analysis: string;
+  trade_recommendations?: Array<{
+    entry_price: number;
+    direction: 'long' | 'short';
+    stop_loss: number;
+    take_profit_1: number;
+    take_profit_2: number;
+    take_profit_3: number;
+    confidence_level: number;
+    risk_reward_ratio: number;
+    portfolio_percentage: number;
+    timeframe: string;
+    reasoning: string;
+  }>;
   tokens_used?: number;
   processing_time_ms?: number;
   warnings: string[];

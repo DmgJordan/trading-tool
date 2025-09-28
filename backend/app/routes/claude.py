@@ -12,7 +12,10 @@ from ..schemas.claude import (
     ClaudeModel,
     SingleAssetAnalysisRequest,
     SingleAssetAnalysisResponse,
-    TechnicalDataLight
+    TechnicalDataLight,
+    StructuredAnalysisResponse,
+    TradeRecommendation,
+    TradeDirection
 )
 from ..services.connectors.anthropic_connector import AnthropicConnector
 from ..services.ccxt_service import CCXTService
@@ -72,7 +75,7 @@ async def test_claude_connection(
         )
 
 
-@router.post("/analyze-single-asset", response_model=SingleAssetAnalysisResponse)
+@router.post("/analyze-single-asset", response_model=StructuredAnalysisResponse)
 async def analyze_single_asset_with_technical(
     request: SingleAssetAnalysisRequest,
     current_user: User = Depends(get_current_user),
@@ -126,7 +129,7 @@ async def analyze_single_asset_with_technical(
             )
 
         # 3. Préparer les prompts système et utilisateur
-        system_prompt = """Tu es un expert en analyse technique de trading cryptocurrency avec une expertise en analyse multi-timeframes. Tu dois analyser des données techniques complètes et fournir des recommandations de trading précises basées sur les indicateurs, patterns, et structure de marché."""
+        system_prompt = """Tu es un expert en analyse technique de trading cryptocurrency avec une expertise en analyse multi-timeframes. Tu dois analyser des données techniques complètes et fournir des recommandations de trading précises et automatisables."""
 
         user_prompt = f"""
 ANALYSE TECHNIQUE DÉTAILLÉE - {request.ticker}
@@ -138,37 +141,66 @@ Exchange: {request.exchange}
 {json.dumps(technical_data, indent=2, ensure_ascii=False)}
 
 === INSTRUCTIONS D'ANALYSE ===
-Analysez ces données techniques multi-timeframes et fournissez:
 
-1. **SITUATION ACTUELLE**
-   - Prix actuel et contexte de marché
-   - Analyse de la structure multi-timeframes
-   - Confluence des indicateurs
+Tu dois fournir une réponse JSON strictement formatée avec cette structure exacte :
 
-2. **ANALYSE PAR TIMEFRAME**
-   - Timeframe principal ({technical_data.get('tf', 'N/A')}): Tendance, signaux d'entrée/sortie
-   - Contexte supérieur: Biais directionnel et niveaux clés
-   - Contexte inférieur: Points d'entrée précis et timing
+{{
+  "analysis_text": "Analyse textuelle complète en français...",
+  "trade_recommendations": [
+    {{
+      "entry_price": 45000.0,
+      "direction": "long",
+      "stop_loss": 43500.0,
+      "take_profit_1": 46500.0,
+      "take_profit_2": 47800.0,
+      "take_profit_3": 49200.0,
+      "confidence_level": 85,
+      "risk_reward_ratio": 2.8,
+      "portfolio_percentage": 3.5,
+      "timeframe": "{technical_data.get('tf', 'N/A')}",
+      "reasoning": "Justification technique détaillée..."
+    }}
+  ]
+}}
 
-3. **SIGNAUX DE TRADING**
-   - Points d'entrée potentiels avec justifications
-   - Niveaux de stop-loss basés sur la structure
-   - Objectifs de take-profit réalistes
-   - Gestion de position recommandée
+=== RÈGLES DE GÉNÉRATION ===
 
-4. **ÉVALUATION DES RISQUES**
-   - Analyse de la volatilité (ATR)
-   - Identification des zones dangereuses
-   - Scénarios alternatifs
+1. **ANALYSE TEXTUELLE** (analysis_text) :
+   - Situation actuelle du marché
+   - Analyse multi-timeframes complète
+   - Signaux techniques identifiés
+   - Évaluation des risques
+   - Perspective générale
 
-5. **RECOMMANDATION FINALE**
-   - Action recommandée (ACHAT/VENTE/ATTENTE)
-   - Niveau de confiance et horizon temporel
-   - Conditions de révision de l'analyse
+2. **RECOMMANDATIONS DE TRADING** (trade_recommendations) :
+   - Générer 0 à 3 recommandations maximum
+   - Si aucune opportunité claire : array vide []
+   - Chaque trade doit être basé sur des signaux techniques précis
+   - Prix d'entrée : Niveau technique exact identifié
+   - Stop-loss : Basé sur structure (support/résistance, ATR)
+   - Take-profits : Niveaux de résistance/fibonacci progressifs
+   - Confidence : 70-100 pour trades recommandés
+   - Portfolio % : 1-5% selon qualité du setup
+   - Direction : "long" ou "short" uniquement
+   - Timeframe : Horizon de détention du trade
+   - Reasoning : Justification technique précise (200-300 mots)
 
-Utilisez les données de bougies pour identifier les patterns, cassures, et niveaux de prix précis.
-Basez vos recommandations sur les 600 bougies analysées pour chaque timeframe.
-"""
+3. **CRITÈRES DE QUALITÉ** :
+   - Confluence de plusieurs indicateurs
+   - Structure de marché claire
+   - Ratio risque/récompense > 1.5
+   - Contexte multi-timeframes favorable
+   - Volume et momentum supportent la direction
+
+4. **CALCULS REQUIS** :
+   - Risk/Reward = (TP moyen - Entry) / (Entry - SL)
+   - TP1 : Premier objectif conservateur
+   - TP2 : Objectif principal basé structure
+   - TP3 : Extension sur breakout/momentum
+
+Prix actuel : ${technical_data.get('current_price', {}).get('current_price', 'N/A')}
+
+IMPORTANT : Réponds UNIQUEMENT avec le JSON valide, sans texte supplémentaire."""
 
         # 4. Ajouter instructions personnalisées si fournies
         if request.custom_prompt:
@@ -231,8 +263,53 @@ Basez vos recommandations sur les 600 bougies analysées pour chaque timeframe.
         processing_time = (datetime.now() - start_time).total_seconds() * 1000
         tokens_used = claude_response.get("tokens_used", 0)
 
-        # 8. Construire réponse finale
-        response = SingleAssetAnalysisResponse(
+        # 8. Parser la réponse structurée de Claude
+        try:
+            claude_content = claude_response.get("content", "")
+
+            # Nettoyer et extraire le JSON
+            content_clean = claude_content.strip()
+            start_idx = content_clean.find("{")
+            end_idx = content_clean.rfind("}") + 1
+
+            if start_idx == -1 or end_idx == 0:
+                # Fallback vers l'ancien format si pas de JSON
+                structured_response = {
+                    "analysis_text": claude_content,
+                    "trade_recommendations": []
+                }
+            else:
+                json_content = content_clean[start_idx:end_idx]
+                structured_response = json.loads(json_content)
+
+            # Valider et construire les recommandations de trading
+            trade_recommendations = []
+            for rec_data in structured_response.get("trade_recommendations", []):
+                try:
+                    trade_rec = TradeRecommendation(**rec_data)
+                    trade_recommendations.append(trade_rec)
+                except Exception as e:
+                    logger.warning(f"Recommandation trade invalide ignorée: {e}")
+                    continue
+
+        except json.JSONDecodeError as e:
+            logger.warning(f"Erreur parsing JSON Claude: {e}")
+            # Fallback vers l'ancien format
+            structured_response = {
+                "analysis_text": claude_response.get("content", ""),
+                "trade_recommendations": []
+            }
+            trade_recommendations = []
+        except Exception as e:
+            logger.error(f"Erreur inattendue parsing Claude: {e}")
+            structured_response = {
+                "analysis_text": claude_response.get("content", ""),
+                "trade_recommendations": []
+            }
+            trade_recommendations = []
+
+        # 9. Construire réponse finale avec nouveau format structuré
+        response = StructuredAnalysisResponse(
             request_id=request_id,
             timestamp=start_time,
             model_used=request.model,
@@ -240,7 +317,8 @@ Basez vos recommandations sur les 600 bougies analysées pour chaque timeframe.
             exchange=request.exchange,
             profile=request.profile,
             technical_data=technical_light,
-            claude_analysis=claude_response.get("content", ""),
+            claude_analysis=structured_response.get("analysis_text", claude_response.get("content", "")),
+            trade_recommendations=trade_recommendations,
             tokens_used=tokens_used,
             processing_time_ms=int(processing_time),
             warnings=[]
@@ -248,7 +326,8 @@ Basez vos recommandations sur les 600 bougies analysées pour chaque timeframe.
 
         logger.info(
             f"Analyse {request_id} terminée - "
-            f"Tokens: {tokens_used}, Temps: {int(processing_time)}ms"
+            f"Tokens: {tokens_used}, Temps: {int(processing_time)}ms, "
+            f"Recommandations: {len(trade_recommendations)}"
         )
 
         return response

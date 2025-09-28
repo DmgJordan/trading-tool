@@ -5,7 +5,7 @@ import logging
 import sys
 from .database import engine, get_db
 from .models import Base
-from .routes import users, auth, connectors, market_data, user_preferences, ai_recommendations, claude, ohlcv
+from .routes import users, auth, connectors, market_data, user_preferences, ai_recommendations, claude, ohlcv, hyperliquid_trading
 
 # Configuration du logging pour afficher dans le terminal
 logging.basicConfig(
@@ -45,6 +45,7 @@ app.include_router(user_preferences.router)
 app.include_router(ai_recommendations.router)
 app.include_router(claude.router)
 app.include_router(ohlcv.router)
+app.include_router(hyperliquid_trading.router)
 
 @app.get("/")
 async def root():
