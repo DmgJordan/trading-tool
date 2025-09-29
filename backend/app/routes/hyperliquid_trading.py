@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 import logging
@@ -40,25 +41,34 @@ async def execute_trade(
         if not current_user.hyperliquid_api_key:
             raise HTTPException(
                 status_code=400,
-                detail="Aucune clé privée Hyperliquid configurée. Configurez-la dans vos paramètres."
+                detail="Aucune cle privee Hyperliquid configuree. Configurez-la dans vos parametres."
             )
 
         # 2. Déchiffrer la clé privée
         try:
             private_key = decrypt_api_key(current_user.hyperliquid_api_key)
+
+            if not private_key:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Cle privee Hyperliquid vide. Veuillez reconfigurer votre cle privee dans les parametres."
+                )
+
+        except HTTPException:
+            raise
         except Exception as e:
-            logger.error(f"Erreur déchiffrement clé Hyperliquid: {e}")
+            logger.error(f"Erreur dechiffrement cle Hyperliquid: {e}")
             raise HTTPException(
                 status_code=400,
-                detail="Erreur lors du déchiffrement de la clé privée Hyperliquid"
+                detail="Erreur lors du dechiffrement de la cle privee Hyperliquid"
             )
 
         # 3. Validation de sécurité du trade
-        if trade_request.portfolio_percentage > 5.0:
-            logger.warning(f"Utilisateur {current_user.id} tente un trade > 5% du portefeuille")
+        if trade_request.portfolio_percentage > 50.0:
+            logger.warning(f"Utilisateur {current_user.id} tente un trade > 50% du portefeuille")
             raise HTTPException(
                 status_code=400,
-                detail="Pourcentage du portefeuille limité à 5% maximum pour la sécurité"
+                detail="Pourcentage du portefeuille limite a 50% maximum pour la securite"
             )
 
         # 4. Vérifier la cohérence des prix
@@ -66,50 +76,55 @@ async def execute_trade(
             if trade_request.stop_loss >= trade_request.entry_price:
                 raise HTTPException(
                     status_code=400,
-                    detail="Pour un long, le stop-loss doit être inférieur au prix d'entrée"
+                    detail="Pour un long, le stop-loss doit etre inferieur au prix d'entree"
                 )
             if trade_request.take_profit_1 <= trade_request.entry_price:
                 raise HTTPException(
                     status_code=400,
-                    detail="Pour un long, les take-profits doivent être supérieurs au prix d'entrée"
+                    detail="Pour un long, les take-profits doivent etre superieurs au prix d'entree"
                 )
         else:  # short
             if trade_request.stop_loss <= trade_request.entry_price:
                 raise HTTPException(
                     status_code=400,
-                    detail="Pour un short, le stop-loss doit être supérieur au prix d'entrée"
+                    detail="Pour un short, le stop-loss doit etre superieur au prix d'entree"
                 )
             if trade_request.take_profit_1 >= trade_request.entry_price:
                 raise HTTPException(
                     status_code=400,
-                    detail="Pour un short, les take-profits doivent être inférieurs au prix d'entrée"
+                    detail="Pour un short, les take-profits doivent etre inferieurs au prix d'entree"
                 )
 
-        # 5. Exécuter le trade
+        # 5. Injecter l'adresse publique pour trading delegue si configuree
+        if current_user.hyperliquid_public_address and not trade_request.account_address:
+            trade_request.account_address = current_user.hyperliquid_public_address
+            logger.info(f"Mode delegue active: API trade pour {current_user.hyperliquid_public_address[:10]}...")
+
+        # 6. Executer le trade
         logger.info(
-            f"Exécution trade pour utilisateur {current_user.id}: "
+            f"Execution trade pour utilisateur {current_user.id}: "
             f"{trade_request.symbol} {trade_request.direction} "
             f"{trade_request.portfolio_percentage}% @ {trade_request.entry_price}"
         )
 
         result = await trading_service.execute_trade(private_key, trade_request)
 
-        # 6. Logger le résultat
+        # 7. Logger le resultat
         if result.status == "success":
             logger.info(
-                f"Trade exécuté avec succès pour utilisateur {current_user.id}: "
+                f"Trade execute avec succes pour utilisateur {current_user.id}: "
                 f"Ordre principal {result.main_order_id}, "
                 f"SL: {result.stop_loss_order_id}, "
                 f"TPs: {len(result.take_profit_orders)}"
             )
         elif result.status == "partial":
             logger.warning(
-                f"Trade partiellement exécuté pour utilisateur {current_user.id}: "
+                f"Trade partiellement execute pour utilisateur {current_user.id}: "
                 f"{len(result.errors)} erreurs"
             )
         else:
             logger.error(
-                f"Échec trade pour utilisateur {current_user.id}: {result.message}"
+                f"Echec trade pour utilisateur {current_user.id}: {result.message}"
             )
 
         return result
@@ -120,7 +135,7 @@ async def execute_trade(
         logger.error(f"Erreur inattendue execute_trade pour utilisateur {current_user.id}: {e}")
         raise HTTPException(
             status_code=500,
-            detail="Erreur interne lors de l'exécution du trade"
+            detail="Erreur interne lors de l'execution du trade"
         )
 
 # Note: Pour récupérer les informations du portefeuille,

@@ -21,8 +21,9 @@ class ExecuteTradeRequest(BaseModel):
     take_profit_1: float = Field(..., description="Premier take-profit")
     take_profit_2: float = Field(..., description="Deuxième take-profit")
     take_profit_3: float = Field(..., description="Troisième take-profit")
-    portfolio_percentage: float = Field(..., ge=0.1, le=10.0, description="Pourcentage du portefeuille")
+    portfolio_percentage: float = Field(..., ge=0.1, le=50.0, description="Pourcentage du portefeuille")
     use_testnet: bool = Field(default=False, description="Utiliser le testnet")
+    account_address: Optional[str] = Field(None, description="Adresse du wallet principal (trading délégué)")
 
     @field_validator('symbol')
     @classmethod

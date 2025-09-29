@@ -105,7 +105,7 @@ class TradeRecommendation(BaseModel):
     # Métriques
     confidence_level: int = Field(..., ge=0, le=100, description="Niveau de confiance (0-100)")
     risk_reward_ratio: float = Field(..., description="Ratio risque/récompense")
-    portfolio_percentage: float = Field(..., ge=0.1, le=10.0, description="Pourcentage du portefeuille recommandé (0.1-10%)")
+    portfolio_percentage: float = Field(..., ge=0.1, le=50.0, description="Pourcentage du portefeuille recommandé (0.1-50%)")
 
     # Contexte
     timeframe: str = Field(..., description="Horizon temporel du trade")

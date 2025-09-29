@@ -37,9 +37,41 @@ def encrypt_api_key(api_key: str) -> str:
     return cipher_suite.encrypt(api_key.encode()).decode()
 
 def decrypt_api_key(encrypted_api_key: str) -> str:
+    import logging
+    logger = logging.getLogger(__name__)
+
     if not encrypted_api_key:
         return ""
-    return cipher_suite.decrypt(encrypted_api_key.encode()).decode()
+
+    try:
+        decrypted_bytes = cipher_suite.decrypt(encrypted_api_key.encode())
+        decrypted = decrypted_bytes.decode('utf-8')
+
+        # Verifier que le resultat est ASCII valide
+        decrypted.encode('ascii')
+        return decrypted
+
+    except UnicodeDecodeError:
+        # Fallback si probleme de decodage UTF-8
+        decrypted_bytes = cipher_suite.decrypt(encrypted_api_key.encode())
+        return decrypted_bytes.decode('utf-8', errors='ignore')
+
+    except UnicodeEncodeError:
+        # La cle contient des caracteres non-ASCII - traiter comme hex
+        decrypted = cipher_suite.decrypt(encrypted_api_key.encode()).decode('utf-8')
+
+        # Si hex pur, retourner tel quel
+        if all(c in '0123456789abcdefABCDEF' for c in decrypted):
+            return decrypted
+
+        # Sinon convertir chaque caractere en hex
+        hex_key = ''.join(f"{ord(char):02x}" for char in decrypted)
+        logger.info(f"decrypt_api_key: Conversion Unicode->hex effectuee (longueur: {len(hex_key)})")
+        return hex_key
+
+    except Exception as e:
+        logger.error(f"decrypt_api_key: Erreur dechiffrement - {type(e).__name__}: {e}")
+        return ""
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()

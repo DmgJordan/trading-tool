@@ -23,7 +23,7 @@ export default function ExecuteTradeModal({
 }: ExecuteTradeModalProps) {
   const [portfolioInfo, setPortfolioInfo] = useState<any>(null);
   const [isLoadingPortfolio, setIsLoadingPortfolio] = useState(false);
-  const [useTestnet, setUseTestnet] = useState(false);
+  const [useTestnet, setUseTestnet] = useState(true); // Testnet par défaut pour sécurité
   const [customPercentage, setCustomPercentage] = useState<number>(0);
   const [isExecuting, setIsExecuting] = useState(false);
 
@@ -193,7 +193,7 @@ export default function ExecuteTradeModal({
                 <input
                   type="range"
                   min="0.1"
-                  max="5.0"
+                  max="50.0"
                   step="0.1"
                   value={customPercentage}
                   onChange={(e) => setCustomPercentage(Number(e.target.value))}
@@ -203,7 +203,7 @@ export default function ExecuteTradeModal({
                   <input
                     type="number"
                     min="0.1"
-                    max="5.0"
+                    max="50.0"
                     step="0.1"
                     value={customPercentage}
                     onChange={(e) => setCustomPercentage(Number(e.target.value))}
@@ -213,7 +213,7 @@ export default function ExecuteTradeModal({
                 </div>
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                Recommandé : {recommendation.portfolio_percentage}% (Max : 5%)
+                Recommandé : {recommendation.portfolio_percentage}% (Max : 50%)
               </p>
             </div>
 
