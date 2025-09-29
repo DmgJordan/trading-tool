@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { TradeRecommendation, ExecuteTradeRequest } from '../../lib/types/trading';
 import { hyperliquidTradingApi } from '../../lib/api/hyperliquid-trading';
+import { HyperliquidUserInfoData } from '../../lib/types/hyperliquid';
 
 interface ExecuteTradeModalProps {
   isOpen: boolean;
@@ -21,7 +22,7 @@ export default function ExecuteTradeModal({
   onExecute,
   className = '',
 }: ExecuteTradeModalProps) {
-  const [portfolioInfo, setPortfolioInfo] = useState<any>(null);
+  const [portfolioInfo, setPortfolioInfo] = useState<{ status: string; data: HyperliquidUserInfoData } | null>(null);
   const [isLoadingPortfolio, setIsLoadingPortfolio] = useState(false);
   const [useTestnet, setUseTestnet] = useState(true); // Testnet par défaut pour sécurité
   const [customPercentage, setCustomPercentage] = useState<number>(0);
@@ -39,8 +40,9 @@ export default function ExecuteTradeModal({
     setIsLoadingPortfolio(true);
     try {
       const result = await hyperliquidTradingApi.getPortfolioInfo(useTestnet);
+      console.log('Portfolio info reçue:', result);
       if (result.status === 'success') {
-        setPortfolioInfo(result.data);
+        setPortfolioInfo(result);
       }
     } catch (error) {
       console.error('Erreur chargement portefeuille:', error);
@@ -76,8 +78,8 @@ export default function ExecuteTradeModal({
   };
 
   const calculatePositionValue = () => {
-    if (!portfolioInfo || !recommendation) return 0;
-    const accountValue = portfolioInfo.portfolio_summary?.account_value || 0;
+    if (!portfolioInfo?.data?.user_state?.marginSummary?.accountValue || !recommendation) return 0;
+    const accountValue = parseFloat(portfolioInfo.data.user_state.marginSummary.accountValue);
     return (accountValue * customPercentage) / 100;
   };
 
@@ -158,20 +160,24 @@ export default function ExecuteTradeModal({
                 <div className="animate-spin w-6 h-6 border-2 border-gray-300 border-t-gray-900 rounded-full mx-auto"></div>
                 <p className="text-sm text-gray-600 mt-2">Chargement...</p>
               </div>
-            ) : portfolioInfo ? (
+            ) : portfolioInfo?.data ? (
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <div className="text-sm text-gray-600">Valeur du compte</div>
                   <div className="font-semibold">
-                    ${portfolioInfo.portfolio_summary?.account_value?.toLocaleString() || 'N/A'}
+                    ${parseFloat(portfolioInfo.data.user_state?.marginSummary?.accountValue || '0').toLocaleString()}
                   </div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-600">Balance disponible</div>
                   <div className="font-semibold">
-                    ${portfolioInfo.portfolio_summary?.withdrawable_balance?.toLocaleString() || 'N/A'}
+                    ${parseFloat(portfolioInfo.data.user_state?.crossMarginSummary?.totalRawUsd || '0').toLocaleString()}
                   </div>
                 </div>
+              </div>
+            ) : portfolioInfo ? (
+              <div className="text-red-600 text-sm">
+                Erreur : données du portefeuille manquantes
               </div>
             ) : (
               <div className="text-red-600 text-sm">

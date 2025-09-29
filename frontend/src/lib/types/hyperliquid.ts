@@ -96,20 +96,20 @@ export interface HyperliquidOpenOrder {
 }
 
 export interface HyperliquidMarginSummary {
-  accountValue?: number | null;
-  totalMarginUsed?: number | null;
-  totalNotional?: number | null;
-  totalRawUsd?: number | null;
+  accountValue?: string | null;
+  totalMarginUsed?: string | null;
+  totalNtlPos?: string | null;
+  totalRawUsd?: string | null;
   raw?: Record<string, unknown> | null;
 }
 
 export interface HyperliquidUserState {
-  marginSummary?: Record<string, unknown> | null;
-  crossMarginSummary?: Record<string, unknown> | null;
+  marginSummary?: HyperliquidMarginSummary | null;
+  crossMarginSummary?: HyperliquidMarginSummary | null;
   perpPositions?: HyperliquidPerpPosition[] | null;
   assetPositions?: HyperliquidAssetPosition[] | null;
   withdrawables?: Record<string, unknown> | null;
-  openOrders?: HyperliquidOpenOrder[] | null;
+  crossMaintenanceMarginUsed?: string | null;
   [key: string]: unknown;
 }
 
@@ -134,16 +134,16 @@ export interface HyperliquidPortfolioData {
 }
 
 export interface HyperliquidUserInfoData {
-  walletAddress: string;
+  wallet_address: string;
   network: 'mainnet' | 'testnet';
-  retrievedAt: string;
-  portfolioSummary: HyperliquidPortfolioSummary;
-  userState: HyperliquidUserState | null;
-  spotUserState: HyperliquidSpotUserState | null;
+  retrieved_at: string;
+  portfolio_summary: HyperliquidPortfolioSummary;
+  user_state: HyperliquidUserState | null;
+  spot_user_state: HyperliquidSpotUserState | null;
   portfolio: HyperliquidPortfolioData | null;
   fills: HyperliquidFill[];
-  openOrders: HyperliquidOpenOrder[];
-  frontendOpenOrders?: Record<string, unknown> | null;
+  open_orders: HyperliquidOpenOrder[];
+  frontend_open_orders?: Record<string, unknown> | null;
 }
 
 export interface HyperliquidConnectorResponse {

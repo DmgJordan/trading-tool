@@ -138,5 +138,68 @@ async def execute_trade(
             detail="Erreur interne lors de l'execution du trade"
         )
 
-# Note: Pour récupérer les informations du portefeuille,
-# utiliser l'endpoint existant /connectors/user-info avec service_type="hyperliquid"
+@router.get("/portfolio-info")
+async def get_portfolio_info(
+    use_testnet: bool = False,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Récupère les informations du portefeuille Hyperliquid de l'utilisateur
+    Endpoint de production pour le trading actif
+    """
+    try:
+        # Vérifier la clé privée Hyperliquid
+        if not current_user.hyperliquid_api_key:
+            raise HTTPException(
+                status_code=400,
+                detail="Aucune cle privee Hyperliquid configuree"
+            )
+
+        if not current_user.hyperliquid_public_address:
+            raise HTTPException(
+                status_code=400,
+                detail="Aucune adresse publique Hyperliquid configuree"
+            )
+
+        # Déchiffrer la clé privée
+        try:
+            private_key = decrypt_api_key(current_user.hyperliquid_api_key)
+            if not private_key:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Cle privee Hyperliquid vide"
+                )
+        except Exception as e:
+            logger.error(f"Erreur dechiffrement cle: {e}")
+            raise HTTPException(
+                status_code=400,
+                detail="Erreur dechiffrement cle privee"
+            )
+
+        # Récupérer les infos via le service
+        from ..services.validators.dex_validator import DexValidator
+        dex_validator = DexValidator()
+
+        result = await dex_validator.get_hyperliquid_user_info(
+            private_key,
+            current_user.hyperliquid_public_address,
+            use_testnet
+        )
+
+        if result["status"] != "success":
+            raise HTTPException(
+                status_code=500,
+                detail=result.get("message", "Erreur recuperation portfolio")
+            )
+
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur inattendue get_portfolio_info: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Erreur interne lors de la recuperation du portfolio"
+        )
