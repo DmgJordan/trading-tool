@@ -1,7 +1,6 @@
 import { create } from 'zustand';
-import { hyperliquidApi } from '../lib/api/hyperliquid';
+import { hyperliquidTradingApi } from '../lib/api/hyperliquid-trading';
 import {
-  HyperliquidConnectorResponse,
   HyperliquidUserInfoData,
 } from '../lib/types/hyperliquid';
 
@@ -16,7 +15,7 @@ interface HyperliquidState {
 interface HyperliquidActions {
   fetchUserInfo: (options?: {
     useTestnet?: boolean;
-  }) => Promise<HyperliquidConnectorResponse>;
+  }) => Promise<{ status: string; data: HyperliquidUserInfoData }>;
   setUseTestnet: (useTestnet: boolean) => Promise<void>;
   clearError: () => void;
 }
@@ -35,21 +34,17 @@ export const useHyperliquidStore = create<HyperliquidStore>()((set, get) => ({
     set({ isLoading: true, error: null });
 
     try {
-      const response = await hyperliquidApi.getUserInfo({
-        useTestnet: targetUseTestnet,
-      });
+      const response = await hyperliquidTradingApi.getPortfolioInfo(targetUseTestnet);
 
       if (response.status !== 'success' || !response.data) {
-        throw new Error(
-          response.message || 'Impossible de récupérer les données Hyperliquid'
-        );
+        throw new Error('Impossible de récupérer les données Hyperliquid');
       }
 
       set({
         data: response.data,
         isLoading: false,
         error: null,
-        lastUpdated: response.data.retrievedAt || response.timestamp,
+        lastUpdated: response.data.retrieved_at,
         useTestnet: targetUseTestnet,
       });
 

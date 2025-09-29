@@ -162,14 +162,14 @@ export default function HyperliquidSection({
   const perpPositions = useMemo(
     () =>
       derivePerpPositions(
-        data?.userState?.perpPositions ?? data?.userState?.assetPositions
+        data?.user_state?.perpPositions ?? data?.user_state?.assetPositions
       ),
-    [data?.userState?.perpPositions, data?.userState?.assetPositions]
+    [data?.user_state?.perpPositions, data?.user_state?.assetPositions]
   );
 
   const spotPositions = useMemo(
-    () => deriveSpotPositions(data?.spotUserState),
-    [data?.spotUserState]
+    () => deriveSpotPositions(data?.spot_user_state),
+    [data?.spot_user_state]
   );
 
   const fills = useMemo(
@@ -177,8 +177,8 @@ export default function HyperliquidSection({
     [data?.fills]
   );
   const openOrders = useMemo(
-    () => (Array.isArray(data?.openOrders) ? data?.openOrders : []),
-    [data?.openOrders]
+    () => (Array.isArray(data?.open_orders) ? data?.open_orders : []),
+    [data?.open_orders]
   );
 
   // Configuration des onglets Hyperliquid
@@ -274,7 +274,7 @@ export default function HyperliquidSection({
   };
 
   const networkLabel = useTestnet ? 'Testnet' : 'Mainnet';
-  const retrievedAt = data?.retrievedAt || lastUpdated;
+  const retrievedAt = data?.retrieved_at || lastUpdated;
 
   return (
     <div className={`space-y-8 ${className}`}>
@@ -360,7 +360,7 @@ export default function HyperliquidSection({
       {/* Header avec métriques principales */}
       {data && (
         <MetricsHeader
-          portfolioSummary={data.portfolioSummary}
+          portfolioSummary={data.portfolio_summary}
           volume14d={volume14d}
           fees={fees}
         />
@@ -382,7 +382,7 @@ export default function HyperliquidSection({
               <PortfolioOverview
                 perpPositions={perpPositions}
                 spotPositions={spotPositions}
-                portfolioSummary={data.portfolioSummary}
+                portfolioSummary={data.portfolio_summary}
                 onAction={handleQuickAction}
               />
             )}

@@ -211,9 +211,16 @@ async def get_user_info(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Récupère les informations utilisateur pour un service donné"""
+    """Récupère les informations utilisateur pour un service donné (test uniquement)"""
     try:
+        # Hyperliquid utilise maintenant un endpoint de production dédié
         if info_request.service_type == "hyperliquid":
+            raise HTTPException(
+                status_code=400,
+                detail="Utilisez l'endpoint de production /hyperliquid/portfolio-info pour Hyperliquid"
+            )
+
+        if info_request.service_type == "hyperliquid_legacy":
             if not current_user.hyperliquid_api_key:
                 raise HTTPException(
                     status_code=400,
