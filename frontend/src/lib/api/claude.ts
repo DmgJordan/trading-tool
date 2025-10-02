@@ -6,8 +6,7 @@ export interface SingleAssetAnalysisRequest {
   profile: 'short' | 'medium' | 'long';
   model?:
     | 'claude-3-5-haiku-20241022'
-    | 'claude-3-7-sonnet-20250219'
-    | 'claude-sonnet-4-20250514'
+    | 'claude-sonnet-4-5-20250929'
     | 'claude-opus-4-1-20250805';
   custom_prompt?: string;
 }
@@ -111,7 +110,7 @@ export const claudeApi = {
       ticker: request.ticker,
       exchange: request.exchange || 'binance',
       profile: request.profile,
-      model: request.model || 'claude-sonnet-4-20250514',
+      model: request.model || 'claude-sonnet-4-5-20250929',
       custom_prompt: request.custom_prompt,
     });
     return response.data as SingleAssetAnalysisResponse;

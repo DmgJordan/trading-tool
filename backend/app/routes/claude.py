@@ -29,6 +29,91 @@ anthropic_connector = AnthropicConnector()
 ccxt_service = CCXTService()
 
 
+def _get_system_prompt_for_model(model: ClaudeModel) -> str:
+    """
+    Retourne le prompt système optimisé selon le modèle Claude sélectionné
+
+    Args:
+        model: Modèle Claude à utiliser
+
+    Returns:
+        Prompt système adapté aux capacités du modèle
+    """
+
+    if model == ClaudeModel.HAIKU_35:
+        # Haiku 3.5: Analyse rapide et concise
+        return """Tu es un analyste trading crypto expert spécialisé dans les analyses techniques rapides et précises.
+
+OBJECTIF: Fournir des analyses trading concises mais complètes avec des recommandations actionnables immédiatement.
+
+APPROCHE:
+• Analyse directe et factuelle des données techniques
+• Identification rapide des opportunités de trading
+• Recommandations claires avec niveaux de prix précis
+• Gestion des risques adaptée au contexte
+
+STYLE: Direct, concis, sans jargon inutile. Privilégier l'essentiel et l'actionnable."""
+
+    elif model == ClaudeModel.SONNET_45:
+        # Sonnet 4.5: Analyse équilibrée et détaillée (par défaut)
+        return """Tu es un analyste trading crypto senior avec une expertise approfondie en analyse technique multi-timeframes.
+
+OBJECTIF: Fournir des analyses trading de qualité institutionnelle, équilibrant profondeur analytique et clarté opérationnelle.
+
+COMPÉTENCES AVANCÉES:
+• Analyse technique multi-dimensionnelle (MA, RSI, ATR, Volume)
+• Détection de patterns et structures de marché
+• Évaluation des confluences d'indicateurs
+• Gestion de risque sophistiquée avec ratios R/R optimaux
+• Timing d'entrée/sortie basé sur probabilités
+
+MÉTHODOLOGIE:
+• Analyser les 3 timeframes (main/higher/lower) de manière systématique
+• Identifier les zones de support/résistance critiques
+• Évaluer la force de la tendance et le momentum
+• Anticiper les scénarios alternatifs (bull/bear)
+• Quantifier la qualité des setups (confluence, R/R, timing)
+• Proposer des recommandations précises avec justifications détaillées
+
+STYLE: Professionnel, structuré, analytique. Équilibre entre détail technique et lisibilité opérationnelle."""
+
+    elif model == ClaudeModel.OPUS_41:
+        # Opus 4.1: Analyse institutionnelle sophistiquée
+        return """Tu es un analyste trading crypto de niveau institutionnel avec une compréhension systémique des marchés financiers.
+
+OBJECTIF: Fournir des analyses trading exhaustives et sophistiquées de qualité hedge fund, rivalisant avec les meilleures recherches quantitatives.
+
+EXPERTISE ÉLITE:
+• Modélisation technique avancée avec analyse fractale multi-timeframes
+• Microstructure des marchés et analyse des flux d'ordres
+• Détection de régimes de marché (tendance/range/volatilité)
+• Stratégies de position complexes avec optimisation risk-adjusted
+• Psychologie comportementale et positionnement du marché
+• Stress-testing des scénarios extrêmes et black swans
+
+MÉTHODOLOGIE INSTITUTIONNELLE:
+• Analyse systémique des interconnexions entre timeframes
+• Évaluation probabiliste de chaque scénario (bull/bear/neutral)
+• Modélisation des corrélations dynamiques entre indicateurs
+• Optimisation du ratio Sharpe et drawdown management
+• Intégration des facteurs macro et sentiment de marché
+• Anticipation des changements de régime et inflexions majeures
+• Sizing de position sophistiqué basé sur Kelly criterion
+
+PERSPECTIVE:
+• Vision holistique des dynamiques de marché
+• Intégration de l'analyse comportementale (fear/greed)
+• Prise en compte des asymétries de volatilité
+• Adaptation continue aux conditions changeantes
+• Excellence opérationnelle dans l'exécution
+
+STYLE: Sophistiqué, nuancé, avec profondeur analytique exceptionnelle. Intègre les subtilités et l'incertitude inhérente aux marchés financiers."""
+
+    else:
+        # Fallback vers Sonnet 4.5 si modèle inconnu
+        return _get_system_prompt_for_model(ClaudeModel.SONNET_45)
+
+
 @router.post("/test-connection")
 async def test_claude_connection(
     model: ClaudeModel = ClaudeModel.HAIKU_35,
@@ -128,24 +213,24 @@ async def analyze_single_asset_with_technical(
                 detail="Erreur lors de la récupération des données techniques"
             )
 
-        # 3. Préparer les prompts système et utilisateur
-        system_prompt = """Tu es un expert en analyse technique de trading cryptocurrency avec une expertise en analyse multi-timeframes. Tu dois analyser des données techniques complètes et fournir des recommandations de trading précises et automatisables."""
+        # 3. Préparer les prompts système et utilisateur optimisés selon le modèle
+        system_prompt = _get_system_prompt_for_model(request.model)
 
         user_prompt = f"""
-ANALYSE TECHNIQUE DÉTAILLÉE - {request.ticker}
+ANALYSE TECHNIQUE - {request.ticker}
+Profil: {request.profile.upper()} | Exchange: {request.exchange} | Prix actuel: ${technical_data.get('current_price', {}).get('current_price', 'N/A')}
 
-Profil de trading: {request.profile}
-Exchange: {request.exchange}
-
-=== DONNÉES TECHNIQUES COMPLÈTES ===
+═══════════════════════════════════════════════════════════════
+DONNÉES TECHNIQUES MULTI-TIMEFRAMES
+═══════════════════════════════════════════════════════════════
 {json.dumps(technical_data, indent=2, ensure_ascii=False)}
 
-=== INSTRUCTIONS D'ANALYSE ===
-
-Tu dois fournir une réponse JSON strictement formatée avec cette structure exacte :
+═══════════════════════════════════════════════════════════════
+FORMAT DE RÉPONSE REQUIS (JSON strict)
+═══════════════════════════════════════════════════════════════
 
 {{
-  "analysis_text": "Analyse textuelle complète en français...",
+  "analysis_text": "Analyse complète en français (500-1000 mots)...",
   "trade_recommendations": [
     {{
       "entry_price": 45000.0,
@@ -158,49 +243,46 @@ Tu dois fournir une réponse JSON strictement formatée avec cette structure exa
       "risk_reward_ratio": 2.8,
       "portfolio_percentage": 3.5,
       "timeframe": "{technical_data.get('tf', 'N/A')}",
-      "reasoning": "Justification technique détaillée..."
+      "reasoning": "Justification technique détaillée (200-300 mots)..."
     }}
   ]
 }}
 
-=== RÈGLES DE GÉNÉRATION ===
+═══════════════════════════════════════════════════════════════
+INSTRUCTIONS D'ANALYSE
+═══════════════════════════════════════════════════════════════
 
-1. **ANALYSE TEXTUELLE** (analysis_text) :
-   - Situation actuelle du marché
-   - Analyse multi-timeframes complète
-   - Signaux techniques identifiés
-   - Évaluation des risques
-   - Perspective générale
+1️⃣ ANALYSE TEXTUELLE (analysis_text) :
+   • Contexte de marché et tendance générale
+   • Analyse multi-timeframes (main/higher/lower)
+   • Signaux techniques : MA, RSI, ATR, Volume
+   • Niveaux clés : supports, résistances, zones de breakout
+   • Évaluation des risques et catalyseurs potentiels
+   • Conclusion et perspective
 
-2. **RECOMMANDATIONS DE TRADING** (trade_recommendations) :
-   - Générer 0 à 3 recommandations maximum
-   - Si aucune opportunité claire : array vide []
-   - Chaque trade doit être basé sur des signaux techniques précis
-   - Prix d'entrée : Niveau technique exact identifié
-   - Stop-loss : Basé sur structure (support/résistance, ATR)
-   - Take-profits : Niveaux de résistance/fibonacci progressifs
-   - Confidence : 70-100 pour trades recommandés
-   - Portfolio % : 1-5% selon qualité du setup
-   - Direction : "long" ou "short" uniquement
-   - Timeframe : Horizon de détention du trade
-   - Reasoning : Justification technique précise (200-300 mots)
+2️⃣ RECOMMANDATIONS DE TRADING (0 à 3 max) :
+   • Si aucune opportunité claire → array vide []
+   • Entry : Niveau technique précis (support/résistance/breakout)
+   • Stop-loss : Sous structure ou 1-2× ATR
+   • Take-profits : Objectifs progressifs (TP1 conservateur, TP2 principal, TP3 extension)
+   • Confidence : 70-100 (basé sur confluence d'indicateurs)
+   • Portfolio % : 1.0-5.0% (selon qualité du setup)
+   • Direction : "long" ou "short" uniquement
+   • Timeframe : Horizon de détention estimé
+   • Reasoning : Justification technique précise
 
-3. **CRITÈRES DE QUALITÉ** :
-   - Confluence de plusieurs indicateurs
-   - Structure de marché claire
-   - Ratio risque/récompense > 1.5
-   - Contexte multi-timeframes favorable
-   - Volume et momentum supportent la direction
+3️⃣ CRITÈRES DE QUALITÉ :
+   ✓ Confluence de 3+ indicateurs
+   ✓ Structure de marché claire (tendance ou range)
+   ✓ Ratio R/R minimum : 1.5:1
+   ✓ Cohérence multi-timeframes
+   ✓ Volume et momentum favorables
 
-4. **CALCULS REQUIS** :
-   - Risk/Reward = (TP moyen - Entry) / (Entry - SL)
-   - TP1 : Premier objectif conservateur
-   - TP2 : Objectif principal basé structure
-   - TP3 : Extension sur breakout/momentum
-
-Prix actuel : ${technical_data.get('current_price', {}).get('current_price', 'N/A')}
-
-IMPORTANT : Réponds UNIQUEMENT avec le JSON valide, sans texte supplémentaire."""
+⚠️ RÈGLES STRICTES :
+   • Réponds UNIQUEMENT avec le JSON valide
+   • Pas de texte avant/après le JSON
+   • Calcul R/R : (TP_moyen - Entry) / (Entry - SL)
+   • Prix réalistes basés sur données fournies"""
 
         # 4. Ajouter instructions personnalisées si fournies
         if request.custom_prompt:

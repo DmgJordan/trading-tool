@@ -30,7 +30,7 @@ class AITradingService:
         self.anthropic_base_url = "https://api.anthropic.com/v1"
         self.timeout = 30.0
         self.max_tokens = 4000
-        self.model = "claude-sonnet-4-20250514"  # Modèle Claude 4 le plus récent et performant
+        self.model = "claude-sonnet-4-5-20250929"  # Modèle Claude 4.5 le plus récent et performant
 
     async def generate_recommendations(
         self,
