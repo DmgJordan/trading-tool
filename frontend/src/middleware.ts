@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { PUBLIC_ROUTES } from './constants/routes';
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Routes publiques qui ne nécessitent pas d'authentification
-  const publicRoutes = ['/login'];
-  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
+  // Vérifier si la route est publique
+  const isPublicRoute = PUBLIC_ROUTES.some(route => pathname.startsWith(route));
 
   // Routes statiques et API à ignorer
   if (

@@ -3,7 +3,7 @@ export { default as apiClient } from './client';
 export { authApi } from './auth';
 export { preferencesApi } from './preferences';
 export { claudeApi } from './claude';
-// hyperliquidApi deprecated: use hyperliquidTradingApi from './hyperliquid-trading' instead
+export { hyperliquidTradingApi } from './hyperliquid-trading';
 export { ohlcvApi } from './ohlcv';
 
 // Types pour faciliter les imports

@@ -1,8 +1,8 @@
 import { create } from 'zustand';
-import { hyperliquidTradingApi } from '../lib/api/hyperliquid-trading';
+import { hyperliquidTradingApi, HyperliquidPortfolioResponse } from '@/lib/api/hyperliquid-trading';
 import {
   HyperliquidUserInfoData,
-} from '../lib/types/hyperliquid';
+} from '@/lib/types/hyperliquid';
 
 interface HyperliquidState {
   data: HyperliquidUserInfoData | null;
@@ -15,7 +15,7 @@ interface HyperliquidState {
 interface HyperliquidActions {
   fetchUserInfo: (options?: {
     useTestnet?: boolean;
-  }) => Promise<{ status: string; data: HyperliquidUserInfoData }>;
+  }) => Promise<HyperliquidPortfolioResponse>;
   setUseTestnet: (useTestnet: boolean) => Promise<void>;
   clearError: () => void;
 }

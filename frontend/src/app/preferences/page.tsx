@@ -2,169 +2,28 @@
 
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import Navbar from '../../components/Navbar';
-import RangeSlider from '../../components/preferences/RangeSlider';
-import MultiSelect, {
-  MultiSelectOption,
-} from '../../components/preferences/MultiSelect';
-import RadioCardGroup from '../../components/preferences/RadioCardGroup';
-import { ToggleGroup } from '../../components/preferences/ToggleSwitch';
+import Navbar from '@/components/Navbar';
+import RangeSlider from '@/components/preferences/RangeSlider';
+import MultiSelect from '@/components/preferences/MultiSelect';
+import RadioCardGroup from '@/components/preferences/RadioCardGroup';
+import { ToggleGroup } from '@/components/preferences/ToggleSwitch';
 import {
   useInitializePreferences,
   usePreferencesActions,
   useAutoSavePreferences,
-} from '../../store/preferencesStore';
+} from '@/hooks/usePreferences';
 import {
   validateAssetSymbol,
   validateTechnicalIndicator,
   defaultPreferencesValues,
-} from '../../lib/validation/preferences';
+} from '@/lib/validation/preferences';
 import {
   RISK_TOLERANCE_OPTIONS,
   INVESTMENT_HORIZON_OPTIONS,
   TRADING_STYLE_OPTIONS,
   SLIDER_CONFIGS,
-} from '../../lib/types/preferences';
-
-// Options pour les cryptomonnaies populaires
-const CRYPTO_OPTIONS: MultiSelectOption[] = [
-  {
-    value: 'BTC',
-    label: 'Bitcoin',
-    description: 'La première cryptomonnaie',
-    category: 'Major',
-    isPopular: true,
-  },
-  {
-    value: 'ETH',
-    label: 'Ethereum',
-    description: 'Plateforme de contrats intelligents',
-    category: 'Major',
-    isPopular: true,
-  },
-  {
-    value: 'SOL',
-    label: 'Solana',
-    description: 'Blockchain haute performance',
-    category: 'Layer 1',
-    isPopular: true,
-  },
-  {
-    value: 'ADA',
-    label: 'Cardano',
-    description: 'Blockchain proof-of-stake',
-    category: 'Layer 1',
-  },
-  {
-    value: 'DOT',
-    label: 'Polkadot',
-    description: 'Interopérabilité blockchain',
-    category: 'Layer 1',
-  },
-  {
-    value: 'AVAX',
-    label: 'Avalanche',
-    description: 'Plateforme DeFi rapide',
-    category: 'Layer 1',
-  },
-  {
-    value: 'MATIC',
-    label: 'Polygon',
-    description: "Solution de mise à l'échelle Ethereum",
-    category: 'Layer 2',
-  },
-  {
-    value: 'LINK',
-    label: 'Chainlink',
-    description: 'Oracle décentralisé',
-    category: 'Infrastructure',
-  },
-  {
-    value: 'UNI',
-    label: 'Uniswap',
-    description: 'Exchange décentralisé',
-    category: 'DeFi',
-  },
-  {
-    value: 'AAVE',
-    label: 'Aave',
-    description: 'Protocole de prêt DeFi',
-    category: 'DeFi',
-  },
-];
-
-// Options pour les indicateurs techniques
-const INDICATOR_OPTIONS: MultiSelectOption[] = [
-  {
-    value: 'RSI',
-    label: 'RSI',
-    description: 'Relative Strength Index',
-    category: 'Momentum',
-    isPopular: true,
-  },
-  {
-    value: 'MACD',
-    label: 'MACD',
-    description: 'Moving Average Convergence Divergence',
-    category: 'Momentum',
-    isPopular: true,
-  },
-  {
-    value: 'SMA',
-    label: 'SMA',
-    description: 'Simple Moving Average',
-    category: 'Trend',
-    isPopular: true,
-  },
-  {
-    value: 'EMA',
-    label: 'EMA',
-    description: 'Exponential Moving Average',
-    category: 'Trend',
-  },
-  {
-    value: 'BB',
-    label: 'Bollinger Bands',
-    description: 'Bandes de Bollinger',
-    category: 'Volatility',
-  },
-  {
-    value: 'STOCH',
-    label: 'Stochastic',
-    description: 'Oscillateur stochastique',
-    category: 'Momentum',
-  },
-  {
-    value: 'ADX',
-    label: 'ADX',
-    description: 'Average Directional Index',
-    category: 'Trend',
-  },
-  {
-    value: 'CCI',
-    label: 'CCI',
-    description: 'Commodity Channel Index',
-    category: 'Momentum',
-  },
-  {
-    value: 'ATR',
-    label: 'ATR',
-    description: 'Average True Range',
-    category: 'Volatility',
-  },
-  {
-    value: 'VWAP',
-    label: 'VWAP',
-    description: 'Volume Weighted Average Price',
-    category: 'Volume',
-  },
-  {
-    value: 'OBV',
-    label: 'OBV',
-    description: 'On Balance Volume',
-    category: 'Volume',
-  },
-];
+} from '@/lib/types/preferences';
+import { CRYPTO_OPTIONS, INDICATOR_OPTIONS } from '@/constants/preferences';
 
 // Helper pour convertir les erreurs en string
 const getErrorMessage = (error: any): string | undefined => {

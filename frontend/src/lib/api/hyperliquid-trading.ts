@@ -2,9 +2,13 @@ import apiClient from './client';
 import {
   ExecuteTradeRequest,
   TradeExecutionResult,
-  PortfolioInfo,
 } from '../types/trading';
 import { HyperliquidUserInfoData } from '../types/hyperliquid';
+
+export interface HyperliquidPortfolioResponse {
+  status: string;
+  data: HyperliquidUserInfoData;
+}
 
 export const hyperliquidTradingApi = {
   /**
@@ -21,11 +25,8 @@ export const hyperliquidTradingApi = {
    * Récupère les informations du portefeuille Hyperliquid
    * Endpoint de production
    */
-  getPortfolioInfo: async (useTestnet = false): Promise<{
-    status: string;
-    data: HyperliquidUserInfoData;
-  }> => {
-    const response = await apiClient.get('/hyperliquid/portfolio-info', {
+  getPortfolioInfo: async (useTestnet = false): Promise<HyperliquidPortfolioResponse> => {
+    const response = await apiClient.get<HyperliquidPortfolioResponse>('/hyperliquid/portfolio-info', {
       params: { use_testnet: useTestnet }
     });
     return response.data;

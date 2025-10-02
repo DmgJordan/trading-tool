@@ -6,9 +6,9 @@ import {
   LoginRequest,
   RegisterRequest,
   User,
-} from '../lib/types/auth';
-import { authApi } from '../lib/api/auth';
-import { initializeAuthStore } from '../lib/api/client';
+} from '@/lib/types/auth';
+import { authApi } from '@/lib/api/auth';
+import { initializeAuthStore } from '@/lib/api/client';
 
 interface AuthStore extends AuthState, AuthActions {}
 

@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { useAuthStore } from '../store/authStore';
-import LoadingScreen from './LoadingScreen';
+import { useAuthStore } from '@/store/authStore';
+import LoadingScreen from '@/components/LoadingScreen';
+import { isPublicRoute as checkIsPublicRoute } from '@/constants/routes';
 
 interface RouteGuardProps {
   children: React.ReactNode;
@@ -21,9 +22,8 @@ export default function RouteGuard({
   const router = useRouter();
   const pathname = usePathname();
 
-  // Pages publiques qui ne nécessitent pas d'authentification
-  const publicRoutes = ['/login'];
-  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
+  // Vérifier si la route est publique
+  const isPublicRoute = checkIsPublicRoute(pathname);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -93,26 +93,4 @@ export default function RouteGuard({
 
   // Afficher le contenu seulement si toutes les vérifications passent
   return <>{children}</>;
-}
-
-// Hook personnalisé pour utiliser RouteGuard facilement
-export function useRouteGuard(requireAuth: boolean = true) {
-  const { isAuthenticated } = useAuthStore();
-  const pathname = usePathname();
-
-  const publicRoutes = ['/login'];
-  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
-
-  const shouldRedirect = requireAuth
-    ? !isAuthenticated && !isPublicRoute
-    : isAuthenticated && isPublicRoute;
-
-  return {
-    isAuthenticated,
-    isPublicRoute,
-    shouldRedirect,
-    canAccess: requireAuth
-      ? isAuthenticated
-      : !isAuthenticated || !isPublicRoute,
-  };
 }
