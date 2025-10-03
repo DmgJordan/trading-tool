@@ -10,6 +10,8 @@ import {
   SingleAssetAnalysisResponse,
 } from '../../lib/api';
 import { usePreferencesStore } from '../../store/preferencesStore';
+import { getProfileLabel, getProfileDescription } from '@/utils/ui';
+import { TRADING_PROFILES } from '@/constants/trading';
 
 interface TradingAssistantProps {
   className?: string;
@@ -63,19 +65,6 @@ export default function TradingAssistant({
       }
     }
   }, [preferences?.preferred_assets, selectedTicker]);
-
-  const getProfileDescription = (profile: string) => {
-    switch (profile) {
-      case 'short':
-        return 'Court terme (15m/1h/5m) - Scalping et day trading';
-      case 'medium':
-        return 'Moyen terme (1h/1D/15m) - Swing trading';
-      case 'long':
-        return 'Long terme (1D/1W/4h) - Position trading';
-      default:
-        return '';
-    }
-  };
 
   const handleAnalyze = async () => {
     if (!selectedTicker) {
@@ -222,11 +211,7 @@ export default function TradingAssistant({
                   />
                   <div>
                     <div className="font-medium text-black">
-                      {profile === 'short'
-                        ? 'Court terme'
-                        : profile === 'medium'
-                          ? 'Moyen terme'
-                          : 'Long terme'}
+                      {getProfileLabel(profile)}
                     </div>
                     <div className="text-xs text-gray-500">
                       {getProfileDescription(profile).split(' - ')[0]}
@@ -245,11 +230,7 @@ export default function TradingAssistant({
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <div className="text-sm">
                 <div className="font-medium text-blue-900 mb-1">
-                  {selectedProfile === 'short'
-                    ? 'Court terme'
-                    : selectedProfile === 'medium'
-                      ? 'Moyen terme'
-                      : 'Long terme'}
+                  {getProfileLabel(selectedProfile)}
                 </div>
                 <div className="text-blue-800 text-xs">
                   {getProfileDescription(selectedProfile)}
@@ -277,7 +258,7 @@ export default function TradingAssistant({
             </h3>
             <p className="text-sm text-gray-600 mt-1">
               {selectedTicker
-                ? `${selectedTicker} • ${selectedProfile === 'short' ? 'Court' : selectedProfile === 'medium' ? 'Moyen' : 'Long'} terme • ${selectedModel.replace('claude-3', 'Claude 3').replace('-20240307', '').replace('-20240229', '').replace('-20241022', '').replace('-', ' ')}`
+                ? `${selectedTicker} • ${getProfileLabel(selectedProfile)} • ${selectedModel.replace('claude-3', 'Claude 3').replace('-20240307', '').replace('-20240229', '').replace('-20241022', '').replace('-', ' ')}`
                 : 'Sélectionnez un actif pour commencer'}
             </p>
           </div>

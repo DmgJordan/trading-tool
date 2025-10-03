@@ -175,3 +175,142 @@ export const formatRelativeTime = (
 
   return formatDate(dateObj);
 };
+
+/**
+ * Formate un changement de pourcentage avec signe
+ */
+export const formatPercentageChange = (
+  value: number | null | undefined,
+  decimals: number = 2
+): string => {
+  if (value === null || value === undefined) return '-';
+
+  const sign = value >= 0 ? '+' : '';
+  return `${sign}${value.toFixed(decimals)}%`;
+};
+
+/**
+ * Formate un volume avec suffixes K/M/B
+ */
+export const formatVolume = (
+  volume: number | null | undefined,
+  decimals: number = 2
+): string => {
+  if (volume === null || volume === undefined) return '-';
+
+  if (volume >= 1_000_000_000) {
+    return `${(volume / 1_000_000_000).toFixed(decimals)}B`;
+  }
+  if (volume >= 1_000_000) {
+    return `${(volume / 1_000_000).toFixed(decimals)}M`;
+  }
+  if (volume >= 1_000) {
+    return `${(volume / 1_000).toFixed(decimals)}K`;
+  }
+
+  return formatNumber(volume, decimals);
+};
+
+/**
+ * Formate un symbole de trading (ajoute /USDT si manquant)
+ */
+export const formatTicker = (ticker: string): string => {
+  if (!ticker) return '';
+
+  const normalized = ticker.toUpperCase().trim();
+
+  // Si déjà au format SYMBOL/QUOTE
+  if (normalized.includes('/')) return normalized;
+
+  // Ajouter /USDT par défaut
+  return `${normalized}/USDT`;
+};
+
+/**
+ * Formate un timeframe en label lisible
+ */
+export const formatTimeframe = (timeframe: string): string => {
+  const labels: Record<string, string> = {
+    '1m': '1 minute',
+    '5m': '5 minutes',
+    '15m': '15 minutes',
+    '30m': '30 minutes',
+    '1h': '1 heure',
+    '4h': '4 heures',
+    '1D': '1 jour',
+    '1d': '1 jour',
+    '1W': '1 semaine',
+    '1w': '1 semaine',
+    '1M': '1 mois',
+    '1mo': '1 mois',
+  };
+
+  return labels[timeframe] || timeframe;
+};
+
+/**
+ * Formate une quantité de trade
+ */
+export const formatQuantity = (
+  quantity: number | string | null | undefined,
+  decimals: number = 8
+): string => {
+  if (quantity === null || quantity === undefined) return '-';
+
+  const num = typeof quantity === 'string' ? parseFloat(quantity) : quantity;
+
+  if (isNaN(num)) return '-';
+
+  // Ajuster les décimales selon la taille
+  const adjustedDecimals = num < 0.001 ? decimals : Math.min(decimals, 4);
+
+  return formatNumber(num, adjustedDecimals);
+};
+
+/**
+ * Formate un prix avec nombre de décimales adaptatif
+ */
+export const formatPrice = (
+  price: number | string | null | undefined,
+  minDecimals: number = 2
+): string => {
+  if (price === null || price === undefined) return '-';
+
+  const num = typeof price === 'string' ? parseFloat(price) : price;
+
+  if (isNaN(num)) return '-';
+
+  // Déterminer le nombre de décimales selon le prix
+  let decimals = minDecimals;
+  if (num < 0.0001) decimals = 8;
+  else if (num < 0.01) decimals = 6;
+  else if (num < 1) decimals = 4;
+
+  return formatNumber(num, decimals);
+};
+
+/**
+ * Formate un montant avec sa devise
+ */
+export const formatAmountWithCurrency = (
+  amount: number | null | undefined,
+  currency: string = 'USD',
+  decimals: number = 2
+): string => {
+  if (amount === null || amount === undefined) return '-';
+
+  if (currency === 'USD' || currency === 'USDT') {
+    return formatCurrency(amount, 'USD', decimals);
+  }
+
+  return `${formatNumber(amount, decimals)} ${currency}`;
+};
+
+/**
+ * Formate un risk/reward ratio
+ */
+export const formatRiskRewardRatio = (ratio: number | null | undefined): string => {
+  if (ratio === null || ratio === undefined) return '-';
+
+  return `1:${ratio.toFixed(2)}`;
+};

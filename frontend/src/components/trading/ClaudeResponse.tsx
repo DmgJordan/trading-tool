@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { useNotifications } from '@/hooks';
+import { formatDateTime } from '@/utils/formatters';
 
 interface ClaudeResponseProps {
   response: string;
@@ -16,6 +18,7 @@ export default function ClaudeResponse({
   className = '',
 }: ClaudeResponseProps) {
   const [isExpanded, setIsExpanded] = useState(true);
+  const { success } = useNotifications();
 
   const formatTimestamp = (date: Date) => {
     return new Intl.DateTimeFormat('fr-FR', {
@@ -31,7 +34,7 @@ export default function ClaudeResponse({
   const handleCopyResponse = async () => {
     try {
       await navigator.clipboard.writeText(response);
-      // TODO: Add toast notification for copy success
+      success('Analyse copiée dans le presse-papiers !');
     } catch (error) {
       console.error('Failed to copy response:', error);
     }

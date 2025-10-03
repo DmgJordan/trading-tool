@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import TradeCard from './TradeCard';
 import ExecuteTradeModal from './ExecuteTradeModal';
-import { TradeRecommendation, ExecuteTradeRequest, TradeExecutionResult } from '../../lib/types/trading';
-import { hyperliquidTradingApi } from '../../lib/api/hyperliquid-trading';
+import { TradeRecommendation, ExecuteTradeRequest, TradeExecutionResult } from '@/lib/types/trading';
+import { hyperliquidTradingApi } from '@/lib/api/hyperliquid-trading';
+import { useNotifications } from '@/hooks';
 
 interface TradeRecommendationsProps {
   recommendations: TradeRecommendation[];
@@ -23,6 +24,8 @@ export default function TradeRecommendations({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [executingTrades, setExecutingTrades] = useState<Set<number>>(new Set());
   const [executionResults, setExecutionResults] = useState<Map<number, TradeExecutionResult>>(new Map());
+
+  const { success, warning, error: notifyError } = useNotifications();
 
   const handleExecuteTrade = (recommendation: TradeRecommendation) => {
     setSelectedRecommendation(recommendation);
@@ -45,19 +48,17 @@ export default function TradeRecommendations({
 
       // Afficher une notification selon le résultat
       if (result.status === 'success') {
-        // TODO: Afficher notification de succès
-        console.log('Trade exécuté avec succès:', result);
+        success(`Trade exécuté avec succès ! Order ID: ${result.main_order_id || 'N/A'}`);
       } else if (result.status === 'partial') {
-        // TODO: Afficher notification d'avertissement
-        console.warn('Trade partiellement exécuté:', result);
+        warning(`Trade partiellement exécuté: ${result.message}`);
       } else {
-        // TODO: Afficher notification d'erreur
-        console.error('Échec du trade:', result);
+        notifyError(`Échec du trade: ${result.message}`);
       }
 
     } catch (error) {
-      console.error('Erreur lors de l\'exécution du trade:', error);
-      // TODO: Afficher notification d'erreur
+      notifyError(
+        `Erreur lors de l'exécution du trade: ${error instanceof Error ? error.message : 'Erreur inconnue'}`
+      );
     } finally {
       // Retirer de la liste des trades en cours
       setExecutingTrades(prev => {

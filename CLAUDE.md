@@ -27,6 +27,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Axios centralisé** : Client API avec intercepteurs JWT automatiques
 - **Protection des routes** : Middleware SSR + RouteGuard sans flash
 - **Composants** : Structure modulaire réutilisable
+- **Architecture DRY** : Utils, constants et hooks centralisés pour éliminer la duplication
+- **Système de notifications** : Toast notifications pour feedback utilisateur
 
 ## État Actuel de l'Application
 
@@ -134,14 +136,43 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 │   ├── AuthProvider.tsx     # Provider auth avec RouteGuard
 │   ├── RouteGuard.tsx       # Protection client anti-flash
 │   ├── LoadingScreen.tsx    # Composants de chargement
-│   ├── ApiKeysConfiguration.tsx  # Config clés API
+│   ├── ApiKeysConfiguration.tsx  # Config clés API (refactorisé avec hook)
 │   ├── ConfigurationTest.tsx     # Tests système
+│   ├── CCXTTest.tsx         # Tests CCXT multi-timeframes (refactorisé)
+│   ├── ui/                  # Composants UI réutilisables
+│   │   ├── Toast.tsx        # Système de notifications toast
+│   │   ├── RSIIndicator.tsx # Indicateur RSI réutilisable
+│   │   ├── MACard.tsx       # Carte moyennes mobiles
+│   │   ├── VolumeCard.tsx   # Carte volume
+│   │   ├── PriceDisplay.tsx # Affichage prix avec variation
+│   │   ├── StatusBadge.tsx  # Badge de statut universel
+│   │   └── index.ts         # Barrel exports
+│   ├── trading/             # Composants trading spécialisés
+│   │   ├── TradingAssistant.tsx  # Assistant IA (refactorisé)
+│   │   ├── ClaudeResponse.tsx    # Réponse Claude AI
+│   │   └── TradeRecommendations.tsx  # Recommandations
 │   └── preferences/         # Composants préférences spécialisés
+├── hooks/
+│   ├── useAuth.ts           # Hook authentification
+│   ├── usePreferences.ts    # Hook préférences
+│   ├── useHyperliquid.ts    # Hook Hyperliquid
+│   ├── useNotifications.ts  # Hook notifications toast
+│   ├── useCCXTAnalysis.ts   # Hook analyse CCXT
+│   ├── useApiKeyManagement.ts  # Hook gestion clés API
+│   └── index.ts             # Barrel exports
+├── constants/
+│   ├── trading.ts           # Constantes trading (symboles, profils, services)
+│   └── index.ts             # Barrel exports
+├── utils/
+│   ├── ui.ts                # Helpers UI (couleurs, icônes, labels)
+│   ├── formatters.ts        # Formatage nombres, prix, volumes
+│   └── index.ts             # Barrel exports
 ├── lib/
 │   ├── api/
 │   │   ├── client.ts        # Instance Axios centralisée
 │   │   ├── auth.ts          # Client API auth
-│   │   └── preferences.ts   # Client API préférences
+│   │   ├── preferences.ts   # Client API préférences
+│   │   └── index.ts         # Barrel exports
 │   ├── types/
 │   │   ├── auth.ts          # Types TypeScript auth + isInitialized
 │   │   └── preferences.ts   # Types préférences trading
@@ -193,12 +224,20 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 - Types centralisés dans `frontend/src/lib/types/`
 - Interfaces pour les réponses API
 - Validation Zod pour les formulaires
+- **TOUJOURS** typer les réponses API avec génériques (`apiClient.post<ResponseType>()`)
 
 ### Styling
 - **Tailwind CSS uniquement** - pas de CSS custom
 - **Thème cohérent** : noir/blanc avec accents
 - **Design responsive** : mobile-first
 - **Composants réutilisables** sans dépendances UI externes
+
+### DRY (Don't Repeat Yourself)
+- **JAMAIS** dupliquer de fonctions utilitaires - toujours centraliser dans `utils/`
+- **JAMAIS** dupliquer de constantes - toujours centraliser dans `constants/`
+- **TOUJOURS** extraire la logique métier dans des hooks personnalisés
+- **Barrel exports** obligatoires pour tous les modules (`index.ts`)
+- **Pattern de composition** : utiliser des composants UI réutilisables
 
 ### Base de Données
 - **Migrations Alembic obligatoires** pour tout changement de schéma
@@ -265,3 +304,204 @@ docker-compose up -d pgadmin
 - **Backend** : Pydantic v2 avec `@field_validator` et `@classmethod`
 - **Frontend** : Zod avec schémas de validation stricte
 - **Préférences** : Validation croisée et contraintes métier
+
+## Helpers et Utilitaires Disponibles
+
+### `utils/ui.ts` - Fonctions UI
+```typescript
+// Couleurs et styles de statut
+getStatusColor(status: Status): string         // Classes Tailwind pour statuts
+getStatusIcon(status: Status): JSX.Element     // Icône pour chaque statut
+
+// Trading - Indicateurs RSI
+getRSIColor(rsi: number): string               // Couleur selon niveau RSI
+getRSILabel(rsi: number): string               // Label (Surachat/Survente/etc)
+
+// Trading - Directions et profils
+getDirectionColors(direction: 'long'|'short')  // Couleurs long/short
+getConfidenceColor(level: number): string      // Couleur niveau de confiance
+getProfileLabel(profile: TradingProfile): string          // Label profil (Court/Moyen/Long terme)
+getProfileDescription(profile: TradingProfile): string    // Description complète profil
+
+// Classes CSS préconfigurées
+INDICATOR_CARD_CLASSES = {
+  rsi: 'bg-gradient-to-br from-purple-50...',
+  ma: 'bg-gradient-to-br from-blue-50...',
+  volume: 'bg-gradient-to-br from-orange-50...',
+  // ... autres indicateurs
+}
+```
+
+### `utils/formatters.ts` - Formatage
+```typescript
+formatNumber(value: number, decimals?: number): string
+formatPrice(price: number, minDecimals?: number): string
+formatVolume(volume: number, decimals?: number): string    // Avec K/M/B
+formatPercentageChange(value: number, decimals?: number): string  // Avec +/-
+formatTicker(ticker: string): string                       // Normalisation
+formatTimeframe(timeframe: string): string                 // Lecture humaine
+formatCurrency(amount: number, currency?: string): string
+formatDate(date: Date | string): string
+```
+
+### `constants/trading.ts` - Constantes Trading
+```typescript
+TRADING_SYMBOLS: readonly string[]              // ['BTC/USDT', 'ETH/USDT', ...]
+EXCHANGES: readonly string[]                    // ['binance', 'coinbase', ...]
+
+TRADING_PROFILES: TradingProfileConfig[] = [
+  { value: 'short', label: 'Court terme', timeframes: {...}, description: '...' },
+  { value: 'medium', label: 'Moyen terme', timeframes: {...}, description: '...' },
+  { value: 'long', label: 'Long terme', timeframes: {...}, description: '...' }
+]
+
+CLAUDE_MODELS = {
+  HAIKU: { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku', ... },
+  SONNET: { id: 'claude-sonnet-4-5-20250929', name: 'Claude Sonnet 4.5', ... },
+  OPUS: { id: 'claude-opus-4-1-20250805', name: 'Claude Opus 4.1', ... }
+}
+
+API_SERVICES = {
+  ANTHROPIC: { name: 'Anthropic', description: '...', required: true },
+  HYPERLIQUID: { name: 'Hyperliquid', description: '...', required: true },
+  COINGECKO: { name: 'CoinGecko', description: '...', required: false }
+}
+```
+
+### Hooks Métier Disponibles
+
+#### `useNotifications()` - Système de notifications
+```typescript
+const { notifications, success, error, warning, info, remove } = useNotifications();
+
+success('Opération réussie !');
+error('Une erreur est survenue');
+warning('Attention !');
+info('Information');
+```
+
+#### `useApiKeyManagement()` - Gestion clés API
+```typescript
+const {
+  user,                    // Utilisateur actuel
+  testResults,             // Résultats des tests API
+  isSaving,                // États de sauvegarde par service
+  showKeys,                // Visibilité des clés par service
+  register,                // React Hook Form register
+  loadMaskedKeys,          // Charger les clés masquées
+  toggleKeyVisibility,     // Toggle visibilité d'une clé
+  saveApiKey,              // Sauvegarder une clé API
+  testApiConnection,       // Tester une connexion API
+} = useApiKeyManagement();
+```
+
+#### `useCCXTAnalysis()` - Analyse multi-timeframes
+```typescript
+const {
+  analysisState,           // État complet de l'analyse
+  selectedExchange,        // Exchange sélectionné
+  selectedSymbol,          // Symbole sélectionné
+  selectedProfile,         // Profil trading sélectionné
+  isAnalyzing,            // Indicateur de chargement
+  setSelectedExchange,
+  setSelectedSymbol,
+  setSelectedProfile,
+  runAnalysis,            // Lancer l'analyse
+  resetAnalysis,          // Reset de l'analyse
+} = useCCXTAnalysis();
+```
+
+### Composants UI Réutilisables
+
+#### `<RSIIndicator />` - Affichage RSI
+```typescript
+<RSIIndicator
+  value={72.5}
+  size="sm" | "md" | "lg"
+  showLabel={true}
+  className="custom-class"
+/>
+```
+
+#### `<MACard />` - Moyennes mobiles
+```typescript
+<MACard
+  indicators={{ ma20: 50000, ma50: 48000, ma200: 45000 }}
+  timeframe="1h"
+  className="custom-class"
+/>
+```
+
+#### `<VolumeCard />` - Volume
+```typescript
+<VolumeCard
+  indicators={{
+    volume_24h: 1500000000,
+    volume_ratio: 1.25,
+    volume_avg_14d: 1200000000
+  }}
+  timeframe="1h"
+/>
+```
+
+#### `<PriceDisplay />` - Prix avec variation
+```typescript
+<PriceDisplay
+  symbol="BTC/USDT"
+  price={50000}
+  change={2.5}
+  change24h={-1.2}
+/>
+```
+
+#### `<StatusBadge />` - Badge de statut
+```typescript
+<StatusBadge
+  status="success" | "error" | "warning" | "info" | "testing"
+  label="Connexion réussie"
+  size="sm" | "md" | "lg"
+/>
+```
+
+## Refactorisation et Optimisation
+
+### Résultats des Refactorisations Majeures
+
+#### CCXTTest.tsx
+- **Avant** : 572 lignes
+- **Après** : 244 lignes (-57%)
+- **Améliorations** :
+  - Logique métier extraite dans `useCCXTAnalysis` hook
+  - Fonctions dupliquées remplacées par utils (`getRSIColor`, `formatNumber`, etc.)
+  - Composants UI réutilisables (`RSIIndicator`, `MACard`, `VolumeCard`)
+  - Constantes centralisées (`TRADING_SYMBOLS`)
+
+#### ApiKeysConfiguration.tsx
+- **Avant** : 631 lignes
+- **Après** : 173 lignes (-73%)
+- **Améliorations** :
+  - Logique complète extraite dans `useApiKeyManagement` hook
+  - Pattern `renderApiKeySection` pour éliminer triplication
+  - Utilisation des constantes `API_SERVICES`
+  - Intégration du système de notifications
+
+#### TradingAssistant.tsx
+- **Améliorations** :
+  - Fonction `getProfileDescription` inline supprimée
+  - Utilisation des utils `getProfileLabel` et `getProfileDescription`
+  - Code plus maintenable et cohérent
+
+#### ConfigurationTest.tsx
+- **Améliorations** :
+  - Fonctions `getStatusColor` et `getStatusIcon` inline supprimées
+  - Utilisation des utils centralisés
+  - Réduction de la duplication
+
+### Principes de Refactorisation Appliqués
+
+1. **Extraction de la logique métier** : Hooks personnalisés pour toute logique complexe
+2. **Centralisation des utils** : Aucune fonction dupliquée, tout dans `utils/`
+3. **Constantes partagées** : Configuration centralisée dans `constants/`
+4. **Composants réutilisables** : Pattern de composition avec composants UI
+5. **Barrel exports** : Imports propres via `index.ts`
+6. **Notifications unifiées** : Système toast au lieu de `alert()` et `console.log`

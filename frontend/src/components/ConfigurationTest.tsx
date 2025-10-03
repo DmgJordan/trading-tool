@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { getStatusColor, getStatusIcon } from '@/utils/ui';
 
 interface TestResult {
   backend: 'success' | 'error' | 'testing' | null;
@@ -80,32 +81,6 @@ export default function ConfigurationTest() {
         database: 'error',
         message: `Erreur base de données: ${error instanceof Error ? error.message : 'Connexion échouée'}`,
       }));
-    }
-  };
-
-  const getStatusIcon = (status: 'success' | 'error' | 'testing' | null) => {
-    switch (status) {
-      case 'success':
-        return <span className="text-black text-xl font-bold">✓</span>;
-      case 'error':
-        return <span className="text-black text-xl font-bold">✗</span>;
-      case 'testing':
-        return <span className="text-black text-xl animate-spin">⟳</span>;
-      default:
-        return <span className="text-gray-400 text-xl">○</span>;
-    }
-  };
-
-  const getStatusColor = (status: 'success' | 'error' | 'testing' | null) => {
-    switch (status) {
-      case 'success':
-        return 'border-black bg-gray-100';
-      case 'error':
-        return 'border-black bg-gray-200';
-      case 'testing':
-        return 'border-black bg-gray-50';
-      default:
-        return 'border-gray-300 bg-white';
     }
   };
 
