@@ -1,35 +1,8 @@
 // Types pour les recommandations de trading structurées
+// Ré-export de TradeRecommendation depuis api/claude.ts pour compatibilité
+export type { TradeRecommendation } from './api/claude';
 
 export type TradeDirection = 'long' | 'short';
-
-export interface TradeRecommendation {
-  entry_price: number;
-  direction: TradeDirection;
-  stop_loss: number;
-  take_profit_1: number;
-  take_profit_2: number;
-  take_profit_3: number;
-  confidence_level: number; // 0-100
-  risk_reward_ratio: number;
-  portfolio_percentage: number; // 0.1-10%
-  timeframe: string;
-  reasoning: string;
-}
-
-export interface StructuredAnalysisResponse {
-  request_id: string;
-  timestamp: string;
-  model_used: string;
-  ticker: string;
-  exchange: string;
-  profile: string;
-  technical_data: any; // Utilise le type existant
-  claude_analysis: string;
-  trade_recommendations: TradeRecommendation[];
-  tokens_used?: number;
-  processing_time_ms?: number;
-  warnings: string[];
-}
 
 // Types pour l'exécution de trades Hyperliquid
 

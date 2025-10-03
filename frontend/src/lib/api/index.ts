@@ -24,15 +24,16 @@ export type {
   ExchangeSymbolsResponse,
   MultiTimeframeRequest,
   MultiTimeframeResponse,
-} from './ohlcv';
-export type {
-  SingleAssetAnalysisRequest,
-  SingleAssetAnalysisResponse,
   MAIndicators,
   VolumeIndicators,
   CurrentPriceInfo,
   MainTFFeatures,
   HigherTFFeatures,
   LowerTFFeatures,
+} from '../types/api/ohlcv';
+export type {
+  SingleAssetAnalysisRequest,
+  SingleAssetAnalysisResponse,
   TechnicalDataLight,
-} from './claude';
+  TradeRecommendation,
+} from '../types/api/claude';

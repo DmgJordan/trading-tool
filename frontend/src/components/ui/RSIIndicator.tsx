@@ -1,12 +1,6 @@
 import { getRSIColor, getRSILabel } from '@/utils/ui';
 import { formatNumber } from '@/utils/formatters';
-
-interface RSIIndicatorProps {
-  value: number;
-  size?: 'small' | 'medium' | 'large';
-  showLabel?: boolean;
-  className?: string;
-}
+import type { RSIIndicatorProps } from '@/lib/types/components/ui';
 
 export default function RSIIndicator({
   value,

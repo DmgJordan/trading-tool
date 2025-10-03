@@ -1,15 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
-import { getStatusColor, getStatusIcon, type Status } from '@/utils/ui';
-
-export interface ToastProps {
-  id: string;
-  message: string;
-  type: Status;
-  duration?: number;
-  onClose: (id: string) => void;
-}
+import { getStatusColor, getStatusIcon } from '@/utils/ui';
+import type { ToastProps } from '@/lib/types/components/ui';
 
 export default function Toast({
   id,
@@ -58,7 +51,9 @@ export default function Toast({
 /**
  * Container pour les toasts empilés
  */
-export function ToastContainer({ children }: { children: React.ReactNode }) {
+import type { ToastContainerProps } from '@/lib/types/components/ui';
+
+export function ToastContainer({ children }: ToastContainerProps) {
   return (
     <div
       className="fixed top-4 right-4 z-50 flex flex-col gap-3 pointer-events-none"
