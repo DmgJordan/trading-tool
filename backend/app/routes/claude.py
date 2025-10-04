@@ -6,7 +6,7 @@ import json
 from datetime import datetime
 
 from ..core import get_db, get_current_user, decrypt_api_key
-from ..models.user import User
+from ..domains.auth.models import User
 from ..schemas.claude import (
     ClaudeModel,
     SingleAssetAnalysisRequest,

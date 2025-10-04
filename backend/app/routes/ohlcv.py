@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 import logging
 
 from ..core import get_db, get_current_user
-from ..models.user import User
+from ..domains.auth.models import User
 from ..schemas.ohlcv import (
     ExchangeListResponse,
     ExchangeSymbolsRequest,

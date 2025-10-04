@@ -1,25 +1,78 @@
-from sqlalchemy import Column, Integer, String, Float, Text, DateTime, ForeignKey, CheckConstraint, Enum as SQLEnum
+"""
+Modèles pour le domaine users - Profils utilisateurs et préférences
+"""
+
+from sqlalchemy import (
+    Column, Integer, String, Float, Text, DateTime, ForeignKey,
+    CheckConstraint, Enum as SQLEnum
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from enum import Enum
-from ..core import Base
+from ...core import Base
+
+
+# ========== Enums pour UserTradingPreferences ==========
 
 class RiskTolerance(str, Enum):
+    """Tolérance au risque de l'utilisateur"""
     LOW = "LOW"
     MEDIUM = "MEDIUM"
     HIGH = "HIGH"
 
+
 class InvestmentHorizon(str, Enum):
+    """Horizon d'investissement de l'utilisateur"""
     SHORT_TERM = "SHORT_TERM"  # < 1 mois
     MEDIUM_TERM = "MEDIUM_TERM"  # 1-12 mois
     LONG_TERM = "LONG_TERM"  # > 1 an
 
+
 class TradingStyle(str, Enum):
+    """Style de trading de l'utilisateur"""
     CONSERVATIVE = "CONSERVATIVE"
     BALANCED = "BALANCED"
     AGGRESSIVE = "AGGRESSIVE"
 
+
+# ========== Modèles ==========
+
+class UserProfile(Base):
+    """
+    Profil utilisateur avec clés API chiffrées
+
+    ✅ OPTIMISATION : Séparation des préoccupations
+    - auth/User : Authentification uniquement
+    - users/UserProfile : Profil et clés API
+    """
+    __tablename__ = "user_profiles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False, index=True)
+
+    # Clés API (chiffrées avec Fernet)
+    hyperliquid_api_key = Column(Text, nullable=True)
+    hyperliquid_public_address = Column(String(66), nullable=True)
+    anthropic_api_key = Column(Text, nullable=True)
+    coingecko_api_key = Column(Text, nullable=True)
+
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relations
+    user = relationship("User", back_populates="profile")
+
+    def __repr__(self):
+        return f"<UserProfile(user_id={self.user_id})>"
+
+
 class UserTradingPreferences(Base):
+    """
+    Préférences de trading de l'utilisateur
+
+    Migré depuis app/models/user_preferences.py
+    """
     __tablename__ = "user_trading_preferences"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -88,8 +141,8 @@ class UserTradingPreferences(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    # Relation avec User
-    user = relationship("User", back_populates="trading_preferences")
+    # Relation avec User (dans auth/)
+    user = relationship("User", backref="trading_preferences")
 
     # Contraintes de validation
     __table_args__ = (

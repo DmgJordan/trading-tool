@@ -8,8 +8,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc
 import logging
 
-from ..models.user import User
-from ..models.user_preferences import UserTradingPreferences
+from ..domains.auth.models import User
+from ..domains.users.models import UserTradingPreferences
 from ..models.market_data import MarketData
 from ..models.ai_recommendations import AIRecommendation, ActionType, RiskLevel
 from ..schemas.ai_recommendations import (

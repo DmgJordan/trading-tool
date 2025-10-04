@@ -10,7 +10,7 @@ from ..schemas.connectors import (
 )
 from ..services.validators.api_validator import ApiValidator
 from ..services.validators.dex_validator import DexValidator
-from ..models.user import User
+from ..domains.auth.models import User
 import logging
 
 logger = logging.getLogger(__name__)

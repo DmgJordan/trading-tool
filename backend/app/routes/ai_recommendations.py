@@ -4,7 +4,7 @@ from typing import Optional, List
 import logging
 
 from ..core import get_db, get_current_user
-from ..models.user import User
+from ..domains.auth.models import User
 from ..schemas.ai_recommendations import (
     AIRecommendationRequest,
     AIRecommendationsListResponse,
@@ -190,7 +190,7 @@ async def get_ai_service_status(
     try:
         from datetime import datetime, timezone, timedelta
         from ..models.ai_recommendations import AIRecommendation
-        from ..models.user_preferences import UserTradingPreferences
+        from ..domains.users.models import UserTradingPreferences
         from ..core import decrypt_api_key
 
         logger.info(f"Vérification statut service IA utilisateur {current_user.id}")

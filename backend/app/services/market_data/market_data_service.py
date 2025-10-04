@@ -9,7 +9,7 @@ import logging
 from ..connectors.coingecko_connector import CoinGeckoConnector
 from ..connectors.hyperliquid_connector import HyperliquidConnector
 from ...models.market_data import MarketData
-from ...models.user import User
+from ...domains.auth.models import User
 from ...core import decrypt_api_key
 
 logger = logging.getLogger(__name__)

@@ -24,7 +24,7 @@ def get_current_user(
     db: Session = Depends(get_db)
 ):
     """Dépendance pour obtenir l'utilisateur actuellement authentifié"""
-    from ..models.user import User
+    from ..domains.auth.models import User
 
     token = credentials.credentials
     token_data = verify_token(token, "access")

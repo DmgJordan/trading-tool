@@ -101,7 +101,7 @@ def verify_token(token: str, token_type: str = "access"):
         raise UnauthorizedException("Could not validate credentials")
 
 def authenticate_user(db: Session, email: str, password: str):
-    from ..models.user import User
+    from ..domains.auth.models import User
 
     user = db.query(User).filter(User.email == email).first()
     if not user:

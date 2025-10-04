@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import logging
 
 from ..core import get_db, get_current_user
-from ..models.user import User
+from ..domains.auth.models import User
 from ..models.market_data import MarketData
 from ..schemas.market_data import (
     MarketDataResponse,

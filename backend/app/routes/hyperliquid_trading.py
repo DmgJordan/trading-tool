@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 import logging
 
 from ..core import get_db, get_current_user, decrypt_api_key
-from ..models.user import User
+from ..domains.auth.models import User
 from ..schemas.hyperliquid_trading import (
     ExecuteTradeRequest,
     TradeExecutionResult

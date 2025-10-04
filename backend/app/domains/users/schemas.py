@@ -1,8 +1,141 @@
-from pydantic import BaseModel, Field, field_validator
+"""
+Schémas Pydantic pour le domaine users - Profils et préférences
+"""
+
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional, List
 from datetime import datetime
-from ..models.user_preferences import RiskTolerance, InvestmentHorizon, TradingStyle
 import json
+
+from .models import RiskTolerance, InvestmentHorizon, TradingStyle
+
+
+# ========== Helpers ==========
+
+def mask_api_key(api_key: Optional[str], show_last_chars: int = 4) -> Optional[str]:
+    """
+    Masque une clé API pour affichage sécurisé
+
+    ✅ OPTIMISATION : Fonction centrale pour masquage cohérent
+
+    Args:
+        api_key: Clé API à masquer
+        show_last_chars: Nombre de caractères à montrer à la fin
+
+    Returns:
+        Clé masquée au format "sk-...abcd" ou None
+    """
+    if not api_key or len(api_key) <= show_last_chars:
+        return None
+
+    # Extraire le préfixe (ex: "sk-", "CG-", "0x")
+    prefix_length = 3 if api_key.startswith(("sk-", "CG-")) else 2 if api_key.startswith("0x") else 0
+
+    if prefix_length > 0:
+        prefix = api_key[:prefix_length]
+        suffix = api_key[-show_last_chars:]
+        return f"{prefix}...{suffix}"
+    else:
+        suffix = api_key[-show_last_chars:]
+        return f"***...{suffix}"
+
+
+# ========== Schémas UserProfile ==========
+
+class UserProfileUpdate(BaseModel):
+    """Schéma pour mettre à jour le profil utilisateur"""
+    email: Optional[EmailStr] = None
+    username: Optional[str] = None
+
+
+class ApiKeyUpdate(BaseModel):
+    """Schéma pour mettre à jour les clés API"""
+    hyperliquid_api_key: Optional[str] = None
+    hyperliquid_public_address: Optional[str] = None
+    anthropic_api_key: Optional[str] = None
+    coingecko_api_key: Optional[str] = None
+
+
+class UserProfileResponse(BaseModel):
+    """
+    Schéma de réponse pour le profil utilisateur
+
+    ✅ SÉCURITÉ : Toutes les clés API sont masquées
+    Les clés complètes ne sont jamais retournées au client
+    """
+    id: int
+    email: EmailStr
+    username: str
+
+    # Clés API masquées
+    hyperliquid_api_key: Optional[str] = None
+    hyperliquid_public_address: Optional[str] = None
+    anthropic_api_key: Optional[str] = None
+    coingecko_api_key: Optional[str] = None
+
+    # Statuts de configuration
+    hyperliquid_api_key_status: Optional[str] = None
+    anthropic_api_key_status: Optional[str] = None
+    coingecko_api_key_status: Optional[str] = None
+
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+    @classmethod
+    def from_user_and_profile(cls, user, profile=None):
+        """
+        Construit le schéma à partir d'un User et son UserProfile
+
+        Args:
+            user: Instance du modèle User (auth/)
+            profile: Instance du modèle UserProfile (users/) - optionnel
+
+        Returns:
+            UserProfileResponse avec clés masquées
+        """
+        # Clés masquées
+        hyperliquid_key_masked = None
+        anthropic_key_masked = None
+        coingecko_key_masked = None
+
+        # Statuts
+        hyperliquid_status = None
+        anthropic_status = None
+        coingecko_status = None
+
+        if profile:
+            if profile.hyperliquid_api_key:
+                hyperliquid_key_masked = mask_api_key(profile.hyperliquid_api_key)
+                hyperliquid_status = "configured"
+
+            if profile.anthropic_api_key:
+                anthropic_key_masked = mask_api_key(profile.anthropic_api_key)
+                anthropic_status = "configured"
+
+            if profile.coingecko_api_key:
+                coingecko_key_masked = mask_api_key(profile.coingecko_api_key)
+                coingecko_status = "configured"
+
+        return cls(
+            id=user.id,
+            email=user.email,
+            username=user.username,
+            hyperliquid_api_key=hyperliquid_key_masked,
+            hyperliquid_public_address=profile.hyperliquid_public_address if profile else None,
+            anthropic_api_key=anthropic_key_masked,
+            coingecko_api_key=coingecko_key_masked,
+            hyperliquid_api_key_status=hyperliquid_status,
+            anthropic_api_key_status=anthropic_status,
+            coingecko_api_key_status=coingecko_status,
+            created_at=user.created_at,
+            updated_at=user.updated_at
+        )
+
+
+# ========== Schémas UserTradingPreferences (migration) ==========
 
 class UserTradingPreferencesBase(BaseModel):
     """Schéma de base pour les préférences de trading"""
@@ -44,13 +177,13 @@ class UserTradingPreferencesBase(BaseModel):
 
     preferred_assets: List[str] = Field(
         default=["BTC", "ETH"],
-        max_items=20,
+        max_length=20,
         description="Liste des actifs préférés (max 20)"
     )
 
     technical_indicators: List[str] = Field(
         default=["RSI", "MACD", "SMA"],
-        max_items=15,
+        max_length=15,
         description="Liste des indicateurs techniques préférés (max 15)"
     )
 
@@ -102,9 +235,11 @@ class UserTradingPreferencesBase(BaseModel):
 
         return normalized
 
+
 class UserTradingPreferencesCreate(UserTradingPreferencesBase):
     """Schéma pour créer des préférences de trading"""
     pass
+
 
 class UserTradingPreferencesUpdate(BaseModel):
     """Schéma pour mettre à jour partiellement les préférences de trading"""
@@ -114,8 +249,8 @@ class UserTradingPreferencesUpdate(BaseModel):
     max_position_size: Optional[float] = Field(None, ge=0.1, le=100.0)
     stop_loss_percentage: Optional[float] = Field(None, ge=0.1, le=50.0)
     take_profit_ratio: Optional[float] = Field(None, ge=0.1, le=10.0)
-    preferred_assets: Optional[List[str]] = Field(None, max_items=20)
-    technical_indicators: Optional[List[str]] = Field(None, max_items=15)
+    preferred_assets: Optional[List[str]] = Field(None, max_length=20)
+    technical_indicators: Optional[List[str]] = Field(None, max_length=15)
 
     @field_validator('preferred_assets')
     @classmethod
@@ -132,6 +267,7 @@ class UserTradingPreferencesUpdate(BaseModel):
         if v is None:
             return v
         return UserTradingPreferencesBase.validate_technical_indicators(v)
+
 
 class UserTradingPreferencesResponse(UserTradingPreferencesBase):
     """Schéma de réponse pour les préférences de trading"""
@@ -194,6 +330,7 @@ class UserTradingPreferencesResponse(UserTradingPreferencesBase):
             updated_at=db_preferences.updated_at
         )
 
+
 class UserTradingPreferencesDefault(BaseModel):
     """Schéma pour les valeurs par défaut des préférences"""
     risk_tolerance: RiskTolerance = RiskTolerance.MEDIUM
@@ -204,6 +341,7 @@ class UserTradingPreferencesDefault(BaseModel):
     take_profit_ratio: float = 2.0
     preferred_assets: List[str] = ["BTC", "ETH"]
     technical_indicators: List[str] = ["RSI", "MACD", "SMA"]
+
 
 class PreferencesValidationError(BaseModel):
     """Schéma pour les erreurs de validation des préférences"""

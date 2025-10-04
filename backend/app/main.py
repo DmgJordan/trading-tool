@@ -4,7 +4,8 @@ from sqlalchemy import text
 import logging
 import sys
 from .core import engine, get_db, Base
-from .routes import users, auth, connectors, market_data, user_preferences, ai_recommendations, claude, ohlcv, hyperliquid_trading
+from .domains import auth_router, users_router
+from .routes import connectors, market_data, ai_recommendations, claude, ohlcv, hyperliquid_trading
 
 # Configuration du logging pour afficher dans le terminal
 logging.basicConfig(
@@ -36,11 +37,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(users.router)
-app.include_router(auth.router)
+# Nouveaux routers depuis domains/ (architecture DDD)
+app.include_router(auth_router)
+app.include_router(users_router)
+
+# Routers existants depuis routes/
 app.include_router(connectors.router)
 app.include_router(market_data.router)
-app.include_router(user_preferences.router)
 app.include_router(ai_recommendations.router)
 app.include_router(claude.router)
 app.include_router(ohlcv.router)
