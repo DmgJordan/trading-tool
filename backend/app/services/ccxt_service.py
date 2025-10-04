@@ -3,9 +3,7 @@ import asyncio
 import logging
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-from .technical_indicators.technical_indicators_service import TechnicalIndicatorsService
-from .technical_indicators.calculators.rsi_calculator import RSICalculator
-from .technical_indicators.calculators.atr_calculator import ATRCalculator
+from ..shared import calculate_rsi, calculate_atr
 
 logger = logging.getLogger(__name__)
 
@@ -23,10 +21,6 @@ class CCXTService:
             'bybit',
             'kucoin'
         ]
-
-        # Initialiser les calculateurs pour logs détaillés
-        self.rsi_calculator = RSICalculator()
-        self.atr_calculator = ATRCalculator()
 
         self.timeframes = {
             '1m': '1m',
@@ -345,10 +339,10 @@ class CCXTService:
         ma200 = sum(closes[-200:]) / 200 if len(closes) >= 200 else closes[-1]
 
         # Calculer RSI 14 (méthode de Wilder)
-        rsi14 = self.rsi_calculator.calculate_rsi(closes, 14)
+        rsi14 = calculate_rsi(closes, 14)
 
         # Calculer ATR 14 (méthode de Wilder)
-        atr14 = self.atr_calculator.calculate_atr(highs, lows, closes, 14)
+        atr14 = calculate_atr(highs, lows, closes, 14)
 
         # Calculer indicateurs de volume
         volume_avg20 = sum(volumes[-20:]) / 20 if len(volumes) >= 20 else volumes[-1]

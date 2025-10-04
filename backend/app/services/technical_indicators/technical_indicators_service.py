@@ -2,21 +2,32 @@ from typing import List, Dict, Any, Optional
 import logging
 from datetime import datetime
 
-from .calculators.rsi_calculator import RSICalculator
-from .calculators.moving_average_calculator import MovingAverageCalculator
-from .analyzers.volume_analyzer import VolumeAnalyzer
-from .detectors.support_resistance_detector import SupportResistanceDetector
+from ...shared import (
+    # RSI
+    calculate_rsi,
+    get_rsi_interpretation,
+    get_rsi_signal,
+    # Moving Averages
+    calculate_multiple_sma,
+    get_ma_trend,
+    detect_ma_crossover,
+    # Volume
+    analyze_volume,
+    get_volume_interpretation,
+    get_volume_signal,
+    detect_volume_trend,
+    # Support/Resistance
+    detect_levels,
+    get_nearest_levels,
+    SupportResistanceLevel,
+    # Formatters
+    round_decimal
+)
 
 logger = logging.getLogger(__name__)
 
 class TechnicalIndicatorsService:
     """Service principal pour l'analyse technique des données OHLCV"""
-
-    def __init__(self):
-        self.rsi_calculator = RSICalculator()
-        self.ma_calculator = MovingAverageCalculator()
-        self.volume_analyzer = VolumeAnalyzer()
-        self.support_resistance_detector = SupportResistanceDetector()
 
     async def analyze_ohlcv_data(self, ohlcv_data: List[Dict], current_price: Optional[float] = None) -> Dict[str, Any]:
         """
@@ -79,15 +90,15 @@ class TechnicalIndicatorsService:
     def _calculate_rsi_analysis(self, closes: List[float]) -> Dict[str, Any]:
         """Calcule l'analyse RSI"""
         try:
-            rsi_value = self.rsi_calculator.calculate_rsi(closes)
+            rsi_value = calculate_rsi(closes)
 
             if rsi_value is None:
                 return {"value": None, "interpretation": "Pas assez de données", "signal": "NEUTRE"}
 
             return {
                 "value": rsi_value,
-                "interpretation": self.rsi_calculator.get_rsi_interpretation(rsi_value),
-                "signal": self.rsi_calculator.get_rsi_signal(rsi_value)
+                "interpretation": get_rsi_interpretation(rsi_value),
+                "signal": get_rsi_signal(rsi_value)
             }
         except Exception as e:
             logger.error(f"Erreur calcul RSI: {e}")
@@ -97,14 +108,14 @@ class TechnicalIndicatorsService:
         """Calcule l'analyse des moyennes mobiles"""
         try:
             # Calcul des moyennes mobiles
-            mas = self.ma_calculator.get_ma20_ma50_ma200(closes)
+            mas = calculate_multiple_sma(closes, [20, 50, 200])
 
             # Analyse des tendances
-            trend_info = self.ma_calculator.get_ma_trend(closes)
+            trend_info = get_ma_trend(closes, [20, 50, 200])
 
             # Détection des croisements
-            golden_cross_20_50 = self.ma_calculator.detect_ma_crossover(closes, 20, 50)
-            golden_cross_50_200 = self.ma_calculator.detect_ma_crossover(closes, 50, 200)
+            golden_cross_20_50 = detect_ma_crossover(closes, 20, 50)
+            golden_cross_50_200 = detect_ma_crossover(closes, 50, 200)
 
             return {
                 "ma20": mas["ma20"],
@@ -131,7 +142,7 @@ class TechnicalIndicatorsService:
         """Calcule l'analyse du volume"""
         try:
             # Analyse du volume actuel
-            volume_analysis = self.volume_analyzer.analyze_volume(volumes)
+            volume_analysis = analyze_volume(volumes)
 
             # Calcul de la variation de prix pour le signal volume
             price_change_percent = 0
@@ -140,11 +151,11 @@ class TechnicalIndicatorsService:
 
             # Interprétation et signal
             spike_ratio = volume_analysis["spike_ratio"]
-            interpretation = self.volume_analyzer.get_volume_interpretation(spike_ratio)
-            signal = self.volume_analyzer.get_volume_signal(spike_ratio, price_change_percent)
+            interpretation = get_volume_interpretation(spike_ratio)
+            signal = get_volume_signal(spike_ratio, price_change_percent)
 
             # Tendance du volume
-            volume_trend = self.volume_analyzer.detect_volume_trend(volumes)
+            volume_trend = detect_volume_trend(volumes)
 
             return {
                 "current": volume_analysis["current"],
@@ -154,7 +165,7 @@ class TechnicalIndicatorsService:
                 "signal": signal,
                 "trend": volume_trend["trend"],
                 "trend_strength": volume_trend["strength"],
-                "price_change_percent": round(price_change_percent, 2)
+                "price_change_percent": round_decimal(price_change_percent, 2)
             }
         except Exception as e:
             logger.error(f"Erreur analyse volume: {e}")
@@ -167,31 +178,48 @@ class TechnicalIndicatorsService:
     def _calculate_support_resistance_analysis(self, ohlcv_data: List[Dict], current_price: float) -> Dict[str, Any]:
         """Calcule l'analyse support/résistance"""
         try:
-            # Détection des niveaux
-            sr_levels = self.support_resistance_detector.detect_levels(ohlcv_data)
+            # Détection des niveaux avec la fonction pure
+            sr_result = detect_levels(ohlcv_data)
 
-            # Reconstruction des objets pour trouver les niveaux les plus proches
+            # Créer des objets SupportResistanceLevel pour get_nearest_levels
             levels = []
-            for i, support in enumerate(sr_levels["support_levels"]):
-                class MockLevel:
-                    def __init__(self, price, is_resistance):
-                        self.price = price
-                        self.is_resistance = is_resistance
-                levels.append(MockLevel(support, False))
 
-            for i, resistance in enumerate(sr_levels["resistance_levels"]):
-                levels.append(MockLevel(resistance, True))
+            # Ajouter les supports
+            for price, confidence in zip(sr_result["support_levels"], sr_result["confidence_scores"]):
+                level = SupportResistanceLevel(
+                    price=price,
+                    is_resistance=False,
+                    confidence_score=confidence,
+                    touches=2,  # Minimum
+                    volume_confirmation=0,
+                    first_occurrence=0,
+                    last_occurrence=len(ohlcv_data) - 1
+                )
+                levels.append(level)
+
+            # Ajouter les résistances
+            for price, confidence in zip(sr_result["resistance_levels"], sr_result["confidence_scores"][len(sr_result["support_levels"]):]):
+                level = SupportResistanceLevel(
+                    price=price,
+                    is_resistance=True,
+                    confidence_score=confidence,
+                    touches=2,
+                    volume_confirmation=0,
+                    first_occurrence=0,
+                    last_occurrence=len(ohlcv_data) - 1
+                )
+                levels.append(level)
 
             # Trouver les niveaux les plus proches
-            nearest = self.support_resistance_detector.get_nearest_levels(current_price, levels)
+            nearest = get_nearest_levels(current_price, levels)
 
             return {
-                "support_levels": sr_levels["support_levels"],
-                "resistance_levels": sr_levels["resistance_levels"],
-                "confidence_scores": sr_levels["confidence_scores"],
+                "support_levels": sr_result["support_levels"],
+                "resistance_levels": sr_result["resistance_levels"],
+                "confidence_scores": sr_result["confidence_scores"],
                 "nearest_support": nearest["nearest_support"],
                 "nearest_resistance": nearest["nearest_resistance"],
-                "total_levels": len(sr_levels["support_levels"]) + len(sr_levels["resistance_levels"])
+                "total_levels": len(sr_result["support_levels"]) + len(sr_result["resistance_levels"])
             }
         except Exception as e:
             logger.error(f"Erreur analyse support/résistance: {e}")
