@@ -1,30 +1,158 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import Optional, List
+from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
 import logging
 
-from ..core import get_db, get_current_user
-from ..domains.auth.models import User
-from ..models.market_data import MarketData
-from ..schemas.market_data import (
+from ...core import get_db, get_current_user
+from ...domains.auth.models import User
+from .models import MarketData
+from .schemas import (
+    # Market Data
     MarketDataResponse,
     MarketDataRequest,
     HistoricalDataRequest,
     SupportedSymbolsResponse,
     MarketDataBatch,
-    MarketDataBatchResponse
+    MarketDataBatchResponse,
+    # OHLCV
+    ExchangeListResponse,
+    ExchangeSymbolsRequest,
+    ExchangeSymbolsResponse,
+    MultiTimeframeRequest,
+    MultiTimeframeResponse
 )
-from ..services.market_data.market_data_service import MarketDataService
+from .service import MarketService
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/market-data", tags=["market-data"])
+router = APIRouter(prefix="/market", tags=["market"])
 
 # Initialisation du service
-market_data_service = MarketDataService()
+market_service = MarketService()
 
-@router.get("/{symbol}", response_model=MarketDataResponse)
+# =============================================================================
+# HELPERS PRIVÉS
+# =============================================================================
+
+def _build_market_data_from_result(result: Dict[str, Any]) -> MarketData:
+    """
+    Helper pour construire un objet MarketData depuis un résultat service
+
+    Args:
+        result: Dict contenant 'data' et optionnellement 'stored_id'
+
+    Returns:
+        Instance MarketData
+    """
+    data = result["data"]
+    return MarketData(
+        id=result.get("stored_id", 0),
+        symbol=data["symbol"],
+        name=data.get("name"),
+        price_usd=data["price_usd"],
+        price_change_24h=data.get("price_change_24h"),
+        price_change_24h_abs=data.get("price_change_24h_abs"),
+        volume_24h_usd=data.get("volume_24h_usd"),
+        market_cap_usd=data.get("market_cap_usd"),
+        source=data["source"],
+        source_id=data.get("source_id"),
+        data_timestamp=data["data_timestamp"],
+        created_at=datetime.utcnow(),
+        updated_at=None
+    )
+
+# =============================================================================
+# ENDPOINTS OHLCV
+# =============================================================================
+
+@router.get("/ohlcv/exchanges", response_model=ExchangeListResponse)
+async def get_available_exchanges(
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère la liste des exchanges et timeframes disponibles"""
+    try:
+        exchanges = market_service.ccxt_adapter.get_available_exchanges()
+        timeframes = market_service.ccxt_adapter.get_available_timeframes()
+
+        return ExchangeListResponse(
+            status="success",
+            exchanges=exchanges,
+            timeframes=timeframes
+        )
+
+    except Exception as e:
+        logger.error(f"Erreur récupération exchanges: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
+
+@router.post("/ohlcv/symbols", response_model=ExchangeSymbolsResponse)
+async def get_exchange_symbols(
+    request: ExchangeSymbolsRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """Récupère les symboles populaires d'un exchange spécifique"""
+    try:
+        logger.info(f"Récupération symboles pour {request.exchange}")
+
+        result = await market_service.ccxt_adapter.get_exchange_symbols(
+            exchange_name=request.exchange,
+            limit=request.limit
+        )
+
+        return ExchangeSymbolsResponse(**result)
+
+    except Exception as e:
+        logger.error(f"Erreur récupération symboles: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
+
+@router.post("/ohlcv/multi-timeframe-analysis", response_model=MultiTimeframeResponse)
+async def get_multi_timeframe_analysis(
+    request: MultiTimeframeRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Analyse multi-timeframes pour un symbole donné selon le profil de trading
+
+    - **exchange**: Nom de l'exchange (ex: binance, coinbase, kraken)
+    - **symbol**: Symbole du trading pair (ex: BTC/USDT, ETH/USDT)
+    - **profile**: Profil de trading (short, medium, long)
+
+    Le profil détermine les timeframes utilisés :
+    - **short**: Principal 15m, Supérieur 1h, Inférieur 5m
+    - **medium**: Principal 1h, Supérieur 1d, Inférieur 15m
+    - **long**: Principal 1d, Supérieur 1w, Inférieur 4h
+
+    Récupère 600 bougies par timeframe pour calculs précis des indicateurs
+    """
+    try:
+        logger.info(f"Analyse multi-timeframes pour utilisateur {current_user.id}: {request.exchange} {request.symbol} profil {request.profile}")
+
+        # Appeler le service pour l'analyse multi-timeframes
+        result = await market_service.get_multi_timeframe_analysis(
+            exchange_name=request.exchange,
+            symbol=request.symbol,
+            profile=request.profile
+        )
+
+        # Vérifier le statut de la réponse
+        if "status" in result and result["status"] == "error":
+            raise HTTPException(status_code=400, detail=result["message"])
+
+        # Retourner la réponse formatée
+        return MultiTimeframeResponse(**result)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur analyse multi-timeframes: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
+
+# =============================================================================
+# ENDPOINTS MARKET DATA
+# =============================================================================
+
+@router.get("/data/{symbol}", response_model=MarketDataResponse)
 async def get_market_data(
     symbol: str,
     source: Optional[str] = Query(default="auto", description="Source (coingecko, hyperliquid, auto)"),
@@ -49,7 +177,7 @@ async def get_market_data(
         if refresh:
             # Récupérer et optionnellement stocker les données
             if store:
-                result = await market_data_service.refresh_and_store_price(
+                result = await market_service.refresh_and_store_price(
                     db=db,
                     symbol=symbol,
                     user=current_user,
@@ -57,7 +185,7 @@ async def get_market_data(
                     use_testnet=use_testnet
                 )
             else:
-                result = await market_data_service.get_symbol_price(
+                result = await market_service.get_symbol_price(
                     symbol=symbol,
                     source=source,
                     user=current_user,
@@ -66,22 +194,7 @@ async def get_market_data(
 
             if result["status"] == "success":
                 # Convertir les données en format MarketData pour la réponse
-                data = result["data"]
-                market_data = MarketData(
-                    id=result.get("stored_id", 0),
-                    symbol=data["symbol"],
-                    name=data.get("name"),
-                    price_usd=data["price_usd"],
-                    price_change_24h=data.get("price_change_24h"),
-                    price_change_24h_abs=data.get("price_change_24h_abs"),
-                    volume_24h_usd=data.get("volume_24h_usd"),
-                    market_cap_usd=data.get("market_cap_usd"),
-                    source=data["source"],
-                    source_id=data.get("source_id"),
-                    data_timestamp=data["data_timestamp"],
-                    created_at=datetime.utcnow(),
-                    updated_at=None
-                )
+                market_data = _build_market_data_from_result(result)
 
                 return MarketDataResponse(
                     status="success",
@@ -97,7 +210,7 @@ async def get_market_data(
                 )
         else:
             # Récupérer depuis la base de données
-            latest_data = await market_data_service.get_latest_price(
+            latest_data = await market_service.get_latest_price(
                 db=db,
                 symbol=symbol,
                 source=source if source != "auto" else None
@@ -121,7 +234,7 @@ async def get_market_data(
         logger.error(f"Erreur récupération données de marché pour {symbol}: {e}")
         raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
 
-@router.get("/{symbol}/history", response_model=MarketDataResponse)
+@router.get("/data/{symbol}/history", response_model=MarketDataResponse)
 async def get_historical_data(
     symbol: str,
     hours_back: int = Query(default=24, le=168, description="Heures d'historique (max 168h = 7 jours)"),
@@ -141,7 +254,7 @@ async def get_historical_data(
     try:
         symbol = symbol.upper()
 
-        historical_data = await market_data_service.get_historical_data(
+        historical_data = await market_service.get_historical_data(
             db=db,
             symbol=symbol,
             hours_back=hours_back,
@@ -163,7 +276,7 @@ async def get_historical_data(
         logger.error(f"Erreur récupération historique pour {symbol}: {e}")
         raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
 
-@router.post("/batch", response_model=MarketDataBatchResponse)
+@router.post("/data/batch", response_model=MarketDataBatchResponse)
 async def get_batch_market_data(
     batch_request: MarketDataBatch,
     use_testnet: bool = Query(default=False),
@@ -192,7 +305,7 @@ async def get_batch_market_data(
 
                 if refresh:
                     if store:
-                        result = await market_data_service.refresh_and_store_price(
+                        result = await market_service.refresh_and_store_price(
                             db=db,
                             symbol=symbol,
                             user=current_user,
@@ -200,7 +313,7 @@ async def get_batch_market_data(
                             use_testnet=use_testnet
                         )
                     else:
-                        result = await market_data_service.get_symbol_price(
+                        result = await market_service.get_symbol_price(
                             symbol=symbol,
                             source=batch_request.source,
                             user=current_user,
@@ -208,22 +321,7 @@ async def get_batch_market_data(
                         )
 
                     if result["status"] == "success":
-                        data = result["data"]
-                        market_data = MarketData(
-                            id=result.get("stored_id", 0),
-                            symbol=data["symbol"],
-                            name=data.get("name"),
-                            price_usd=data["price_usd"],
-                            price_change_24h=data.get("price_change_24h"),
-                            price_change_24h_abs=data.get("price_change_24h_abs"),
-                            volume_24h_usd=data.get("volume_24h_usd"),
-                            market_cap_usd=data.get("market_cap_usd"),
-                            source=data["source"],
-                            source_id=data.get("source_id"),
-                            data_timestamp=data["data_timestamp"],
-                            created_at=datetime.utcnow(),
-                            updated_at=None
-                        )
+                        market_data = _build_market_data_from_result(result)
                         results.append(market_data)
                         successful_count += 1
                     else:
@@ -231,7 +329,7 @@ async def get_batch_market_data(
                         failed_count += 1
                 else:
                     # Récupérer depuis la base
-                    latest_data = await market_data_service.get_latest_price(
+                    latest_data = await market_service.get_latest_price(
                         db=db,
                         symbol=symbol,
                         source=batch_request.source if batch_request.source != "auto" else None
@@ -272,15 +370,13 @@ async def get_batch_market_data(
         logger.error(f"Erreur traitement batch: {e}")
         raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
 
-@router.get("/", response_model=SupportedSymbolsResponse)
+@router.get("/data/supported-symbols", response_model=SupportedSymbolsResponse)
 async def get_supported_symbols(
     current_user: User = Depends(get_current_user)
 ):
-    """
-    Récupère la liste des symboles supportés par les différentes sources
-    """
+    """Récupère la liste des symboles supportés par les différentes sources"""
     try:
-        result = await market_data_service.get_supported_symbols()
+        result = await market_service.get_supported_symbols()
 
         return SupportedSymbolsResponse(
             status=result["status"],
@@ -294,7 +390,7 @@ async def get_supported_symbols(
         logger.error(f"Erreur récupération symboles supportés: {e}")
         raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
 
-@router.delete("/{symbol}")
+@router.delete("/data/{symbol}")
 async def delete_market_data(
     symbol: str,
     older_than_hours: int = Query(default=24, description="Supprimer données plus anciennes que X heures"),

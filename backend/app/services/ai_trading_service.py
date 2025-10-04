@@ -10,7 +10,7 @@ import logging
 
 from ..domains.auth.models import User
 from ..domains.users.models import UserTradingPreferences
-from ..models.market_data import MarketData
+from ..domains.market.models import MarketData
 from ..models.ai_recommendations import AIRecommendation, ActionType, RiskLevel
 from ..schemas.ai_recommendations import (
     RawAIResponse,

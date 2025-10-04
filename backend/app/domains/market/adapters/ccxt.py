@@ -2,13 +2,11 @@ import ccxt
 import asyncio
 import logging
 from typing import List, Dict, Any, Optional
-from datetime import datetime
-from ..shared import calculate_rsi, calculate_atr
 
 logger = logging.getLogger(__name__)
 
-class CCXTService:
-    """Service pour récupérer les données OHLCV via CCXT"""
+class CCXTAdapter:
+    """Adapter pour récupérer les données OHLCV via CCXT (I/O pur - aucun calcul)"""
 
     def __init__(self):
         self.available_exchanges = [
@@ -52,8 +50,6 @@ class CCXTService:
             }
         }
 
-    # Anciennes méthodes get_current_price et get_ohlcv_data supprimées - remplacées par get_multi_timeframe_analysis
-
     async def _load_markets_async(self, exchange) -> None:
         """Charge les marchés de l'exchange de manière asynchrone"""
         loop = asyncio.get_event_loop()
@@ -87,6 +83,18 @@ class CCXTService:
     def get_available_timeframes(self) -> List[str]:
         """Retourne la liste des timeframes disponibles"""
         return list(self.timeframes.keys())
+
+    def get_profile_config(self, profile: str) -> Optional[Dict[str, str]]:
+        """
+        Retourne la configuration des timeframes pour un profil donné
+
+        Args:
+            profile: Profil de trading ("short", "medium", "long")
+
+        Returns:
+            Dict avec les timeframes (main, higher, lower) ou None si profil invalide
+        """
+        return self.profile_configs.get(profile)
 
     async def get_exchange_symbols(self, exchange_name: str, limit: int = 20) -> Dict[str, Any]:
         """
@@ -143,33 +151,34 @@ class CCXTService:
                 "message": f"Erreur récupération symboles: {str(e)}"
             }
 
-    async def get_multi_timeframe_analysis(
+    async def fetch_multi_timeframe_ohlcv(
         self,
         exchange_name: str,
         symbol: str,
-        profile: str
+        profile: str,
+        limit: int = 600
     ) -> Dict[str, Any]:
         """
-        Récupère et analyse les données sur plusieurs timeframes selon le profil
+        Récupère les données OHLCV pour plusieurs timeframes selon le profil
 
         Args:
             exchange_name: Nom de l'exchange
             symbol: Symbole du trading pair
             profile: Profil de trading ("short", "medium", "long")
+            limit: Nombre de bougies à récupérer par timeframe
 
         Returns:
-            Dict contenant l'analyse multi-timeframes
+            Dict contenant les données OHLCV brutes pour chaque timeframe
         """
         try:
             # Vérifier le profil
-            if profile not in self.profile_configs:
+            config = self.get_profile_config(profile)
+            if not config:
                 return {
                     "status": "error",
                     "message": f"Profil '{profile}' non supporté. Profils disponibles: {list(self.profile_configs.keys())}"
                 }
 
-            # Récupérer la configuration du profil
-            config = self.profile_configs[profile]
             main_tf = config["main"]
             higher_tf = config["higher"]
             lower_tf = config["lower"]
@@ -206,11 +215,10 @@ class CCXTService:
                     "message": f"Symbole '{symbol}' non trouvé sur {exchange_name}. Symboles disponibles limités aux paires avec USDT, USDC, BTC."
                 }
 
-            # Récupérer 600 bougies pour historique riche (impact négligeable sur ATR actuel)
-            main_data = await self._fetch_ohlcv_async(exchange, normalized_symbol, main_tf, 600)
-            higher_data = await self._fetch_ohlcv_async(exchange, normalized_symbol, higher_tf, 600)
-            lower_data = await self._fetch_ohlcv_async(exchange, normalized_symbol, lower_tf, 600)
-
+            # Récupérer les données OHLCV pour les 3 timeframes
+            main_data = await self._fetch_ohlcv_async(exchange, normalized_symbol, main_tf, limit)
+            higher_data = await self._fetch_ohlcv_async(exchange, normalized_symbol, higher_tf, limit)
+            lower_data = await self._fetch_ohlcv_async(exchange, normalized_symbol, lower_tf, limit)
 
             # Récupérer le prix actuel via ticker
             current_price_info = None
@@ -241,174 +249,30 @@ class CCXTService:
             if hasattr(exchange, 'close'):
                 await exchange.close()
 
-            # Calculer les indicateurs pour chaque timeframe
-            main_indicators = self._calculate_indicators(main_data)
-            higher_indicators = self._calculate_indicators(higher_data)
-            lower_indicators = self._calculate_indicators(lower_data)
-
-            # Formater la réponse selon le format souhaité
-            response = {
+            # Retourner les données brutes (pas de calculs)
+            return {
+                "status": "success",
                 "profile": profile,
                 "symbol": normalized_symbol,
-                "tf": main_tf,
+                "timeframes": {
+                    "main": main_tf,
+                    "higher": higher_tf,
+                    "lower": lower_tf
+                },
                 "current_price": current_price_info,
-                "features": {
-                    "ma": {
-                        "ma20": main_indicators["ma20"],
-                        "ma50": main_indicators["ma50"],
-                        "ma200": main_indicators["ma200"]
-                    },
-                    "rsi14": main_indicators["rsi14"],
-                    "atr14": main_indicators["atr14"],
-                    "volume": {
-                        "current": int(main_data[-1][5]) if main_data else 0,
-                        "avg20": int(main_indicators["volume_avg20"]),
-                        "spike_ratio": main_indicators["volume_spike_ratio"]
-                    },
-                    "last_20_candles": [[
-                        candle[0],  # timestamp
-                        candle[1],  # open
-                        candle[2],  # high
-                        candle[3],  # low
-                        candle[4],  # close
-                        candle[5]   # volume
-                    ] for candle in main_data[-20:]] if main_data else []
-                },
-                "higher_tf": {
-                    "tf": higher_tf,
-                    "ma": {
-                        "ma20": higher_indicators["ma20"],
-                        "ma50": higher_indicators["ma50"],
-                        "ma200": higher_indicators["ma200"]
-                    },
-                    "rsi14": higher_indicators["rsi14"],
-                    "atr14": higher_indicators["atr14"],
-                    "structure": higher_indicators["market_structure"],
-                    "nearest_resistance": higher_indicators["nearest_resistance"]
-                },
-                "lower_tf": {
-                    "tf": lower_tf,
-                    "rsi14": lower_indicators["rsi14"],
-                    "volume": {
-                        "current": int(lower_data[-1][5]) if lower_data else 0,
-                        "avg20": int(lower_indicators["volume_avg20"]),
-                        "spike_ratio": lower_indicators["volume_spike_ratio"]
-                    },
-                    "last_20_candles": [[
-                        candle[0],  # timestamp
-                        candle[1],  # open
-                        candle[2],  # high
-                        candle[3],  # low
-                        candle[4],  # close
-                        candle[5]   # volume
-                    ] for candle in lower_data[-20:]] if lower_data else []
+                "ohlcv_data": {
+                    "main": main_data,
+                    "higher": higher_data,
+                    "lower": lower_data
                 }
             }
 
-            return response
-
         except Exception as e:
-            logger.error(f"Erreur analyse multi-timeframes pour {symbol} sur {exchange_name}: {e}")
+            logger.error(f"Erreur récupération OHLCV multi-timeframes pour {symbol} sur {exchange_name}: {e}")
             return {
                 "status": "error",
-                "message": f"Erreur analyse multi-timeframes: {str(e)}"
+                "message": f"Erreur récupération OHLCV: {str(e)}"
             }
-
-    def _calculate_indicators(self, ohlcv_data: List[List[float]]) -> Dict[str, float]:
-        """
-        Calcule les indicateurs techniques à partir des données OHLCV
-
-        Args:
-            ohlcv_data: Liste des données OHLCV [timestamp, open, high, low, close, volume]
-
-        Returns:
-            Dict contenant tous les indicateurs calculés
-        """
-        if not ohlcv_data or len(ohlcv_data) < 200:
-            return self._get_default_indicators()
-
-        # Extraire les prix et volumes
-        closes = [candle[4] for candle in ohlcv_data]
-        highs = [candle[2] for candle in ohlcv_data]
-        lows = [candle[3] for candle in ohlcv_data]
-        volumes = [candle[5] for candle in ohlcv_data]
-
-        # Calculer les moyennes mobiles
-        ma20 = sum(closes[-20:]) / 20 if len(closes) >= 20 else closes[-1]
-        ma50 = sum(closes[-50:]) / 50 if len(closes) >= 50 else closes[-1]
-        ma200 = sum(closes[-200:]) / 200 if len(closes) >= 200 else closes[-1]
-
-        # Calculer RSI 14 (méthode de Wilder)
-        rsi14 = calculate_rsi(closes, 14)
-
-        # Calculer ATR 14 (méthode de Wilder)
-        atr14 = calculate_atr(highs, lows, closes, 14)
-
-        # Calculer indicateurs de volume
-        volume_avg20 = sum(volumes[-20:]) / 20 if len(volumes) >= 20 else volumes[-1]
-        volume_spike_ratio = volumes[-1] / volume_avg20 if volume_avg20 > 0 else 1.0
-
-        # Analyser la structure du marché (simplifié)
-        market_structure = self._analyze_market_structure(highs, lows)
-
-        # Trouver la résistance la plus proche (simplifié)
-        nearest_resistance = max(highs[-50:]) if len(highs) >= 50 else highs[-1]
-
-        return {
-            "ma20": round(ma20, 2),
-            "ma50": round(ma50, 2),
-            "ma200": round(ma200, 2),
-            "rsi14": round(rsi14, 1) if rsi14 is not None else 50.0,
-            "atr14": round(atr14, 4) if atr14 is not None else 0.0,
-            "volume_avg20": volume_avg20,
-            "volume_spike_ratio": round(volume_spike_ratio, 2),
-            "market_structure": market_structure,
-            "nearest_resistance": round(nearest_resistance, 2)
-        }
-
-    def _get_default_indicators(self) -> Dict[str, float]:
-        """Retourne des indicateurs par défaut en cas de données insuffisantes"""
-        return {
-            "ma20": 0.0,
-            "ma50": 0.0,
-            "ma200": 0.0,
-            "rsi14": 50.0,
-            "atr14": 0.0,
-            "volume_avg20": 0.0,
-            "volume_spike_ratio": 1.0,
-            "market_structure": "UNDEFINED",
-            "nearest_resistance": 0.0
-        }
-
-
-    def _analyze_market_structure(self, highs: List[float], lows: List[float]) -> str:
-        """Analyse simplifiée de la structure du marché"""
-        if len(highs) < 50 or len(lows) < 50:
-            return "UNDEFINED"
-
-        recent_highs = highs[-20:]
-        recent_lows = lows[-20:]
-        previous_highs = highs[-40:-20]
-        previous_lows = lows[-40:-20]
-
-        max_recent_high = max(recent_highs)
-        max_previous_high = max(previous_highs)
-        min_recent_low = min(recent_lows)
-        min_previous_low = min(previous_lows)
-
-        # Structure haussière : HH (Higher Highs) et HL (Higher Lows)
-        if max_recent_high > max_previous_high and min_recent_low > min_previous_low:
-            return "HH_HL"
-        # Structure baissière : LH (Lower Highs) et LL (Lower Lows)
-        elif max_recent_high < max_previous_high and min_recent_low < min_previous_low:
-            return "LH_LL"
-        # Structure mixte
-        elif max_recent_high > max_previous_high and min_recent_low < min_previous_low:
-            return "HH_LL"
-        elif max_recent_high < max_previous_high and min_recent_low > min_previous_low:
-            return "LH_HL"
-        else:
-            return "SIDEWAYS"
 
     def _normalize_symbol(self, symbol: str, exchange) -> Optional[str]:
         """

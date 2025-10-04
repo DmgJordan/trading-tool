@@ -1,6 +1,6 @@
 from typing import Dict, Any
 from ..connectors.anthropic_connector import AnthropicConnector
-from ..connectors.coingecko_connector import CoinGeckoConnector
+from ...domains.market.adapters.coingecko import CoinGeckoAdapter
 import logging
 
 logger = logging.getLogger(__name__)
@@ -10,7 +10,7 @@ class ApiValidator:
 
     def __init__(self):
         self.anthropic_connector = AnthropicConnector()
-        self.coingecko_connector = CoinGeckoConnector()
+        self.coingecko_connector = CoinGeckoAdapter()
 
     async def validate_anthropic(self, api_key: str) -> Dict[str, Any]:
         """

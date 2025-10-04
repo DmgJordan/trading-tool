@@ -2,11 +2,11 @@ from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional, Literal
 from datetime import datetime
 from enum import Enum
-from .ohlcv import (
+from ..domains.market.schemas import (
     CurrentPriceInfo,
-    MainTFFeaturesLight,
     HigherTFFeatures,
-    LowerTFFeaturesLight,
+    MainTFFeaturesLight,
+    LowerTFFeaturesLight
 )
 
 class ClaudeModel(str, Enum):
@@ -25,6 +25,22 @@ class ConfidenceLevel(str, Enum):
     MEDIUM = "MEDIUM"
     HIGH = "HIGH"
     VERY_HIGH = "VERY_HIGH"
+
+# Schéma pour les données de marché (pour Claude IA)
+
+class ClaudeMarketData(BaseModel):
+    """Données de marché enrichies pour l'analyse Claude"""
+    symbol: str = Field(..., description="Symbole de l'actif")
+    name: str = Field(..., description="Nom de l'actif")
+    current_price: float = Field(..., description="Prix actuel")
+    price_change_24h: Optional[float] = Field(None, description="Variation 24h en %")
+    volume_24h: Optional[float] = Field(None, description="Volume 24h")
+    market_cap: Optional[float] = Field(None, description="Market cap")
+    high_24h: Optional[float] = Field(None, description="Plus haut 24h")
+    low_24h: Optional[float] = Field(None, description="Plus bas 24h")
+    price_change_7d: Optional[float] = Field(None, description="Variation 7 jours")
+    price_change_30d: Optional[float] = Field(None, description="Variation 30 jours")
+    last_updated: datetime = Field(..., description="Dernière mise à jour")
 
 
 

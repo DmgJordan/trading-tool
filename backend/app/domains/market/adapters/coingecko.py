@@ -5,8 +5,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-class CoinGeckoConnector:
-    """Connecteur pour l'API CoinGecko"""
+class CoinGeckoAdapter:
+    """Adapter pour l'API CoinGecko (I/O pur)"""
 
     def __init__(self):
         self.demo_base_url = "https://api.coingecko.com/api/v3"
@@ -24,16 +24,16 @@ class CoinGeckoConnector:
         """
         # Les clés Demo CoinGecko suivent le pattern: CG-XXXXXXXXXXXXXXXXXXXXXX
         # Les clés peuvent être légèrement plus longues après chiffrement/déchiffrement
-        print(f"DEBUG CoinGecko - Clé reçue: {api_key[:6]}... longueur: {len(api_key)}")
-        print(f"DEBUG CoinGecko - Commence par CG-: {api_key.startswith('CG-')}")
+        logger.debug(f"Clé reçue: {api_key[:6]}... longueur: {len(api_key)}")
+        logger.debug(f"Commence par CG-: {api_key.startswith('CG-')}")
 
         # Les clés Demo commencent par CG- et font entre 25-30 caractères
         # Les clés Pro ont généralement un format différent ou sont plus longues
         if api_key.startswith('CG-') and 25 <= len(api_key) <= 30:
-            print("DEBUG CoinGecko - Détection: DEMO API")
+            logger.debug("Détection: DEMO API")
             return self.demo_base_url
         else:
-            print("DEBUG CoinGecko - Détection: PRO API")
+            logger.debug("Détection: PRO API")
             return self.pro_base_url
 
     async def test_connection(self, api_key: str) -> Dict[str, Any]:
@@ -50,18 +50,18 @@ class CoinGeckoConnector:
             # Déterminer l'URL et les headers selon le type de clé
             base_url = self._get_base_url(api_key)
 
-            print(f"DEBUG CoinGecko - URL finale choisie: {base_url}")
+            logger.debug(f"URL finale choisie: {base_url}")
 
             if base_url == self.demo_base_url:
                 # Pour les clés demo, utiliser le paramètre x_cg_demo_api_key
                 headers = {"x-cg-demo-api-key": api_key}
                 api_type = "coingecko_demo"
-                print("DEBUG CoinGecko - Headers: DEMO API (x-cg-demo-api-key)")
+                logger.debug("Headers: DEMO API (x-cg-demo-api-key)")
             else:
                 # Pour les clés pro, utiliser x-cg-pro-api-key
                 headers = {"x-cg-pro-api-key": api_key}
                 api_type = "coingecko_pro"
-                print("DEBUG CoinGecko - Headers: PRO API (x-cg-pro-api-key)")
+                logger.debug("Headers: PRO API (x-cg-pro-api-key)")
 
             async with aiohttp.ClientSession() as session:
                 # Test avec un endpoint simple qui consomme peu de quota
@@ -124,6 +124,7 @@ class CoinGeckoConnector:
         Args:
             session: Session aiohttp
             headers: Headers avec la clé API
+            base_url: URL de base de l'API
 
         Returns:
             Dict avec les informations du plan

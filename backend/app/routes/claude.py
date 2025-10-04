@@ -17,7 +17,7 @@ from ..schemas.claude import (
     TradeDirection
 )
 from ..services.connectors.anthropic_connector import AnthropicConnector
-from ..services.ccxt_service import CCXTService
+from ..domains.market.service import MarketService
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ router = APIRouter(prefix="/claude", tags=["claude"])
 
 # Initialisation des services
 anthropic_connector = AnthropicConnector()
-ccxt_service = CCXTService()
+market_service = MarketService()
 
 
 def _get_system_prompt_for_model(model: ClaudeModel) -> str:
@@ -191,7 +191,7 @@ async def analyze_single_asset_with_technical(
 
         # 2. Récupérer données techniques multi-timeframes (600 bougies par TF)
         try:
-            technical_data = await ccxt_service.get_multi_timeframe_analysis(
+            technical_data = await market_service.get_multi_timeframe_analysis(
                 exchange_name=request.exchange,
                 symbol=request.ticker,
                 profile=request.profile
