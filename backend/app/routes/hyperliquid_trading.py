@@ -3,9 +3,8 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 import logging
 
-from ..database import get_db
+from ..core import get_db, get_current_user, decrypt_api_key
 from ..models.user import User
-from ..auth import get_current_user, decrypt_api_key
 from ..schemas.hyperliquid_trading import (
     ExecuteTradeRequest,
     TradeExecutionResult

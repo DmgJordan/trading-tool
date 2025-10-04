@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import Optional, List
 import logging
 
-from ..database import get_db
+from ..core import get_db, get_current_user
 from ..models.user import User
 from ..schemas.ai_recommendations import (
     AIRecommendationRequest,
@@ -12,7 +12,6 @@ from ..schemas.ai_recommendations import (
     AIAnalysisError
 )
 from ..services.ai_trading_service import AITradingService
-from ..auth import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -192,7 +191,7 @@ async def get_ai_service_status(
         from datetime import datetime, timezone, timedelta
         from ..models.ai_recommendations import AIRecommendation
         from ..models.user_preferences import UserTradingPreferences
-        from ..auth import decrypt_api_key
+        from ..core import decrypt_api_key
 
         logger.info(f"Vérification statut service IA utilisateur {current_user.id}")
 

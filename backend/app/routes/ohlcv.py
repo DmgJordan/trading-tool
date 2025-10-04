@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 import logging
 
-from ..database import get_db
+from ..core import get_db, get_current_user
 from ..models.user import User
 from ..schemas.ohlcv import (
     ExchangeListResponse,
@@ -11,7 +11,6 @@ from ..schemas.ohlcv import (
     MultiTimeframeRequest,
     MultiTimeframeResponse
 )
-from ..auth import get_current_user
 from ..services.ccxt_service import CCXTService
 
 logger = logging.getLogger(__name__)

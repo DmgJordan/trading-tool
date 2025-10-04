@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, Float, DateTime, Text, ForeignKe
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from enum import Enum
-from ..database import Base
+from ..core import Base
 
 class ActionType(Enum):
     """Types d'actions de trading"""

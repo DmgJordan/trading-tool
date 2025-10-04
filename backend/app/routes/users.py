@@ -1,9 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from ..database import get_db
+from ..core import get_db, get_current_user, get_password_hash, encrypt_api_key, decrypt_api_key
 from ..models import User
 from ..schemas.user import UserCreate, UserResponse, UserUpdate, ApiKeyUpdate, ApiKeyTest
-from ..auth import get_current_user, get_password_hash, encrypt_api_key, decrypt_api_key
 
 
 def _normalize_hyperliquid_address(address: str | None) -> str | None:

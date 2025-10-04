@@ -3,8 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 import logging
 import sys
-from .database import engine, get_db
-from .models import Base
+from .core import engine, get_db, Base
 from .routes import users, auth, connectors, market_data, user_preferences, ai_recommendations, claude, ohlcv, hyperliquid_trading
 
 # Configuration du logging pour afficher dans le terminal

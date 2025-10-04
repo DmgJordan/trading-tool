@@ -5,9 +5,8 @@ import logging
 import json
 from datetime import datetime
 
-from ..database import get_db
+from ..core import get_db, get_current_user, decrypt_api_key
 from ..models.user import User
-from ..auth import get_current_user, decrypt_api_key
 from ..schemas.claude import (
     ClaudeModel,
     SingleAssetAnalysisRequest,

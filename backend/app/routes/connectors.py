@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
-from ..database import get_db
+from ..core import get_db, get_current_user, decrypt_api_key
 from ..schemas.connectors import (
     StandardApiKeyTest,
     DexKeyTest,
@@ -11,7 +11,6 @@ from ..schemas.connectors import (
 from ..services.validators.api_validator import ApiValidator
 from ..services.validators.dex_validator import DexValidator
 from ..models.user import User
-from ..auth import get_current_user, decrypt_api_key
 import logging
 
 logger = logging.getLogger(__name__)

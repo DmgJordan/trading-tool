@@ -4,7 +4,7 @@ from typing import Optional, List
 from datetime import datetime, timedelta
 import logging
 
-from ..database import get_db
+from ..core import get_db, get_current_user
 from ..models.user import User
 from ..models.market_data import MarketData
 from ..schemas.market_data import (
@@ -15,7 +15,6 @@ from ..schemas.market_data import (
     MarketDataBatch,
     MarketDataBatchResponse
 )
-from ..auth import get_current_user
 from ..services.market_data.market_data_service import MarketDataService
 
 logger = logging.getLogger(__name__)

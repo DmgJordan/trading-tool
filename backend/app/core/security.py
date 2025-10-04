@@ -1,18 +1,13 @@
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Union
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from typing import Optional
 from sqlalchemy.orm import Session
-from jose import JWTError, jwt
+from jose import jwt
 from passlib.context import CryptContext
 from cryptography.fernet import Fernet
 import base64
 
 from .config import settings
-from .database import get_db
-from .models.user import User
 
-security = HTTPBearer()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def get_encryption_key():
@@ -91,40 +86,23 @@ def create_refresh_token(data: dict):
     return encoded_jwt
 
 def verify_token(token: str, token_type: str = "access"):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+    from .exceptions import UnauthorizedException
+
     try:
         payload = jwt.decode(token, settings.secret_key, algorithms=[settings.jwt_algorithm])
         user_id: int = payload.get("sub")
         token_type_from_payload: str = payload.get("type")
 
         if user_id is None or token_type_from_payload != token_type:
-            raise credentials_exception
+            raise UnauthorizedException("Could not validate credentials")
 
         return {"user_id": user_id, "exp": payload.get("exp")}
-    except JWTError:
-        raise credentials_exception
-
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
-):
-    token = credentials.credentials
-    token_data = verify_token(token, "access")
-
-    user = db.query(User).filter(User.id == token_data["user_id"]).first()
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return user
+    except Exception:
+        raise UnauthorizedException("Could not validate credentials")
 
 def authenticate_user(db: Session, email: str, password: str):
+    from ..models.user import User
+
     user = db.query(User).filter(User.email == email).first()
     if not user:
         return False

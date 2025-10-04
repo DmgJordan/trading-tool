@@ -19,7 +19,7 @@ from ..schemas.ai_recommendations import (
     AIAnalysisError,
     AIGenerationContext
 )
-from ..auth import decrypt_api_key
+from ..core import decrypt_api_key
 
 logger = logging.getLogger(__name__)
 

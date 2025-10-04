@@ -4,7 +4,7 @@ from typing import Optional
 import json
 import logging
 
-from ..database import get_db
+from ..core import get_db, get_current_user
 from ..models.user import User
 from ..models.user_preferences import UserTradingPreferences
 from ..schemas.user_preferences import (
@@ -13,7 +13,6 @@ from ..schemas.user_preferences import (
     UserTradingPreferencesUpdate,
     UserTradingPreferencesDefault
 )
-from ..auth import get_current_user
 
 logger = logging.getLogger(__name__)
 

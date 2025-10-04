@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, Text, Index
 from sqlalchemy.sql import func
-from ..database import Base
+from ..core import Base
 
 class MarketData(Base):
     """Modèle pour stocker l'historique des données de marché"""
