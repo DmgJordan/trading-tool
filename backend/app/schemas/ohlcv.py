@@ -72,6 +72,21 @@ class LowerTFFeatures(BaseModel):
     volume: VolumeIndicators = Field(..., description="Indicateurs de volume")
     last_20_candles: List[List[float]] = Field(..., description="20 dernières bougies [ts, o, h, l, c, v]")
 
+# Versions allégées pour le frontend (sans les bougies)
+
+class MainTFFeaturesLight(BaseModel):
+    """Version allégée des features du timeframe principal (sans bougies)"""
+    ma: MAIndicators = Field(..., description="Moyennes mobiles")
+    rsi14: float = Field(..., description="RSI 14 périodes")
+    atr14: float = Field(..., description="ATR 14 périodes")
+    volume: VolumeIndicators = Field(..., description="Indicateurs de volume")
+
+class LowerTFFeaturesLight(BaseModel):
+    """Version allégée des features du timeframe inférieur (sans bougies)"""
+    tf: str = Field(..., description="Timeframe")
+    rsi14: float = Field(..., description="RSI 14 périodes")
+    volume: VolumeIndicators = Field(..., description="Indicateurs de volume")
+
 class MultiTimeframeRequest(BaseModel):
     """Modèle pour la requête d'analyse multi-timeframes"""
     exchange: str = Field(..., description="Nom de l'exchange")

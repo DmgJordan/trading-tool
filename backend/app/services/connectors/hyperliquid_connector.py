@@ -2,7 +2,7 @@ from hyperliquid.info import Info
 from hyperliquid.exchange import Exchange
 from eth_account import Account
 import asyncio
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Union
 from datetime import datetime
 import logging
 
@@ -147,9 +147,12 @@ class HyperliquidConnector:
             except Exception as spot_error:
                 logger.warning(f"Impossible de récupérer l'état spot Hyperliquid: {spot_error}")
 
-            portfolio_data: Optional[Dict[str, Any]] = None
+            # Structure: [["day", {...}], ["week", {...}], ["month", {...}], ...]
+            # Chaque entrée est un tuple [period: str, data: dict]
+            portfolio_data: Optional[List[List[Union[str, Dict[str, Any]]]]] = None
             try:
-                portfolio_data = await loop.run_in_executor(None, info.portfolio, wallet_address)
+                raw_portfolio = await loop.run_in_executor(None, info.portfolio, wallet_address)
+                portfolio_data = self._ensure_list(raw_portfolio)
             except Exception as portfolio_error:
                 logger.warning(f"Impossible de récupérer le portefeuille Hyperliquid: {portfolio_error}")
 

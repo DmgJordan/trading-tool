@@ -1,4 +1,4 @@
-import { useHyperliquidStore } from '../store/hyperliquidStore';
+import { useHyperliquidStore } from '@/features/portfolio/model/store';
 
 /**
  * Hook personnalisé pour interagir avec Hyperliquid

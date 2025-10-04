@@ -1,4 +1,4 @@
-import { z } from 'zod';
+// import { z } from 'zod'; // Unused - validators don't use zod directly
 
 /**
  * Valide une adresse email
@@ -25,11 +25,7 @@ export const isValidEthAddress = (address: string): boolean => {
 /**
  * Valide un nombre dans une plage
  */
-export const isInRange = (
-  value: number,
-  min: number,
-  max: number
-): boolean => {
+export const isInRange = (value: number, min: number, max: number): boolean => {
   return value >= min && value <= max;
 };
 
@@ -104,14 +100,18 @@ export const validateTradingPreferences = {
   maxPositionSize: (value: number) => isInRange(value, 0.1, 100),
   stopLossPercentage: (value: number) => isInRange(value, 0.1, 50),
   takeProfitRatio: (value: number) => isInRange(value, 0.1, 10),
-  preferredAssets: (assets: string[]) => assets.length >= 1 && assets.length <= 20,
-  technicalIndicators: (indicators: string[]) => indicators.length >= 1 && indicators.length <= 15,
+  preferredAssets: (assets: string[]) =>
+    assets.length >= 1 && assets.length <= 20,
+  technicalIndicators: (indicators: string[]) =>
+    indicators.length >= 1 && indicators.length <= 15,
 };
 
 /**
  * Valide un mot de passe sécurisé
  */
-export const isStrongPassword = (password: string): {
+export const isStrongPassword = (
+  password: string
+): {
   isValid: boolean;
   errors: string[];
 } => {

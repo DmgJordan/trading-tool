@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import Optional, Literal
+from typing import Optional, Literal, List, Tuple
 from datetime import datetime
 from enum import Enum
 
@@ -78,3 +78,25 @@ class PortfolioInfo(BaseModel):
     available_balance: float = Field(..., description="Balance disponible")
     symbol_position: Optional[float] = Field(None, description="Position actuelle sur le symbole")
     max_leverage: float = Field(default=1.0, description="Levier maximum autorisé")
+
+# Types pour les données portfolio de Hyperliquid
+class PortfolioTimeSeriesData(BaseModel):
+    """Données de séries temporelles pour le portfolio"""
+
+    accountValueHistory: List[List] = Field(
+        default_factory=list,
+        description="Historique de valeur du compte [[timestamp, value], ...]"
+    )
+    pnlHistory: List[List] = Field(
+        default_factory=list,
+        description="Historique PnL [[timestamp, pnl], ...]"
+    )
+    vlm: str = Field(default="0.0", description="Volume total")
+
+# Type alias pour la structure complète du portfolio
+# Format: [["day", {...}], ["week", {...}], ...]
+PortfolioDataEntry = Tuple[
+    Literal["day", "week", "month", "allTime", "perpDay", "perpWeek", "perpMonth", "perpAllTime"],
+    PortfolioTimeSeriesData
+]
+PortfolioData = List[PortfolioDataEntry]

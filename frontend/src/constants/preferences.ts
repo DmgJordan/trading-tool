@@ -1,4 +1,4 @@
-import type { MultiSelectOption } from '../components/preferences/MultiSelect';
+import type { MultiSelectOption } from '@/features/preferences/ui/MultiSelect';
 
 // Options pour les cryptomonnaies populaires
 export const CRYPTO_OPTIONS: MultiSelectOption[] = [

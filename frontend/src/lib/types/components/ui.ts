@@ -2,8 +2,8 @@
  * Types pour les composants UI réutilisables
  */
 
-import { Status } from '@/utils/ui';
-import { MAIndicators, VolumeIndicators } from '../api/ohlcv';
+import { Status } from '@/shared/lib/ui';
+import { MAIndicators, VolumeIndicators } from '@/lib/types/api/ohlcv';
 
 // RSI Indicator
 export interface RSIIndicatorProps {
@@ -30,7 +30,8 @@ export interface ToastContainerProps {
 export interface StatusBadgeProps {
   status: Status;
   label?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'small' | 'medium' | 'large';
+  showIcon?: boolean;
   className?: string;
 }
 

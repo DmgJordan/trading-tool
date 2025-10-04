@@ -3,7 +3,7 @@
  * Symboles, exchanges, profils et configurations
  */
 
-import type { TradingProfile } from '../utils/ui';
+import type { TradingProfile } from '@/shared/lib/ui';
 
 // Symboles de trading disponibles
 export const TRADING_SYMBOLS = [
@@ -87,11 +87,7 @@ export const TRADING_PROFILES: TradingProfileConfig[] = [
       higher: '1W',
       lower: '4h',
     },
-    characteristics: [
-      'Vision macro',
-      'Trades mensuels',
-      'Stop-loss larges',
-    ],
+    characteristics: ['Vision macro', 'Trades mensuels', 'Stop-loss larges'],
   },
 ];
 
@@ -176,7 +172,7 @@ export const API_SERVICES = {
 } as const;
 
 // Types dérivés
-export type TradingSymbol = typeof TRADING_SYMBOLS[number];
-export type Exchange = typeof EXCHANGES[number];
-export type ClaudeModel = typeof CLAUDE_MODELS[number]['id'];
-export type ApiKeyStatus = typeof API_KEY_STATUS[keyof typeof API_KEY_STATUS];
+export type TradingSymbol = (typeof TRADING_SYMBOLS)[number];
+export type Exchange = (typeof EXCHANGES)[number];
+export type ClaudeModel = (typeof CLAUDE_MODELS)[number]['id'];
+export type ApiKeyStatus = (typeof API_KEY_STATUS)[keyof typeof API_KEY_STATUS];

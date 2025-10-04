@@ -4,8 +4,8 @@ import {
   ExchangeListResponse,
   MultiTimeframeRequest,
   MultiTimeframeResponse,
-} from '@/lib/api';
-import type { TradingProfile } from '@/utils/ui';
+} from '@/services/api';
+import type { TradingProfile } from '@/shared/lib/ui';
 
 interface AnalysisState {
   status: 'idle' | 'testing' | 'success' | 'error';
@@ -30,10 +30,12 @@ export const useCCXTAnalysis = () => {
     profile: 'medium',
   });
 
-  const [availableData, setAvailableData] = useState<ExchangeListResponse | null>(null);
+  const [availableData, setAvailableData] =
+    useState<ExchangeListResponse | null>(null);
   const [selectedExchange, setSelectedExchange] = useState('binance');
   const [selectedSymbol, setSelectedSymbol] = useState('BTC/USDT');
-  const [selectedProfile, setSelectedProfile] = useState<TradingProfile>('medium');
+  const [selectedProfile, setSelectedProfile] =
+    useState<TradingProfile>('medium');
 
   // Charger les exchanges disponibles
   const loadAvailableExchanges = useCallback(async () => {

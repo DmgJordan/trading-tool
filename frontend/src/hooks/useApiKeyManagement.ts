@@ -2,9 +2,9 @@ import { useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useAuthStore } from '@/store/authStore';
-import { authApi } from '@/lib/api/auth';
-import apiClient from '@/lib/api/client';
+import { useAuthStore } from '@/features/auth/model/store';
+import { authApi } from '@/services/api/auth.api';
+import http from '@/services/http/client';
 import { useNotifications } from './useNotifications';
 
 // Types
@@ -39,7 +39,9 @@ export const useApiKeyManagement = () => {
   const { success, error: notifyError } = useNotifications();
 
   // États pour les tests
-  const [testResults, setTestResults] = useState<Record<ApiService, TestResult>>({
+  const [testResults, setTestResults] = useState<
+    Record<ApiService, TestResult>
+  >({
     hyperliquid: { status: null, message: '' },
     anthropic: { status: null, message: '' },
     coingecko: { status: null, message: '' },
@@ -99,11 +101,14 @@ export const useApiKeyManagement = () => {
             payload.hyperliquid_api_key = values.hyperliquid_api_key.trim();
           }
           if (values.hyperliquid_public_address?.trim()) {
-            payload.hyperliquid_public_address = values.hyperliquid_public_address.trim();
+            payload.hyperliquid_public_address =
+              values.hyperliquid_public_address.trim();
           }
 
           if (Object.keys(payload).length === 0) {
-            notifyError("Veuillez renseigner la clé API ou l'adresse publique Hyperliquid");
+            notifyError(
+              "Veuillez renseigner la clé API ou l'adresse publique Hyperliquid"
+            );
             return;
           }
         } else {
@@ -120,7 +125,7 @@ export const useApiKeyManagement = () => {
           payload = { [`${apiType}_api_key`]: apiKey.trim() };
         }
 
-        await apiClient.put('/users/me/api-keys', payload);
+        await http.put('/users/me/api-keys', payload, { auth: true });
 
         const successMessage =
           apiType === 'hyperliquid'
@@ -156,10 +161,13 @@ export const useApiKeyManagement = () => {
 
       const isStoredKey =
         apiType === 'hyperliquid'
-          ? user?.hyperliquid_api_key_status === 'configured' && apiKey?.includes('••••')
+          ? user?.hyperliquid_api_key_status === 'configured' &&
+            apiKey?.includes('••••')
           : apiType === 'anthropic'
-            ? user?.anthropic_api_key_status === 'configured' && apiKey?.includes('••••')
-            : user?.coingecko_api_key_status === 'configured' && apiKey?.includes('••••');
+            ? user?.anthropic_api_key_status === 'configured' &&
+              apiKey?.includes('••••')
+            : user?.coingecko_api_key_status === 'configured' &&
+              apiKey?.includes('••••');
 
       if (!apiKey?.trim() && !isStoredKey) {
         setTestResults(prev => ({
@@ -188,17 +196,21 @@ export const useApiKeyManagement = () => {
             ? { api_key: values.hyperliquid_api_key }
             : { api_key: apiKey };
 
-        const response = await apiClient.post<{ status: string; message?: string }>(endpoint, requestData);
+        const response = await http.post<{ status: string; message?: string }>(
+          endpoint,
+          requestData,
+          { auth: true }
+        );
 
         setTestResults(prev => ({
           ...prev,
           [apiType]: {
-            status: response.data.status === 'success' ? 'success' : 'error',
-            message: response.data.message || 'Connexion réussie !',
+            status: response.status === 'success' ? 'success' : 'error',
+            message: response.message || 'Connexion réussie !',
           },
         }));
 
-        if (response.data.status === 'success') {
+        if (response.status === 'success') {
           success(`Connexion ${API_NAMES[apiType]} réussie !`);
         }
       } catch (error) {

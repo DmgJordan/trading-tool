@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import type { Status } from '@/utils/ui';
+import type { Status } from '@/shared/lib/ui';
 
 export interface Notification {
   id: string;
@@ -39,7 +39,8 @@ export const useNotifications = () => {
 
   // Helpers pour types spécifiques
   const success = useCallback(
-    (message: string, duration?: number) => notify(message, 'success', duration),
+    (message: string, duration?: number) =>
+      notify(message, 'success', duration),
     [notify]
   );
 
@@ -49,7 +50,8 @@ export const useNotifications = () => {
   );
 
   const warning = useCallback(
-    (message: string, duration?: number) => notify(message, 'warning', duration),
+    (message: string, duration?: number) =>
+      notify(message, 'warning', duration),
     [notify]
   );
 

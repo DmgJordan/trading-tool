@@ -11,11 +11,47 @@ export interface DexKeyTest {
   use_testnet: boolean;
 }
 
+/**
+ * Structure du champ `data` retourné selon le type de connecteur
+ * - Pour les tests de connexion simples, data est null ou undefined
+ * - Pour les requêtes d'infos utilisateur, data contient les détails
+ */
+export type ConnectorTestData =
+  | HyperliquidUserInfo
+  | AnthropicApiInfo
+  | CoinGeckoApiInfo
+  | null
+  | undefined;
+
+/**
+ * Structure du champ `validation` retourné par les validators
+ */
+export interface ApiValidationInfo {
+  api_type: 'anthropic' | 'coingecko';
+  connector_type: 'standard_api';
+  authentication_method: 'api_key';
+}
+
+export interface DexValidationInfo {
+  network: 'mainnet' | 'testnet';
+  connector_type: 'hyperliquid';
+  sdk_used: boolean;
+}
+
+export type ValidationInfo =
+  | ApiValidationInfo
+  | DexValidationInfo
+  | null
+  | undefined;
+
+/**
+ * Réponse standard des tests de connecteurs
+ */
 export interface ConnectorTestResponse {
   status: 'success' | 'error';
   message: string;
-  data?: Record<string, any>;
-  validation?: Record<string, any>;
+  data?: ConnectorTestData;
+  validation?: ValidationInfo;
   timestamp: string;
 }
 

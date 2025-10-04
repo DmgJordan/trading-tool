@@ -2,7 +2,7 @@
  * Types pour les composants de préférences
  */
 
-import { SliderConfig } from '../preferences';
+import { SliderConfig } from '@/lib/types/preferences';
 
 // Range Slider
 export interface RangeSliderProps {

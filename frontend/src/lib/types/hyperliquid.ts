@@ -3,8 +3,10 @@ export interface HyperliquidPortfolioSummary {
   totalMarginUsed?: number | null;
   totalUnrealizedPnl?: number | null;
   withdrawableBalance?: number | null;
-  perpPositionCount: number;
-  assetPositionCount: number;
+  perpPositionCount?: number;
+  assetPositionCount?: number;
+  // Permet les propriétés supplémentaires venant du backend
+  [key: string]: unknown;
 }
 
 export interface HyperliquidPerpPositionDetails {
@@ -129,9 +131,34 @@ export interface HyperliquidSpotUserState {
   [key: string]: unknown;
 }
 
-export interface HyperliquidPortfolioData {
-  [key: string]: unknown;
+/**
+ * Portfolio time series data for a specific period
+ */
+export interface HyperliquidPortfolioTimeSeriesData {
+  accountValueHistory: Array<[number, string]>; // [[timestamp, value], ...]
+  pnlHistory: Array<[number, string]>; // [[timestamp, pnl], ...]
+  vlm: string; // Volume total
 }
+
+/**
+ * Portfolio data from Hyperliquid API
+ * Returns an array of time-period entries: [period, data]
+ * Example: [["day", {...}], ["week", {...}], ["month", {...}], ["allTime", {...}]]
+ * Periods: "day" | "week" | "month" | "allTime" | "perpDay" | "perpWeek" | "perpMonth" | "perpAllTime"
+ */
+export type HyperliquidPortfolioPeriod =
+  | "day"
+  | "week"
+  | "month"
+  | "allTime"
+  | "perpDay"
+  | "perpWeek"
+  | "perpMonth"
+  | "perpAllTime";
+
+export type HyperliquidPortfolioData = Array<
+  [HyperliquidPortfolioPeriod, HyperliquidPortfolioTimeSeriesData]
+>;
 
 export interface HyperliquidUserInfoData {
   wallet_address: string;

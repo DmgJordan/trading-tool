@@ -1,7 +1,24 @@
-// Routes publiques (non protégées)
+/**
+ * Routes publiques (non protégées)
+ *
+ * Pattern Next.js : routes sous /(public)/* sont accessibles sans authentification
+ */
 export const PUBLIC_ROUTES = ['/login'] as const;
 
-// Routes protégées
+/**
+ * Patterns regex pour détecter les routes publiques
+ * Utilisés par le middleware SSR pour whitelisting
+ */
+export const PUBLIC_ROUTE_PATTERNS = [
+  /^\/(public)\/.*/, // Toutes routes sous /(public)/*
+  /^\/login$/, // Legacy /login (compatibilité)
+] as const;
+
+/**
+ * Routes protégées (nécessitent authentification)
+ *
+ * Pattern Next.js : routes sous /(app)/* requièrent auth
+ */
 export const PROTECTED_ROUTES = {
   HOME: '/',
   ACCOUNT: '/account',
@@ -44,12 +61,27 @@ export const API_ROUTES = {
   },
 } as const;
 
-// Helper pour vérifier si une route est publique
+/**
+ * Helper pour vérifier si une route est publique (legacy)
+ * @deprecated Utiliser isPublicPath() à la place
+ */
 export const isPublicRoute = (pathname: string): boolean => {
   return PUBLIC_ROUTES.some(route => pathname.startsWith(route));
 };
 
-// Helper pour vérifier si une route est protégée
+/**
+ * Helper pour vérifier si un chemin est public (compatible route groups Next.js)
+ * Utilisé par le middleware SSR
+ */
+export const isPublicPath = (pathname: string): boolean => {
+  return PUBLIC_ROUTE_PATTERNS.some(pattern => pattern.test(pathname));
+};
+
+/**
+ * Helper pour vérifier si une route est protégée
+ */
 export const isProtectedRoute = (pathname: string): boolean => {
-  return Object.values(PROTECTED_ROUTES).some(route => pathname.startsWith(route));
+  return Object.values(PROTECTED_ROUTES).some(route =>
+    pathname.startsWith(route)
+  );
 };

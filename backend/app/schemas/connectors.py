@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, Literal, Any, Dict
+from typing import Optional, Literal, Union
 from datetime import datetime
 
 class StandardApiKeyTest(BaseModel):
@@ -12,25 +12,6 @@ class DexKeyTest(BaseModel):
     private_key: str = Field(..., description="Clé privée DEX à tester")
     dex_type: Literal["hyperliquid"] = Field(default="hyperliquid", description="Type de DEX")
     use_testnet: bool = Field(default=False, description="Utiliser le testnet")
-
-class ConnectorTestResponse(BaseModel):
-    """Schéma de réponse pour les tests de connexion"""
-    status: Literal["success", "error"]
-    message: str
-    data: Optional[Dict[str, Any]] = None
-    validation: Optional[Dict[str, Any]] = None
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
-
-class KeyFormatValidation(BaseModel):
-    """Schéma pour la validation de format de clé"""
-    key: str = Field(..., description="Clé à valider")
-    key_type: Literal["api_key", "private_key"] = Field(..., description="Type de clé")
-    service_type: str = Field(..., description="Type de service (anthropic, hyperliquid, coingecko, etc.)")
-
-class UserInfoRequest(BaseModel):
-    """Schéma pour récupérer les informations utilisateur"""
-    service_type: Literal["hyperliquid", "anthropic", "coingecko"]
-    use_testnet: bool = Field(default=False, description="Pour Hyperliquid uniquement")
 
 class HyperliquidUserInfo(BaseModel):
     """Schéma spécialisé pour les informations utilisateur Hyperliquid"""
@@ -52,3 +33,35 @@ class CoinGeckoApiInfo(BaseModel):
     rate_limit: Optional[int] = None
     monthly_calls_used: Optional[int] = None
     monthly_calls_limit: Optional[int] = None
+
+# Types pour les champs data et validation de ConnectorTestResponse
+class ApiValidationInfo(BaseModel):
+    """Informations de validation pour les APIs standard"""
+    api_type: Literal["anthropic", "coingecko"]
+    connector_type: Literal["standard_api"]
+    authentication_method: Literal["api_key"]
+
+class DexValidationInfo(BaseModel):
+    """Informations de validation pour les DEX"""
+    network: Literal["mainnet", "testnet"]
+    connector_type: Literal["hyperliquid"]
+    sdk_used: bool
+
+class ConnectorTestResponse(BaseModel):
+    """Schéma de réponse pour les tests de connexion"""
+    status: Literal["success", "error"]
+    message: str
+    data: Optional[Union[HyperliquidUserInfo, AnthropicApiInfo, CoinGeckoApiInfo]] = None
+    validation: Optional[Union[ApiValidationInfo, DexValidationInfo]] = None
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+class KeyFormatValidation(BaseModel):
+    """Schéma pour la validation de format de clé"""
+    key: str = Field(..., description="Clé à valider")
+    key_type: Literal["api_key", "private_key"] = Field(..., description="Type de clé")
+    service_type: str = Field(..., description="Type de service (anthropic, hyperliquid, coingecko, etc.)")
+
+class UserInfoRequest(BaseModel):
+    """Schéma pour récupérer les informations utilisateur"""
+    service_type: Literal["hyperliquid", "anthropic", "coingecko"]
+    use_testnet: bool = Field(default=False, description="Pour Hyperliquid uniquement")
