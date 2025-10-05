@@ -9,7 +9,6 @@ from .adapters import CCXTAdapter, CoinGeckoAdapter
 from .models import MarketData
 from ...domains.auth.models import User
 from ...core import decrypt_api_key
-from ...services.connectors.hyperliquid_connector import HyperliquidConnector
 from ...schemas.claude import ClaudeMarketData
 from ...shared import (
     calculate_rsi,
@@ -27,8 +26,6 @@ class MarketService:
         # Adapters pour I/O
         self.ccxt_adapter = CCXTAdapter()
         self.coingecko_adapter = CoinGeckoAdapter()
-        self.hyperliquid_mainnet = HyperliquidConnector(use_testnet=False)
-        self.hyperliquid_testnet = HyperliquidConnector(use_testnet=True)
 
         # Cache simple en mémoire pour CoinGecko
         self._cache: Dict[str, Dict[str, Any]] = {}
@@ -435,27 +432,17 @@ class MarketService:
         user: Optional[User],
         use_testnet: bool = False
     ) -> Dict[str, Any]:
-        """Essaie de récupérer le prix depuis Hyperliquid"""
-        try:
-            if not user or not user.hyperliquid_api_key:
-                return {
-                    "status": "error",
-                    "message": "Clé API Hyperliquid non configurée"
-                }
+        """
+        Essaie de récupérer le prix depuis Hyperliquid
 
-            # Note: Hyperliquid n'a pas d'endpoint simple pour les prix
-            # Il faudrait implémenter get_market_data dans HyperliquidConnector
-            return {
-                "status": "error",
-                "message": "Prix Hyperliquid non encore implémenté"
-            }
-
-        except Exception as e:
-            logger.error(f"Erreur Hyperliquid pour {symbol}: {e}")
-            return {
-                "status": "error",
-                "message": f"Erreur Hyperliquid: {str(e)}"
-            }
+        Note: Fonctionnalité non implémentée pour l'instant
+        Hyperliquid n'a pas d'endpoint simple pour les prix de marché
+        Utiliser CoinGecko ou CCXT comme sources de prix à la place
+        """
+        return {
+            "status": "error",
+            "message": "Prix Hyperliquid non disponible. Utilisez CoinGecko ou CCXT."
+        }
 
     # ==========================================================================
     # STOCKAGE ET HISTORIQUE DB

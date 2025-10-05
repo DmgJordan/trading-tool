@@ -6,7 +6,8 @@ import sys
 from .core import engine, get_db, Base
 from .domains import auth_router, users_router
 from .domains.market import router as market_router
-from .routes import connectors, ai_recommendations, claude, hyperliquid_trading
+from .domains.trading import router as trading_router
+from .routes import connectors, ai_recommendations, claude
 
 # Configuration du logging pour afficher dans le terminal
 logging.basicConfig(
@@ -42,12 +43,12 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(market_router)
+app.include_router(trading_router)
 
 # Routers existants depuis routes/
 app.include_router(connectors.router)
 app.include_router(ai_recommendations.router)
 app.include_router(claude.router)
-app.include_router(hyperliquid_trading.router)
 
 @app.get("/")
 async def root():

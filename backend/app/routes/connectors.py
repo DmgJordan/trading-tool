@@ -3,13 +3,11 @@ from sqlalchemy.orm import Session
 from ..core import get_db, get_current_user, decrypt_api_key
 from ..schemas.connectors import (
     StandardApiKeyTest,
-    DexKeyTest,
     ConnectorTestResponse,
     KeyFormatValidation,
     UserInfoRequest
 )
 from ..services.validators.api_validator import ApiValidator
-from ..services.validators.dex_validator import DexValidator
 from ..domains.auth.models import User
 import logging
 
@@ -19,7 +17,6 @@ router = APIRouter(prefix="/connectors", tags=["connectors"])
 
 # Initialisation des validators
 api_validator = ApiValidator()
-dex_validator = DexValidator()
 
 @router.post("/test-anthropic", response_model=ConnectorTestResponse)
 async def test_anthropic_connection(
@@ -39,29 +36,6 @@ async def test_anthropic_connection(
 
     except Exception as e:
         logger.error(f"Erreur test Anthropic: {e}")
-        raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
-
-@router.post("/test-hyperliquid", response_model=ConnectorTestResponse)
-async def test_hyperliquid_connection(
-    dex_test: DexKeyTest,
-    current_user: User = Depends(get_current_user)
-):
-    """Test la connexion à Hyperliquid DEX"""
-    try:
-        result = await dex_validator.validate_hyperliquid(
-            dex_test.private_key,
-            dex_test.use_testnet
-        )
-
-        return ConnectorTestResponse(
-            status=result["status"],
-            message=result["message"],
-            data=result.get("data"),
-            validation=result.get("validation")
-        )
-
-    except Exception as e:
-        logger.error(f"Erreur test Hyperliquid: {e}")
         raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
 
 @router.post("/test-coingecko", response_model=ConnectorTestResponse)
@@ -113,39 +87,6 @@ async def test_anthropic_stored_connection(
         logger.error(f"Erreur test Anthropic stocké: {e}")
         raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
 
-@router.post("/test-hyperliquid-stored", response_model=ConnectorTestResponse)
-async def test_hyperliquid_stored_connection(
-    dex_test: DexKeyTest,  # Réutiliser DexKeyTest qui contient use_testnet
-    current_user: User = Depends(get_current_user)
-):
-    """Test la connexion à Hyperliquid DEX avec la clé stockée de l'utilisateur"""
-    try:
-        if not current_user.hyperliquid_api_key:
-            raise HTTPException(
-                status_code=400,
-                detail="Aucune clé Hyperliquid configurée. Veuillez d'abord enregistrer votre clé API."
-            )
-
-        # Déchiffrer la clé stockée
-        private_key = decrypt_api_key(current_user.hyperliquid_api_key)
-        result = await dex_validator.validate_hyperliquid(
-            private_key,
-            dex_test.use_testnet
-        )
-
-        return ConnectorTestResponse(
-            status=result["status"],
-            message=result["message"],
-            data=result.get("data"),
-            validation=result.get("validation")
-        )
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Erreur test Hyperliquid stocké: {e}")
-        raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
-
 @router.post("/test-coingecko-stored", response_model=ConnectorTestResponse)
 async def test_coingecko_stored_connection(
     current_user: User = Depends(get_current_user)
@@ -188,10 +129,35 @@ async def validate_key_format(
                 validation_request.service_type
             )
         elif validation_request.key_type == "private_key":
-            result = dex_validator.validate_dex_key_format(
-                validation_request.key,
-                validation_request.service_type
-            )
+            # Validation format clé privée Hyperliquid
+            if validation_request.service_type.lower() == "hyperliquid":
+                if not validation_request.key.startswith('0x'):
+                    result = {
+                        "status": "error",
+                        "message": "Clé Hyperliquid doit commencer par '0x'"
+                    }
+                elif len(validation_request.key) != 66:
+                    result = {
+                        "status": "error",
+                        "message": "Clé Hyperliquid doit faire 66 caractères (0x + 64 caractères hex)"
+                    }
+                else:
+                    try:
+                        int(validation_request.key[2:], 16)
+                        result = {
+                            "status": "success",
+                            "message": "Format de clé Hyperliquid valide"
+                        }
+                    except ValueError:
+                        result = {
+                            "status": "error",
+                            "message": "Clé Hyperliquid doit contenir uniquement des caractères hexadécimaux"
+                        }
+            else:
+                result = {
+                    "status": "error",
+                    "message": f"Type de DEX non supporté: {validation_request.service_type}"
+                }
         else:
             raise HTTPException(status_code=400, detail="Type de clé non supporté")
 
@@ -212,34 +178,14 @@ async def get_user_info(
 ):
     """Récupère les informations utilisateur pour un service donné (test uniquement)"""
     try:
-        # Hyperliquid utilise maintenant un endpoint de production dédié
-        if info_request.service_type == "hyperliquid":
+        # Hyperliquid utilise maintenant l'endpoint de production /trading/portfolio
+        if info_request.service_type in ["hyperliquid", "hyperliquid_legacy"]:
             raise HTTPException(
                 status_code=400,
-                detail="Utilisez l'endpoint de production /hyperliquid/portfolio-info pour Hyperliquid"
+                detail="Utilisez l'endpoint de production /trading/portfolio pour Hyperliquid"
             )
 
-        if info_request.service_type == "hyperliquid_legacy":
-            if not current_user.hyperliquid_api_key:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Aucune clé Hyperliquid configurée pour cet utilisateur"
-                )
-
-            if not current_user.hyperliquid_public_address:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Aucune adresse publique Hyperliquid configurée pour cet utilisateur"
-                )
-
-            private_key = decrypt_api_key(current_user.hyperliquid_api_key).strip()
-            result = await dex_validator.get_hyperliquid_user_info(
-                private_key,
-                current_user.hyperliquid_public_address,
-                info_request.use_testnet
-            )
-
-        elif info_request.service_type == "anthropic":
+        if info_request.service_type == "anthropic":
             if not current_user.anthropic_api_key:
                 raise HTTPException(
                     status_code=400,
