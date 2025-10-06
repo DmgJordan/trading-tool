@@ -7,9 +7,9 @@ import logging
 
 from .adapters import CCXTAdapter, CoinGeckoAdapter
 from .models import MarketData
+from .schemas import ClaudeMarketData
 from ...domains.auth.models import User
 from ...core import decrypt_api_key
-from ...schemas.claude import ClaudeMarketData
 from ...shared import (
     calculate_rsi,
     calculate_atr,

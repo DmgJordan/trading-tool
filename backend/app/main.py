@@ -7,7 +7,9 @@ from .core import engine, get_db, Base
 from .domains import auth_router, users_router
 from .domains.market import router as market_router
 from .domains.trading import router as trading_router
-from .routes import connectors, ai_recommendations, claude
+from .domains import ai, ai_profile
+# DÉPRÉCIÉ - from .routes import connectors  # Migré vers domains/users/
+# DÉPRÉCIÉ - from .routes import ai_recommendations, claude  # Migrés vers domains/ai/
 
 # Configuration du logging pour afficher dans le terminal
 logging.basicConfig(
@@ -44,11 +46,13 @@ app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(market_router)
 app.include_router(trading_router)
+app.include_router(ai.router)  # Nouveau : Infrastructure IA multi-providers
+app.include_router(ai_profile.router)  # Nouveau : Configuration IA utilisateur
 
-# Routers existants depuis routes/
-app.include_router(connectors.router)
-app.include_router(ai_recommendations.router)
-app.include_router(claude.router)
+# Routers existants depuis routes/ (à migrer/déprécier progressivement)
+# app.include_router(connectors.router)  # DÉPRÉCIÉ : migré vers domains/users/
+# app.include_router(ai_recommendations.router)  # DÉPRÉCIÉ : migré vers domains/ai/
+# app.include_router(claude.router)  # DÉPRÉCIÉ : migré vers domains/ai/
 
 @app.get("/")
 async def root():

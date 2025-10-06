@@ -1,5 +1,5 @@
 from typing import Dict, Any
-from ..connectors.anthropic_connector import AnthropicConnector
+from ...domains.ai.providers.anthropic import AnthropicProvider
 from ...domains.market.adapters.coingecko import CoinGeckoAdapter
 import logging
 
@@ -9,7 +9,7 @@ class ApiValidator:
     """Service de validation pour les APIs standard (clé API simple)"""
 
     def __init__(self):
-        self.anthropic_connector = AnthropicConnector()
+        self.anthropic_provider = AnthropicProvider()
         self.coingecko_connector = CoinGeckoAdapter()
 
     async def validate_anthropic(self, api_key: str) -> Dict[str, Any]:
@@ -23,7 +23,7 @@ class ApiValidator:
             Dict avec le résultat de la validation
         """
         try:
-            result = await self.anthropic_connector.test_connection(api_key)
+            result = await self.anthropic_provider.test_connection(api_key)
 
             # Enrichir le résultat avec des informations de validation
             if result["status"] == "success":
@@ -83,7 +83,12 @@ class ApiValidator:
             Dict avec la liste des modèles
         """
         try:
-            return await self.anthropic_connector.get_available_models(api_key)
+            # Note: get_available_models ne prend pas d'api_key en paramètre dans le nouveau provider
+            models = self.anthropic_provider.get_available_models()
+            return {
+                "status": "success",
+                "data": models
+            }
 
         except Exception as e:
             logger.error(f"Erreur récupération modèles: {e}")

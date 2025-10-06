@@ -256,3 +256,25 @@ class TechnicalAnalysis(BaseModel):
     overall_analysis: OverallAnalysis = Field(..., description="Analyse globale")
     analyzed_at: str = Field(..., description="Timestamp de l'analyse")
     data_points: int = Field(..., description="Nombre de bougies analysées")
+
+# =============================================================================
+# SCHEMAS FOR AI INTEGRATION
+# =============================================================================
+
+class ClaudeMarketData(BaseModel):
+    """
+    Données de marché enrichies pour l'analyse IA
+
+    Utilisé par MarketService pour fournir des données formatées à l'IA
+    """
+    symbol: str = Field(..., description="Symbole de l'actif")
+    name: str = Field(..., description="Nom de l'actif")
+    current_price: float = Field(..., description="Prix actuel")
+    price_change_24h: Optional[float] = Field(None, description="Variation 24h en %")
+    volume_24h: Optional[float] = Field(None, description="Volume 24h")
+    market_cap: Optional[float] = Field(None, description="Market cap")
+    high_24h: Optional[float] = Field(None, description="Plus haut 24h")
+    low_24h: Optional[float] = Field(None, description="Plus bas 24h")
+    price_change_7d: Optional[float] = Field(None, description="Variation 7 jours")
+    price_change_30d: Optional[float] = Field(None, description="Variation 30 jours")
+    last_updated: datetime = Field(..., description="Dernière mise à jour")

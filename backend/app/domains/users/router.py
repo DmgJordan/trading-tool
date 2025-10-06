@@ -10,9 +10,12 @@ from sqlalchemy.orm import Session
 from .schemas import (
     UserProfileUpdate, ApiKeyUpdate, UserProfileResponse,
     UserTradingPreferencesCreate, UserTradingPreferencesUpdate,
-    UserTradingPreferencesResponse, UserTradingPreferencesDefault
+    UserTradingPreferencesResponse, UserTradingPreferencesDefault,
+    StandardApiKeyTest, DexKeyTest, ConnectorTestResponse,
+    KeyFormatValidation, UserInfoRequest
 )
 from .service import UserService, PreferencesService
+from .api_key_testing import ApiKeyTestingService
 from ..auth.models import User
 from ...core import get_db, get_current_user
 
@@ -119,3 +122,64 @@ async def get_default_preferences():
     Utile pour afficher les valeurs par défaut dans l'interface utilisateur.
     """
     return PreferencesService.get_default_preferences()
+
+
+# ========== Endpoints Tests de Clés API (migré depuis routes/connectors.py) ==========
+
+# Initialisation du service de test
+api_testing_service = ApiKeyTestingService()
+
+
+@router.post("/me/api-keys/test", response_model=ConnectorTestResponse)
+async def test_api_key(
+    test_data: StandardApiKeyTest,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Teste une nouvelle clé API (Anthropic, CoinGecko) sans la sauvegarder
+
+    Migré depuis POST /connectors/test-{api_type}
+    """
+    return await api_testing_service.test_standard_api(test_data)
+
+
+@router.post("/me/api-keys/test-stored/{api_type}", response_model=ConnectorTestResponse)
+async def test_stored_api_key(
+    api_type: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Teste une clé API stockée de l'utilisateur
+
+    Args:
+        api_type: Type d'API (anthropic, coingecko)
+
+    Migré depuis POST /connectors/test-{api_type}-stored
+    """
+    return await api_testing_service.test_stored_api_key(api_type, current_user, db)
+
+
+@router.post("/me/api-keys/validate-format", response_model=ConnectorTestResponse)
+async def validate_api_key_format(
+    validation_request: KeyFormatValidation,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Valide le format d'une clé API sans tester la connexion
+
+    Migré depuis POST /connectors/validate-key-format
+    """
+    return api_testing_service.validate_key_format(validation_request)
+
+
+@router.get("/me/api-keys/supported-services")
+async def get_supported_api_services(
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Retourne la liste des services d'API supportés
+
+    Migré depuis GET /connectors/supported-services
+    """
+    return api_testing_service.get_supported_services()

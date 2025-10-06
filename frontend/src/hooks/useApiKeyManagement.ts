@@ -187,14 +187,12 @@ export const useApiKeyManagement = () => {
 
       try {
         const endpoint = isStoredKey
-          ? `/connectors/test-${apiType}-stored`
-          : `/connectors/test-${apiType}`;
+          ? `/users/me/api-keys/test-stored/${apiType}`
+          : `/users/me/api-keys/test`;
 
         const requestData = isStoredKey
           ? {}
-          : apiType === 'hyperliquid'
-            ? { api_key: values.hyperliquid_api_key }
-            : { api_key: apiKey };
+          : { api_key: apiKey, api_type: apiType };
 
         const response = await http.post<{ status: string; message?: string }>(
           endpoint,

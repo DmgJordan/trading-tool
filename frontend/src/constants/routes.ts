@@ -50,10 +50,12 @@ export const API_ROUTES = {
     EXECUTE_TRADE: '/hyperliquid/execute-trade',
     PORTFOLIO_INFO: '/hyperliquid/portfolio-info',
   },
-  CONNECTORS: {
-    TEST_ANTHROPIC: '/connectors/test-anthropic',
-    TEST_HYPERLIQUID: '/connectors/test-hyperliquid',
-    USER_INFO: '/connectors/user-info',
+  API_KEYS: {
+    // Migré depuis CONNECTORS vers users/me/api-keys
+    TEST: '/users/me/api-keys/test',
+    TEST_STORED: (apiType: string) => `/users/me/api-keys/test-stored/${apiType}`,
+    VALIDATE_FORMAT: '/users/me/api-keys/validate-format',
+    SUPPORTED_SERVICES: '/users/me/api-keys/supported-services',
   },
   HEALTH: {
     API: '/health',

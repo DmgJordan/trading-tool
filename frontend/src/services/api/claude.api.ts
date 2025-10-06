@@ -14,7 +14,7 @@ const testConnectionSchema = z.object({
 export const claudeApi = {
   testConnection: async (): Promise<{ success: boolean; message: string }> => {
     const response = await http.post<unknown>(
-      '/connectors/test-anthropic-stored',
+      '/users/me/api-keys/test-stored/anthropic',
       undefined,
       { auth: true }
     );

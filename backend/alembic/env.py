@@ -16,7 +16,15 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-from app.database import Base
+from app.core import Base
+
+# Import all models to ensure they are registered with Base.metadata
+from app.domains.auth.models import User
+from app.domains.users.models import UserProfile, UserTradingPreferences
+from app.domains.market.models import MarketData
+from app.domains.ai_profile.models import AIProfile
+# Note: trading.models est vide (pas de persistance DB pour l'instant)
+
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,

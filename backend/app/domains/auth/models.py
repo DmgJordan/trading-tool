@@ -29,5 +29,6 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    # Relations (définie ici, mais les modèles cibles sont dans users/)
+    # Relations (définie ici, mais les modèles cibles sont dans users/ et ai_profile/)
     profile = relationship("UserProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    ai_profile = relationship("AIProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
