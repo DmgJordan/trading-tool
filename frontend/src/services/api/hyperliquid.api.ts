@@ -68,7 +68,7 @@ export const hyperliquidTradingApi = {
     tradeRequest: ExecuteTradeRequest
   ): Promise<TradeExecutionResult> => {
     const response = await http.post<unknown>(
-      '/hyperliquid/execute-trade',
+      '/trading/orders',
       tradeRequest,
       { auth: true }
     );
@@ -78,7 +78,7 @@ export const hyperliquidTradingApi = {
     useTestnet: boolean = false
   ): Promise<HyperliquidPortfolioResponse> => {
     const response = await http.get<unknown>(
-      `/hyperliquid/portfolio-info?use_testnet=${useTestnet}`,
+      `/trading/portfolio?use_testnet=${useTestnet}`,
       { auth: true }
     );
     return hyperliquidPortfolioResponseSchema.parse(response);

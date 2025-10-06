@@ -46,9 +46,24 @@ export const API_ROUTES = {
     DEFAULT: '/users/me/preferences/default',
     VALIDATION: '/users/me/preferences/validation-info',
   },
-  HYPERLIQUID: {
-    EXECUTE_TRADE: '/hyperliquid/execute-trade',
-    PORTFOLIO_INFO: '/hyperliquid/portfolio-info',
+  TRADING: {
+    EXECUTE_TRADE: '/trading/orders',
+    PORTFOLIO_INFO: '/trading/portfolio',
+    POSITIONS: '/trading/positions',
+    ORDERS: '/trading/orders',
+    TEST_CONNECTION: '/trading/test',
+  },
+  MARKET: {
+    OHLCV_EXCHANGES: '/market/ohlcv/exchanges',
+    OHLCV_SYMBOLS: '/market/ohlcv/symbols',
+    MULTI_TIMEFRAME_ANALYSIS: '/market/ohlcv/multi-timeframe-analysis',
+    MARKET_DATA: (symbol: string) => `/market/data/${symbol}`,
+  },
+  AI: {
+    ANALYZE: '/ai/analyze',
+    TEST_PROVIDER: '/ai/test-provider',
+    PROVIDERS: '/ai/providers',
+    MODELS: '/ai/models',
   },
   API_KEYS: {
     // Migré depuis CONNECTORS vers users/me/api-keys

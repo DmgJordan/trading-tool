@@ -99,7 +99,7 @@ export const fetchOHLCV = async (
 ): Promise<OHLCVResponse> => {
   const response = await http.get<unknown>(
     // TODO: confirmer l'endpoint exact côté backend
-    `/ohlcv/${encodeURIComponent(symbol)}/${encodeURIComponent(timeframe)}`,
+    `/market/ohlcv/${encodeURIComponent(symbol)}/${encodeURIComponent(timeframe)}`,
     { auth: true }
   );
 
@@ -109,7 +109,7 @@ export const fetchOHLCV = async (
 export const ohlcvApi = {
   fetchOHLCV,
   getAvailableExchanges: async (): Promise<ExchangeListResponse> => {
-    const response = await http.get<unknown>('/ohlcv/exchanges', {
+    const response = await http.get<unknown>('/market/ohlcv/exchanges', {
       auth: true,
     });
     return exchangeListSchema.parse(response);
@@ -117,7 +117,7 @@ export const ohlcvApi = {
   getExchangeSymbols: async (
     request: ExchangeSymbolsRequest
   ): Promise<ExchangeSymbolsResponse> => {
-    const response = await http.post<unknown>('/ohlcv/symbols', request, {
+    const response = await http.post<unknown>('/market/ohlcv/symbols', request, {
       auth: true,
     });
     return exchangeSymbolsResponseSchema.parse(response);
@@ -126,7 +126,7 @@ export const ohlcvApi = {
     request: MultiTimeframeRequest
   ): Promise<MultiTimeframeResponse> => {
     const response = await http.post<unknown>(
-      '/ohlcv/multi-timeframe-analysis',
+      '/market/ohlcv/multi-timeframe-analysis',
       request,
       { auth: true }
     );

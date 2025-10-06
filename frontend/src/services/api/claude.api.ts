@@ -24,7 +24,7 @@ export const claudeApi = {
     request: SingleAssetAnalysisRequest
   ): Promise<SingleAssetAnalysisResponse> => {
     const response = await http.post<unknown>(
-      '/claude/analyze-single-asset',
+      '/ai/analyze',
       {
         ticker: request.ticker,
         exchange: request.exchange ?? 'binance',
