@@ -30,18 +30,24 @@ export default function RouteGuard({ children, fallback }: RouteGuardProps) {
 
         // Cas 2: Token présent mais expiré
         if (isTokenExpired(token)) {
-          console.warn('[RouteGuard] Token expiré détecté, tentative de refresh via initialize');
+          console.warn(
+            '[RouteGuard] Token expiré détecté, tentative de refresh via initialize'
+          );
           try {
             await initialize();
           } catch (error) {
-            console.warn('[RouteGuard] Échec initialize, redirection vers login');
+            console.warn(
+              '[RouteGuard] Échec initialize, redirection vers login'
+            );
             await logout();
             router.push('/login');
             return;
           }
         } else if (!isAuthenticated) {
           // Cas 3: Token valide mais store pas initialisé
-          console.log('[RouteGuard] Token valide trouvé, initialisation du store');
+          console.log(
+            '[RouteGuard] Token valide trouvé, initialisation du store'
+          );
           await initialize();
         }
       } catch (error) {

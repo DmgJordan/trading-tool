@@ -147,14 +147,14 @@ export interface HyperliquidPortfolioTimeSeriesData {
  * Periods: "day" | "week" | "month" | "allTime" | "perpDay" | "perpWeek" | "perpMonth" | "perpAllTime"
  */
 export type HyperliquidPortfolioPeriod =
-  | "day"
-  | "week"
-  | "month"
-  | "allTime"
-  | "perpDay"
-  | "perpWeek"
-  | "perpMonth"
-  | "perpAllTime";
+  | 'day'
+  | 'week'
+  | 'month'
+  | 'allTime'
+  | 'perpDay'
+  | 'perpWeek'
+  | 'perpMonth'
+  | 'perpAllTime';
 
 export type HyperliquidPortfolioData = Array<
   [HyperliquidPortfolioPeriod, HyperliquidPortfolioTimeSeriesData]

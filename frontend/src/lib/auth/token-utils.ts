@@ -56,7 +56,10 @@ export function decodeJWT(token: string): JWTPayload | null {
  * }
  * ```
  */
-export function isTokenExpired(token: string | null | undefined, bufferSeconds: number = 60): boolean {
+export function isTokenExpired(
+  token: string | null | undefined,
+  bufferSeconds: number = 60
+): boolean {
   if (!token) {
     return true;
   }
@@ -112,7 +115,9 @@ export function hasValidToken(): boolean {
  *
  * @returns Secondes avant expiration, ou 0 si expiré/invalide
  */
-export function getTokenTimeRemaining(token: string | null | undefined): number {
+export function getTokenTimeRemaining(
+  token: string | null | undefined
+): number {
   if (!token) {
     return 0;
   }

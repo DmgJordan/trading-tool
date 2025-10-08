@@ -27,7 +27,16 @@ const portfolioTimeSeriesDataSchema = z.object({
 
 // Schéma pour une entrée de portfolio [period, data]
 const portfolioEntrySchema = z.tuple([
-  z.enum(['day', 'week', 'month', 'allTime', 'perpDay', 'perpWeek', 'perpMonth', 'perpAllTime']),
+  z.enum([
+    'day',
+    'week',
+    'month',
+    'allTime',
+    'perpDay',
+    'perpWeek',
+    'perpMonth',
+    'perpAllTime',
+  ]),
   portfolioTimeSeriesDataSchema,
 ]);
 
@@ -67,11 +76,9 @@ export const hyperliquidTradingApi = {
   executeTrade: async (
     tradeRequest: ExecuteTradeRequest
   ): Promise<TradeExecutionResult> => {
-    const response = await http.post<unknown>(
-      '/trading/orders',
-      tradeRequest,
-      { auth: true }
-    );
+    const response = await http.post<unknown>('/trading/orders', tradeRequest, {
+      auth: true,
+    });
     return tradeExecutionResultSchema.parse(response);
   },
   getPortfolioInfo: async (

@@ -144,7 +144,9 @@ export const useAuthStore = create<AuthStore>()(
 
           // Si token absent ou expiré, tenter le refresh via l'intercepteur
           if (!token || isTokenExpired(token, 0)) {
-            console.log('[AuthStore] Token expiré ou absent, tentative de refresh...');
+            console.log(
+              '[AuthStore] Token expiré ou absent, tentative de refresh...'
+            );
           }
 
           // L'API interceptor gère automatiquement le rafraîchissement
@@ -153,7 +155,9 @@ export const useAuthStore = create<AuthStore>()(
           set({ user, isAuthenticated: true, isInitialized: true });
         } catch (error) {
           // Échec du rafraîchissement, déconnecter l'utilisateur
-          console.warn('[AuthStore] Échec du refresh token, déconnexion forcée');
+          console.warn(
+            '[AuthStore] Échec du refresh token, déconnexion forcée'
+          );
           get().logout();
           throw error;
         }
@@ -230,7 +234,9 @@ export const useAuthStore = create<AuthStore>()(
 
           // Cas 3: Token présent et valide, mais utilisateur non marqué authentifié
           if (token && !currentState.isAuthenticated) {
-            console.log('[AuthStore] Token valide trouvé, récupération utilisateur');
+            console.log(
+              '[AuthStore] Token valide trouvé, récupération utilisateur'
+            );
             await get().refreshToken();
           } else {
             // Cas 4: Pas de token ou déjà authentifié avec token valide

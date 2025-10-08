@@ -57,7 +57,8 @@ export const authApi = {
   },
   getMe: async (): Promise<User> => {
     const response = await http.get<unknown>('/users/me', { auth: true });
-    return userSchema.parse(response);
+    const parsed = userSchema.parse(response);
+    return parsed;
   },
   updateUser: async (userData: Partial<User>): Promise<User> => {
     const response = await http.put<unknown>('/users/me', userData, {

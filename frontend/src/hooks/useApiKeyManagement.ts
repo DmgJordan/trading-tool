@@ -66,21 +66,63 @@ export const useApiKeyManagement = () => {
     resolver: zodResolver(apiKeysSchema),
   });
 
-  // Charger les clés masquées
-  const loadMaskedKeys = useCallback(() => {
-    if (user?.hyperliquid_api_key_status === 'configured') {
-      setValue('hyperliquid_api_key', user.hyperliquid_api_key || '');
-    }
-    if (user?.hyperliquid_public_address) {
-      setValue('hyperliquid_public_address', user.hyperliquid_public_address);
-    }
-    if (user?.anthropic_api_key_status === 'configured') {
-      setValue('anthropic_api_key', user.anthropic_api_key || '');
-    }
-    if (user?.coingecko_api_key_status === 'configured') {
-      setValue('coingecko_api_key', user.coingecko_api_key || '');
-    }
-  }, [user, setValue]);
+  // Tester une clé stockée (utilise la clé chiffrée en DB)
+  const testStoredApiKey = useCallback(
+    async (apiType: ApiService) => {
+      const statusKey = `${apiType}_api_key_status` as const;
+      const isConfigured = user?.[statusKey] === 'configured';
+
+      if (!isConfigured) {
+        setTestResults(prev => ({
+          ...prev,
+          [apiType]: {
+            status: 'error',
+            message: `Aucune clé ${API_NAMES[apiType]} configurée`,
+          },
+        }));
+        return;
+      }
+
+      setIsSaving(prev => ({ ...prev, [apiType]: true }));
+      setTestResults(prev => ({
+        ...prev,
+        [apiType]: { status: 'testing', message: 'Test en cours...' },
+      }));
+
+      try {
+        const response = await http.post<{ status: string; message?: string }>(
+          `/users/me/api-keys/test-stored/${apiType}`,
+          {},
+          { auth: true }
+        );
+
+        setTestResults(prev => ({
+          ...prev,
+          [apiType]: {
+            status: response.status === 'success' ? 'success' : 'error',
+            message: response.message || 'Connexion réussie !',
+          },
+        }));
+
+        if (response.status === 'success') {
+          success(`Test ${API_NAMES[apiType]} réussi !`);
+        }
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Erreur de connexion';
+
+        setTestResults(prev => ({
+          ...prev,
+          [apiType]: { status: 'error', message },
+        }));
+
+        notifyError(`Test ${API_NAMES[apiType]} échoué: ${message}`);
+      } finally {
+        setIsSaving(prev => ({ ...prev, [apiType]: false }));
+      }
+    },
+    [user, success, notifyError]
+  );
 
   // Toggle visibilité d'une clé
   const toggleKeyVisibility = useCallback((service: ApiService) => {
@@ -148,7 +190,7 @@ export const useApiKeyManagement = () => {
     [getValues, setUser, success, notifyError]
   );
 
-  // Tester une connexion API
+  // Tester une nouvelle clé API (non sauvegardée)
   const testApiConnection = useCallback(
     async (apiType: ApiService) => {
       const values = getValues();
@@ -159,17 +201,7 @@ export const useApiKeyManagement = () => {
             ? values.anthropic_api_key
             : values.coingecko_api_key;
 
-      const isStoredKey =
-        apiType === 'hyperliquid'
-          ? user?.hyperliquid_api_key_status === 'configured' &&
-            apiKey?.includes('••••')
-          : apiType === 'anthropic'
-            ? user?.anthropic_api_key_status === 'configured' &&
-              apiKey?.includes('••••')
-            : user?.coingecko_api_key_status === 'configured' &&
-              apiKey?.includes('••••');
-
-      if (!apiKey?.trim() && !isStoredKey) {
+      if (!apiKey?.trim()) {
         setTestResults(prev => ({
           ...prev,
           [apiType]: {
@@ -180,23 +212,16 @@ export const useApiKeyManagement = () => {
         return;
       }
 
+      setIsSaving(prev => ({ ...prev, [apiType]: true }));
       setTestResults(prev => ({
         ...prev,
         [apiType]: { status: 'testing', message: 'Test en cours...' },
       }));
 
       try {
-        const endpoint = isStoredKey
-          ? `/users/me/api-keys/test-stored/${apiType}`
-          : `/users/me/api-keys/test`;
-
-        const requestData = isStoredKey
-          ? {}
-          : { api_key: apiKey, api_type: apiType };
-
         const response = await http.post<{ status: string; message?: string }>(
-          endpoint,
-          requestData,
+          `/users/me/api-keys/test`,
+          { api_key: apiKey, api_type: apiType },
           { auth: true }
         );
 
@@ -209,7 +234,7 @@ export const useApiKeyManagement = () => {
         }));
 
         if (response.status === 'success') {
-          success(`Connexion ${API_NAMES[apiType]} réussie !`);
+          success(`Test ${API_NAMES[apiType]} réussi !`);
         }
       } catch (error) {
         const message =
@@ -221,9 +246,11 @@ export const useApiKeyManagement = () => {
         }));
 
         notifyError(`Test ${API_NAMES[apiType]} échoué: ${message}`);
+      } finally {
+        setIsSaving(prev => ({ ...prev, [apiType]: false }));
       }
     },
-    [getValues, user, success, notifyError]
+    [getValues, success, notifyError]
   );
 
   return {
@@ -240,9 +267,9 @@ export const useApiKeyManagement = () => {
     watch,
 
     // Actions
-    loadMaskedKeys,
     toggleKeyVisibility,
     saveApiKey,
     testApiConnection,
+    testStoredApiKey,
   };
 };

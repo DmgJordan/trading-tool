@@ -117,9 +117,13 @@ export const ohlcvApi = {
   getExchangeSymbols: async (
     request: ExchangeSymbolsRequest
   ): Promise<ExchangeSymbolsResponse> => {
-    const response = await http.post<unknown>('/market/ohlcv/symbols', request, {
-      auth: true,
-    });
+    const response = await http.post<unknown>(
+      '/market/ohlcv/symbols',
+      request,
+      {
+        auth: true,
+      }
+    );
     return exchangeSymbolsResponseSchema.parse(response);
   },
   getMultiTimeframeAnalysis: async (

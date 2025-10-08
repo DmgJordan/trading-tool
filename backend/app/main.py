@@ -1,8 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 import logging
 import sys
+import time
 from .core import engine, get_db, Base
 from .domains import auth_router, users_router
 from .domains.market import router as market_router

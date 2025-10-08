@@ -35,8 +35,7 @@ export function middleware(request: NextRequest) {
    * - public : Dossier static files (/public/*)
    * - api/.* : API routes Next.js (/api/*)
    */
-  const isWhitelisted =
-    /^\/(_next|favicon\.ico|public|api\/.*)/.test(pathname);
+  const isWhitelisted = /^\/(_next|favicon\.ico|public|api\/.*)/.test(pathname);
 
   if (isWhitelisted) {
     return NextResponse.next();
@@ -93,7 +92,9 @@ export function middleware(request: NextRequest) {
     loginUrl.searchParams.set('redirect', pathname);
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[Middleware SSR] ❌ Redirect: ${pathname} → /login (not authenticated)`);
+      console.log(
+        `[Middleware SSR] ❌ Redirect: ${pathname} → /login (not authenticated)`
+      );
     }
 
     return NextResponse.redirect(loginUrl);
@@ -108,7 +109,9 @@ export function middleware(request: NextRequest) {
     response.headers.set('x-is-public', isPublic.toString());
     response.headers.set('x-is-protected', isProtected.toString());
     response.headers.set('x-is-authenticated', isAuthenticated.toString());
-    console.log(`[Middleware SSR] ✅ Allow: ${pathname} (public=${isPublic}, protected=${isProtected}, auth=${isAuthenticated})`);
+    console.log(
+      `[Middleware SSR] ✅ Allow: ${pathname} (public=${isPublic}, protected=${isProtected}, auth=${isAuthenticated})`
+    );
   }
 
   return response;

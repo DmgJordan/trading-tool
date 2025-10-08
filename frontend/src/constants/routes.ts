@@ -68,7 +68,8 @@ export const API_ROUTES = {
   API_KEYS: {
     // Migré depuis CONNECTORS vers users/me/api-keys
     TEST: '/users/me/api-keys/test',
-    TEST_STORED: (apiType: string) => `/users/me/api-keys/test-stored/${apiType}`,
+    TEST_STORED: (apiType: string) =>
+      `/users/me/api-keys/test-stored/${apiType}`,
     VALIDATE_FORMAT: '/users/me/api-keys/validate-format',
     SUPPORTED_SERVICES: '/users/me/api-keys/supported-services',
   },
