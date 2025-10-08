@@ -87,6 +87,7 @@ def create_refresh_token(data: dict):
 
 def verify_token(token: str, token_type: str = "access"):
     from .exceptions import UnauthorizedException
+    from jose.exceptions import ExpiredSignatureError, JWTError
 
     try:
         payload = jwt.decode(token, settings.secret_key, algorithms=[settings.jwt_algorithm])
@@ -97,7 +98,14 @@ def verify_token(token: str, token_type: str = "access"):
             raise UnauthorizedException("Could not validate credentials")
 
         return {"user_id": user_id, "exp": payload.get("exp")}
+    except ExpiredSignatureError:
+        # Token expiré → 401 avec message spécifique pour que le frontend puisse refresh
+        raise UnauthorizedException("Token has expired")
+    except JWTError:
+        # Token invalide (signature, format, etc.)
+        raise UnauthorizedException("Invalid token")
     except Exception:
+        # Autres erreurs
         raise UnauthorizedException("Could not validate credentials")
 
 def authenticate_user(db: Session, email: str, password: str):

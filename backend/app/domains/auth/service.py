@@ -178,38 +178,48 @@ class AuthService:
         Raises:
             HTTPException: Si le token est invalide ou expiré
         """
-        # Vérifier le refresh token
-        payload = verify_token(refresh_token)
+        try:
+            # Vérifier le refresh token (type="refresh" pour refresh tokens)
+            payload = verify_token(refresh_token, token_type="refresh")
 
-        if payload.get("type") != "refresh":
+            if payload.get("type") != "refresh":
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid token type"
+                )
+
+            user_id = payload.get("user_id")
+            if user_id is None:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Could not validate credentials"
+                )
+
+            # Vérifier que l'utilisateur existe toujours
+            user = db.query(User).filter(User.id == int(user_id)).first()
+            if not user:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="User not found"
+                )
+
+            # Créer de nouveaux tokens
+            new_access_token = create_access_token(data={"sub": str(user_id)})
+            new_refresh_token = create_refresh_token(data={"sub": str(user_id)})
+
+            # Stocker le nouveau refresh_token dans cookie HttpOnly
+            set_refresh_token_cookie(response, new_refresh_token)
+
+            return Token(access_token=new_access_token, refresh_token=new_refresh_token)
+        except HTTPException:
+            # Re-raise les HTTPException (déjà avec le bon status code)
+            raise
+        except Exception as e:
+            # Toute autre erreur → 401
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token type"
+                detail=f"Token refresh failed: {str(e)}"
             )
-
-        user_id = payload.get("sub")
-        if user_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Could not validate credentials"
-            )
-
-        # Vérifier que l'utilisateur existe toujours
-        user = db.query(User).filter(User.id == int(user_id)).first()
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found"
-            )
-
-        # Créer de nouveaux tokens
-        new_access_token = create_access_token(data={"sub": str(user_id)})
-        new_refresh_token = create_refresh_token(data={"sub": str(user_id)})
-
-        # Stocker le nouveau refresh_token dans cookie HttpOnly
-        set_refresh_token_cookie(response, new_refresh_token)
-
-        return Token(access_token=new_access_token, refresh_token=new_refresh_token)
 
     @staticmethod
     def logout(response: Response) -> dict:

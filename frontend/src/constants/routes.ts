@@ -96,9 +96,18 @@ export const isPublicPath = (pathname: string): boolean => {
 
 /**
  * Helper pour vérifier si une route est protégée
+ *
+ * CRITICAL: Traiter '/' comme cas spécial pour éviter que TOUTES
+ * les routes soient considérées comme protégées (car '/login'.startsWith('/') === true)
  */
 export const isProtectedRoute = (pathname: string): boolean => {
-  return Object.values(PROTECTED_ROUTES).some(route =>
-    pathname.startsWith(route)
-  );
+  // Cas spécial : '/' exact (page d'accueil)
+  if (pathname === '/') {
+    return true;
+  }
+
+  // Vérifier les autres routes protégées (en excluant '/')
+  return Object.values(PROTECTED_ROUTES)
+    .filter(route => route !== '/') // Exclure '/' pour éviter le bug startsWith
+    .some(route => pathname.startsWith(route));
 };

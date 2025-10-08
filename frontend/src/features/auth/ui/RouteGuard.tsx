@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/features/auth/model/store';
 import LoadingScreen from '@/shared/ui/LoadingScreen';
+import { isTokenExpired, getAccessToken } from '@/lib/auth/token-utils';
 
 interface RouteGuardProps {
   children: React.ReactNode;
@@ -11,32 +13,52 @@ interface RouteGuardProps {
 
 export default function RouteGuard({ children, fallback }: RouteGuardProps) {
   const [isLoading, setIsLoading] = useState(true);
-  const { isAuthenticated, refreshToken } = useAuthStore();
+  const { isAuthenticated, initialize, logout } = useAuthStore();
+  const router = useRouter();
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Vérifier si on a des tokens stockés
-        if (typeof window !== 'undefined') {
-          const tokens = localStorage.getItem('auth_tokens');
+        const token = getAccessToken();
 
-          if (tokens && !isAuthenticated) {
-            // Essayer de rafraîchir l'authentification
-            await refreshToken();
+        // Cas 1: Pas de token du tout
+        if (!token) {
+          console.log('[RouteGuard] Aucun token trouvé');
+          setIsLoading(false);
+          return;
+        }
+
+        // Cas 2: Token présent mais expiré
+        if (isTokenExpired(token)) {
+          console.warn('[RouteGuard] Token expiré détecté, tentative de refresh via initialize');
+          try {
+            await initialize();
+          } catch (error) {
+            console.warn('[RouteGuard] Échec initialize, redirection vers login');
+            await logout();
+            router.push('/login');
+            return;
           }
+        } else if (!isAuthenticated) {
+          // Cas 3: Token valide mais store pas initialisé
+          console.log('[RouteGuard] Token valide trouvé, initialisation du store');
+          await initialize();
         }
       } catch (error) {
         console.warn(
-          "Erreur lors de la vérification de l'authentification:",
+          "[RouteGuard] Erreur lors de la vérification de l'authentification:",
           error
         );
+        // En cas d'erreur, rediriger vers login par sécurité
+        await logout();
+        router.push('/login');
       } finally {
         setIsLoading(false);
       }
     };
 
     checkAuth();
-  }, [isAuthenticated, refreshToken]);
+  }, []); // Déclenchement unique au mount
 
   /**
    * ⚠️ Redirections SUPPRIMÉES - gérées par middleware SSR

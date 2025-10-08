@@ -8,6 +8,7 @@ import type {
   User,
 } from './types';
 import { authApi } from '@/services/api/auth.api';
+import { isTokenExpired, getAccessToken } from '@/lib/auth/token-utils';
 
 interface AuthStore extends AuthState, AuthActions {}
 
@@ -139,18 +140,20 @@ export const useAuthStore = create<AuthStore>()(
 
       refreshToken: async () => {
         try {
-          const tokens = localStorage.getItem('auth_tokens');
-          if (!tokens) {
-            throw new Error('Aucun token de rafraîchissement disponible');
+          const token = getAccessToken();
+
+          // Si token absent ou expiré, tenter le refresh via l'intercepteur
+          if (!token || isTokenExpired(token, 0)) {
+            console.log('[AuthStore] Token expiré ou absent, tentative de refresh...');
           }
 
-          JSON.parse(tokens); // Vérifier la validité du token
           // L'API interceptor gère automatiquement le rafraîchissement
           const user = await authApi.getMe();
 
           set({ user, isAuthenticated: true, isInitialized: true });
         } catch (error) {
           // Échec du rafraîchissement, déconnecter l'utilisateur
+          console.warn('[AuthStore] Échec du refresh token, déconnexion forcée');
           get().logout();
           throw error;
         }
@@ -191,13 +194,13 @@ export const useAuthStore = create<AuthStore>()(
       // Nouvelle méthode pour initialiser l'état d'authentification
       initialize: async () => {
         try {
-          const tokens = localStorage.getItem('auth_tokens');
+          const token = getAccessToken();
           const currentState = get();
 
-          // Si l'utilisateur est marqué comme authentifié mais n'a pas de tokens, le déconnecter
-          if (currentState.isAuthenticated && !tokens) {
+          // Cas 1: Utilisateur marqué authentifié mais token absent
+          if (currentState.isAuthenticated && !token) {
             console.warn(
-              'Utilisateur authentifié sans tokens - déconnexion forcée'
+              '[AuthStore] Utilisateur authentifié sans token - déconnexion forcée'
             );
             set({
               user: null,
@@ -210,17 +213,33 @@ export const useAuthStore = create<AuthStore>()(
             return;
           }
 
-          if (tokens && !currentState.isAuthenticated) {
-            // Essayer de récupérer les informations utilisateur
+          // Cas 2: Token présent mais expiré
+          if (token && isTokenExpired(token)) {
+            console.warn(
+              '[AuthStore] Token expiré détecté - tentative de refresh'
+            );
+            try {
+              await get().refreshToken();
+              return;
+            } catch (error) {
+              console.warn('[AuthStore] Refresh échoué, déconnexion');
+              // Le logout est déjà appelé dans refreshToken en cas d'échec
+              return;
+            }
+          }
+
+          // Cas 3: Token présent et valide, mais utilisateur non marqué authentifié
+          if (token && !currentState.isAuthenticated) {
+            console.log('[AuthStore] Token valide trouvé, récupération utilisateur');
             await get().refreshToken();
           } else {
-            // Pas de tokens ou déjà authentifié avec tokens valides
+            // Cas 4: Pas de token ou déjà authentifié avec token valide
             set({ isInitialized: true });
           }
         } catch (error) {
           // Échec de l'initialisation, déconnecter par sécurité
           console.warn(
-            "Échec de l'initialisation de l'authentification:",
+            "[AuthStore] Échec de l'initialisation de l'authentification:",
             error
           );
           set({

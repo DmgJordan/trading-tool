@@ -1,15 +1,20 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { isPublicPath } from './constants/routes';
+import { isPublicPath, isProtectedRoute } from './constants/routes';
 
 /**
  * Middleware SSR Next.js - Protection des routes
  *
  * Logique :
- * 1. Whitelist : ressources statiques, Next.js internals, routes publiques
+ * 1. Whitelist : ressources statiques, Next.js internals
  * 2. Vérification auth : lecture du cookie refresh_token
- * 3. Redirection SSR si /(app)/* sans authentification
- * 4. Redirection inverse si utilisateur auth sur /(public)/*
+ * 3. Redirection SSR si route protégée sans authentification
+ * 4. Redirection inverse si utilisateur auth sur route publique
+ *
+ * CRITICAL: Next.js supprime les route groups des URLs
+ * - Fichier: app/(app)/dashboard/page.tsx
+ * - URL réelle: /dashboard (PAS /(app)/dashboard)
+ * - Donc on utilise isProtectedRoute() au lieu de pathname.startsWith()
  *
  * Avantages SSR :
  * - Pas de flash côté client
@@ -22,17 +27,16 @@ export function middleware(request: NextRequest) {
   /**
    * Whitelist : ressources autorisées sans vérification
    *
-   * Regex : /^\/(\(public\)|_next|favicon\.ico|public|api\/.*)/
+   * Regex : /^\/(_next|favicon\.ico|public|api\/.*)/
    *
    * Explications :
-   * - /(public) : Route group Next.js pour pages publiques
    * - _next : Assets Next.js (static, image optimization, etc.)
    * - favicon.ico : Favicon du site
    * - public : Dossier static files (/public/*)
    * - api/.* : API routes Next.js (/api/*)
    */
   const isWhitelisted =
-    /^\/(\(public\)|_next|favicon\.ico|public|api\/.*)/.test(pathname);
+    /^\/(_next|favicon\.ico|public|api\/.*)/.test(pathname);
 
   if (isWhitelisted) {
     return NextResponse.next();
@@ -42,7 +46,6 @@ export function middleware(request: NextRequest) {
    * Vérification authentification via cookie HttpOnly
    *
    * Note : refresh_token stocké en cookie sécurisé par le backend
-   * (à implémenter côté API si pas encore fait)
    */
   const refreshToken = request.cookies.get('refresh_token')?.value;
   const isAuthenticated = !!refreshToken;
@@ -50,39 +53,50 @@ export function middleware(request: NextRequest) {
   /**
    * Détection route publique via patterns regex
    * Voir constants/routes.ts pour la définition des patterns
+   *
+   * CRITICAL: Vérifier les routes publiques EN PREMIER pour éviter
+   * les boucles de redirection (ex: /login détecté comme protégé)
    */
   const isPublic = isPublicPath(pathname);
 
   /**
-   * Protection SSR : redirection si accès /(app)/* sans auth
-   *
-   * Redirection vers /(public)/login avec paramètre redirect
-   * pour revenir à la page demandée après connexion
+   * 1. ROUTES PUBLIQUES : laisser passer, avec redirection inverse si déjà auth
    */
-  if (pathname.startsWith('/(app)') && !isAuthenticated) {
-    const loginUrl = new URL('/(public)/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname);
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[Middleware SSR] Redirect: ${pathname} → /(public)/login`);
+  if (isPublic) {
+    // Redirection inverse : utilisateur déjà authentifié sur /login
+    if (isAuthenticated && pathname !== '/logout') {
+      if (process.env.NODE_ENV === 'development') {
+        console.log(
+          `[Middleware SSR] ✅ Redirect: ${pathname} → /dashboard (already authenticated)`
+        );
+      }
+      return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
-    return NextResponse.redirect(loginUrl);
+    // Route publique + pas authentifié (ou logout) → laisser passer
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Middleware SSR] ✅ Allow: ${pathname} (public route)`);
+    }
+    return NextResponse.next();
   }
 
   /**
-   * Redirection inverse : utilisateur authentifié sur route publique
+   * 2. ROUTES PROTÉGÉES : vérifier authentification
    *
-   * Exception : /(public)/logout (déconnexion autorisée)
+   * CRITICAL: Ne PAS utiliser pathname.startsWith('/(app)') car route groups
+   * n'apparaissent pas dans les URLs Next.js
    */
-  if (isPublic && isAuthenticated && pathname !== '/(public)/logout') {
+  const isProtected = isProtectedRoute(pathname);
+
+  if (isProtected && !isAuthenticated) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirect', pathname);
+
     if (process.env.NODE_ENV === 'development') {
-      console.log(
-        `[Middleware SSR] Authenticated user on public route → /(app)/dashboard`
-      );
+      console.log(`[Middleware SSR] ❌ Redirect: ${pathname} → /login (not authenticated)`);
     }
 
-    return NextResponse.redirect(new URL('/(app)/dashboard', request.url));
+    return NextResponse.redirect(loginUrl);
   }
 
   /**
@@ -92,7 +106,9 @@ export function middleware(request: NextRequest) {
   if (process.env.NODE_ENV === 'development') {
     response.headers.set('x-pathname', pathname);
     response.headers.set('x-is-public', isPublic.toString());
+    response.headers.set('x-is-protected', isProtected.toString());
     response.headers.set('x-is-authenticated', isAuthenticated.toString());
+    console.log(`[Middleware SSR] ✅ Allow: ${pathname} (public=${isPublic}, protected=${isProtected}, auth=${isAuthenticated})`);
   }
 
   return response;
